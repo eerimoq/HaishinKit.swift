@@ -39,7 +39,7 @@ public class SRTConnection: NSObject {
     }
 
     /// Open a two-way connection to an application on SRT Server.
-    public func open(_ uri: URL?, mode: SRTMode = .caller) {
+    public func open(_ uri: URL?, mode: SRTMode = .caller) throws {
         guard let uri = uri, let scheme = uri.scheme, let host = uri.host, let port = uri.port, scheme == "srt" else {
             return
         }
@@ -47,7 +47,7 @@ public class SRTConnection: NSObject {
         let options = SRTSocketOption.from(uri: uri)
         let addr = sockaddr_in(mode.host(host), port: UInt16(port))
         socket = .init()
-        ((try? socket?.open(addr, mode: mode, options: options)) as ()??)
+        try socket?.open(addr, mode: mode, options: options)
     }
 
     /// Closes the connection from the server.
@@ -60,6 +60,7 @@ public class SRTConnection: NSObject {
         }
         socket?.close()
         clients.removeAll()
+        connected = false
     }
 
     private func sockaddr_in(_ host: String, port: UInt16) -> sockaddr_in {

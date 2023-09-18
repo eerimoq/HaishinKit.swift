@@ -46,6 +46,7 @@ final class SRTSocket {
                 stopRunning()
             case SRTS_NONEXIST:
                 logger.warn("SRT Socket Not Exist")
+                stopRunning()
             default:
                 break
             }
