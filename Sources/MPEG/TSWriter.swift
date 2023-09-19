@@ -62,7 +62,7 @@ public class TSWriter: Running {
     private var audioTimestamp: CMTime = .invalid
     private var PCRTimestamp = CMTime.zero
     private var canWriteFor: Bool {
-        guard expectedMedias.isEmpty else {
+        if expectedMedias.isEmpty {
             return true
         }
         if expectedMedias.contains(.audio) && expectedMedias.contains(.video) {
@@ -235,6 +235,9 @@ extension TSWriter: AudioCodecDelegate {
         guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
             return
         }
+        guard canWriteFor else {
+            return
+        }
         writeSampleBuffer(
             TSWriter.defaultAudioPID,
             streamID: 192,
@@ -274,6 +277,9 @@ extension TSWriter: VideoCodecDelegate {
             return
         }
         guard let bytes = buffer else {
+            return
+        }
+        guard canWriteFor else {
             return
         }
         writeSampleBuffer(
