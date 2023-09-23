@@ -19,6 +19,7 @@ protocol IOMixerDelegate: AnyObject {
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
     #endif
+    func mixer(_ mixer: IOMixer, audioLevel: Float)
 }
 
 /// An object that mixies audio and video for streaming.

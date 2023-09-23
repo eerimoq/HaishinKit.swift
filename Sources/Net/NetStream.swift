@@ -28,6 +28,7 @@ public protocol NetStreamDelegate: AnyObject {
     func streamWillDropFrame(_ stream: NetStream) -> Bool
     /// Tells the receiver to the stream opened.
     func streamDidOpen(_ stream: NetStream)
+    func stream(_ stream: NetStream, audioLevel: Float)
 }
 
 /// The `NetStream` class is the foundation of a RTMPStream, HTTPStream.
@@ -340,6 +341,10 @@ extension NetStream: IOMixerDelegate {
         delegate?.stream(self, sessionInterruptionEnded: session)
     }
     #endif
+    
+    func mixer(_ mixer: IOMixer, audioLevel: Float) {
+        delegate?.stream(self, audioLevel: audioLevel)
+    }
 }
 
 extension NetStream: IOScreenCaptureUnitDelegate {
