@@ -156,12 +156,17 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
     }
-        var audioLevel: Float = 0.0
-        for channel in connection.audioChannels {
-            audioLevel += channel.averagePowerLevel
-        }
-        audioLevel /= Float(connection.audioChannels.count)
         if let mixer {
+            var audioLevel: Float
+            if muted {
+                audioLevel = .nan
+            } else {
+                audioLevel = 0.0
+                for channel in connection.audioChannels {
+                    audioLevel += channel.averagePowerLevel
+                }
+                audioLevel /= Float(connection.audioChannels.count)
+            }
             mixer.delegate?.mixer(mixer, audioLevel: audioLevel)
         }
         appendSampleBuffer(sampleBuffer)
