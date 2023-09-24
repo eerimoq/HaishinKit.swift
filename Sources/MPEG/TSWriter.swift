@@ -53,7 +53,7 @@ public class TSWriter: Running {
             writeProgramIfNeeded()
         }
     }
-    private var videoConfig: AVCDecoderConfigurationRecord? {
+    private var videoConfig: DecoderConfigurationRecord? {
         didSet {
             writeProgramIfNeeded()
         }
@@ -254,17 +254,21 @@ extension TSWriter: AudioCodecDelegate {
 extension TSWriter: VideoCodecDelegate {
     // MARK: VideoCodecDelegate
     public func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
-        guard
-            let formatDescription,
-            let avcC = AVCDecoderConfigurationRecord.getData(formatDescription) else {
+        guard let formatDescription else {
             return
         }
         var data = ESSpecificData()
-        data.streamType = .h264
         data.elementaryPID = TSWriter.defaultVideoPID
-        PMT.elementaryStreamSpecificData.append(data)
         videoContinuityCounter = 0
-        videoConfig = AVCDecoderConfigurationRecord(data: avcC)
+        if let avcC = AVCDecoderConfigurationRecord.getData(formatDescription) {
+            data.streamType = .h264
+            PMT.elementaryStreamSpecificData.append(data)
+            videoConfig = AVCDecoderConfigurationRecord(data: avcC)
+        } else if let hvcC = HEVCDecoderConfigurationRecord.getData(formatDescription) {
+            data.streamType = .h265
+            PMT.elementaryStreamSpecificData.append(data)
+            videoConfig = HEVCDecoderConfigurationRecord(data: hvcC)
+        }
     }
 
     public func videoCodec(_ codec: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {

@@ -158,6 +158,9 @@ struct PacketizedElementaryStream: PESPacketHeader {
         if let config: AVCDecoderConfigurationRecord = config as? AVCDecoderConfigurationRecord {
             return PacketizedElementaryStream(bytes: bytes, count: count, presentationTimeStamp: presentationTimeStamp, decodeTimeStamp: decodeTimeStamp, timestamp: timestamp, config: randomAccessIndicator ? config : nil)
         }
+        if let config: HEVCDecoderConfigurationRecord = config as? HEVCDecoderConfigurationRecord {
+            return PacketizedElementaryStream(bytes: bytes, count: count, presentationTimeStamp: presentationTimeStamp, decodeTimeStamp: decodeTimeStamp, timestamp: timestamp, config: randomAccessIndicator ? config : nil)
+        }
         return nil
     }
 
@@ -235,12 +238,42 @@ struct PacketizedElementaryStream: PESPacketHeader {
         guard let bytes = bytes else {
             return nil
         }
-        if let config: AVCDecoderConfigurationRecord = config {
+        if let config {
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x10])
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
             data.append(contentsOf: config.sequenceParameterSets[0])
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
             data.append(contentsOf: config.pictureParameterSets[0])
+        } else {
+            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x30])
+        }
+        if let stream = AVCFormatStream(bytes: bytes, count: count) {
+            data.append(stream.toByteStream())
+        }
+        optionalPESHeader = PESOptionalHeader()
+        optionalPESHeader?.dataAlignmentIndicator = true
+        optionalPESHeader?.setTimestamp(
+            timestamp,
+            presentationTimeStamp: presentationTimeStamp,
+            decodeTimeStamp: decodeTimeStamp
+        )
+        let length = data.count + optionalPESHeader!.data.count
+        if length < Int(UInt16.max) {
+            packetLength = UInt16(length)
+        }
+    }
+
+    init?(bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, timestamp: CMTime, config: HEVCDecoderConfigurationRecord?) {
+        guard let bytes = bytes else {
+            return nil
+        }
+        print("ToDo: HEVC PES count: \(count)")
+        if let config {
+            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x10])
+            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
+            //data.append(contentsOf: config.sequenceParameterSets[0])
+            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
+            //data.append(contentsOf: config.pictureParameterSets[0])
         } else {
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x30])
         }
