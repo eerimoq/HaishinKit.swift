@@ -239,6 +239,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
             return nil
         }
         if let config {
+            // 3 NAL units. SEI(9), SPS(7) and PPS(8)
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x10])
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
             data.append(contentsOf: config.sequenceParameterSets[0])
@@ -266,16 +267,21 @@ struct PacketizedElementaryStream: PESPacketHeader {
     init?(bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, timestamp: CMTime, config: HEVCDecoderConfigurationRecord?) {
         guard let bytes = bytes else {
             return nil
-        }
-        print("ToDo: HEVC PES count: \(count)")
+    }
         if let config {
-            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x10])
-            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
-            //data.append(contentsOf: config.sequenceParameterSets[0])
-            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
-            //data.append(contentsOf: config.pictureParameterSets[0])
-        } else {
-            data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x30])
+            // ToDo: Error handling and loop over arrays?
+            if let nal = config.array[.vps] {
+                data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
+                data.append(nal[0])
+            }
+            if let nal = config.array[.sps] {
+                data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
+                data.append(nal[0])
+            }
+            if let nal = config.array[.pps] {
+                data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
+                data.append(nal[0])
+            }
         }
         if let stream = AVCFormatStream(bytes: bytes, count: count) {
             data.append(stream.toByteStream())
