@@ -114,22 +114,23 @@ final class SRTSocket {
         startRunning()
     }
 
-    private var videoData: Data?
+    private var videoData: [Data?] = [nil, nil]
     private var videoDataOffset: Int = 0
 
     func doOutput(data: Data) {
         outgoingQueue.async {
             let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
             if pid == TSWriter.defaultVideoPID {
-                if let videoData = self.videoData {
+                if let videoData = self.videoData[0] {
                     let restData = Data(videoData[self.videoDataOffset...])
                     for data in restData.chunk(SRTSocket.payloadSize) {
                         _ = self.sendmsg2(data)
                     }
-                } 
-                self.videoData = data
+                }
+                self.videoData[0] = self.videoData[1]
+                self.videoData[1] = data
                 self.videoDataOffset = 0
-            } else if let videoData = self.videoData {
+            } else if let videoData = self.videoData[0] {
                 for var data in data.chunk(SRTSocket.payloadSize) {
                     let free = SRTSocket.payloadSize - data.count
                     if free > 0 {
@@ -142,7 +143,9 @@ final class SRTSocket {
                     _ = self.sendmsg2(data)
                 }
                 if self.videoDataOffset == videoData.count {
-                    self.videoData = nil
+                    self.videoData[0] = self.videoData[1]
+                    self.videoData[1] = nil
+                    self.videoDataOffset = 0
                 }
             } else {
                 for data in data.chunk(SRTSocket.payloadSize) {
