@@ -54,7 +54,6 @@ final class SRTSocket {
         }
     }
     private var windowSizeC: Int32 = 1024 * 4
-    private var outgoingBuffer: [Data] = .init()
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
     private let outgoingQueue: DispatchQueue = .init(label: "com.haishinkit.SRTHaishinKit.SRTSocket.outgoing", qos: .userInitiated)
     private let incomingQueue: DispatchQueue = .init(label: "com.haishinkit.SRTHaishinKit.SRTSocket.incoming", qos: .userInitiated)
@@ -115,16 +114,42 @@ final class SRTSocket {
         startRunning()
     }
 
+    private var videoData: Data?
+    private var videoDataOffset: Int = 0
+
     func doOutput(data: Data) {
         outgoingQueue.async {
-            self.outgoingBuffer.append(contentsOf: data.chunk(SRTSocket.payloadSize))
-            repeat {
-                guard var data = self.outgoingBuffer.first else {
-                    return
+            let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
+            if pid == 256 {
+                if let videoData = self.videoData {
+                    var t = Data()
+                    t += videoData[self.videoDataOffset...]
+                    for data in t.chunk(SRTSocket.payloadSize) {
+                        _ = self.sendmsg2(data)
+                    }
+                } 
+                self.videoData = data
+                self.videoDataOffset = 0
+            } else if let videoData = self.videoData {
+                for var data in data.chunk(SRTSocket.payloadSize) {
+                    let free = SRTSocket.payloadSize - data.count
+                    if free > 0 {
+                        let endOffset = min(self.videoDataOffset + free, videoData.count)
+                        if self.videoDataOffset != endOffset {
+                            data = videoData[self.videoDataOffset..<endOffset] + data
+                            self.videoDataOffset = endOffset
+                        }
+                    }
+                    _ = self.sendmsg2(data)
                 }
-                _ = self.sendmsg2(&data)
-                self.outgoingBuffer.remove(at: 0)
-            } while !self.outgoingBuffer.isEmpty
+                if self.videoDataOffset == videoData.count {
+                    self.videoData = nil
+                }
+            } else {
+                for data in data.chunk(SRTSocket.payloadSize) {
+                    _ = self.sendmsg2(data)
+                }
+            }
         }
     }
 
@@ -179,7 +204,7 @@ final class SRTSocket {
     }
 
     @inline(__always)
-    private func sendmsg2(_ data: inout Data) -> Int32 {
+    private func sendmsg2(_ data: Data) -> Int32 {
         return data.withUnsafeBytes { pointer in
             guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
                 return SRT_ERROR
