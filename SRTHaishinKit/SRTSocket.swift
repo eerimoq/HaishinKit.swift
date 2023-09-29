@@ -120,11 +120,10 @@ final class SRTSocket {
     func doOutput(data: Data) {
         outgoingQueue.async {
             let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
-            if pid == 256 {
+            if pid == TSWriter.defaultVideoPID {
                 if let videoData = self.videoData {
-                    var t = Data()
-                    t += videoData[self.videoDataOffset...]
-                    for data in t.chunk(SRTSocket.payloadSize) {
+                    let restData = Data(videoData[self.videoDataOffset...])
+                    for data in restData.chunk(SRTSocket.payloadSize) {
                         _ = self.sendmsg2(data)
                     }
                 } 
