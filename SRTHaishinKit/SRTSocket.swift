@@ -5,7 +5,7 @@ import Logboard
 
 protocol SRTSocketDelegate: AnyObject {
     func socket(_ socket: SRTSocket, status: SRT_SOCKSTATUS)
-    func socket(_ socket: SRTSocket, incomingDataAvailabled data: Data, bytes: Int32)
+    func socket(_ socket: SRTSocket, incomingDataAvailable data: Data, bytes: Int32)
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket)
 }
 
@@ -160,7 +160,7 @@ final class SRTSocket {
             repeat {
                 let result = self.recvmsg()
                 if 0 < result {
-                    self.delegate?.socket(self, incomingDataAvailabled: self.incomingBuffer, bytes: result)
+                    self.delegate?.socket(self, incomingDataAvailable: self.incomingBuffer, bytes: result)
                 }
             } while self.isRunning.value
         }

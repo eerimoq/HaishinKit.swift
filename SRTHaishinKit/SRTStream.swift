@@ -70,7 +70,8 @@ public class SRTStream: NetStream {
     public init(_ connection: SRTConnection) {
         super.init()
         self.connection = connection
-        self.connection?.streams.append(self)
+        self.connection?.removeStream()
+        self.connection?.setStream(stream: self)
         let keyValueObservation = connection.observe(\.connected, options: [.new, .old]) { [weak self] _, _ in
             guard let self = self else {
                 return

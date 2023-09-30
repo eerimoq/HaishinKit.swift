@@ -15,7 +15,7 @@ public class SRTConnection: NSObject {
             socket?.delegate = self
         }
     }
-    var streams: [SRTStream] = []
+    private var stream: SRTStream?
     var clients: [SRTSocket] = []
 
     /// The SRT's performance data.
@@ -34,7 +34,7 @@ public class SRTConnection: NSObject {
     }
 
     deinit {
-        streams.removeAll()
+        removeStream()
         srt_cleanup()
     }
 
@@ -55,12 +55,19 @@ public class SRTConnection: NSObject {
         for client in clients {
             client.close()
         }
-        for stream in streams {
-            stream.close()
-        }
+        stream?.close()
         socket?.close()
         clients.removeAll()
         connected = false
+    }
+
+    func removeStream() {
+        stream?.close()
+        stream = nil
+    }
+
+    func setStream(stream: SRTStream) {
+        self.stream = stream
     }
 
     private func sockaddr_in(_ host: String, port: UInt16) -> sockaddr_in {
@@ -84,8 +91,8 @@ extension SRTConnection: SRTSocketDelegate {
         connected = socket.status == SRTS_CONNECTED
     }
 
-    func socket(_ socket: SRTSocket, incomingDataAvailabled data: Data, bytes: Int32) {
-        streams.first?.doInput(data.subdata(in: 0..<Data.Index(bytes)))
+    func socket(_ socket: SRTSocket, incomingDataAvailable data: Data, bytes: Int32) {
+        stream?.doInput(data.subdata(in: 0..<Data.Index(bytes)))
     }
 
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket) {
