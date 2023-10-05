@@ -218,7 +218,7 @@ open class NetStream: NSObject {
     /// Attaches the audio capture object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     open func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = false, onError: ((_ error: Error) -> Void)? = nil) {
-        lockQueue.async {
+        lockQueue.sync {
             do {
                 try self.mixer.audioIO.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession)
             } catch {
