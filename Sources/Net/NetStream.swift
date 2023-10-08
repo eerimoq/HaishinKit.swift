@@ -192,10 +192,11 @@ open class NetStream: NSObject {
     #if os(iOS) || os(macOS)
     /// Attaches the primary camera object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil) {
+    open func attachCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil, onSuccess: (() -> Void)? = nil) {
         lockQueue.async {
             do {
                 try self.mixer.videoIO.attachCamera(device)
+                onSuccess?()
             } catch {
                 onError?(error)
             }
