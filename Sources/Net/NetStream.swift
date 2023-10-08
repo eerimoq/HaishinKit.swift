@@ -183,10 +183,10 @@ open class NetStream: NSObject {
     /// Creates a NetStream object.
     override public init() {
         super.init()
-        #if os(iOS)
+        /*#if os(iOS)
         NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackground(_:)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground(_:)), name: UIApplication.willEnterForegroundNotification, object: nil)
-        #endif
+        #endif*/
     }
 
     #if os(iOS) || os(macOS)
@@ -307,7 +307,7 @@ open class NetStream: NSObject {
         mixer.recorder.stopRunning()
     }
 
-    #if os(iOS)
+    /*#if os(iOS)
     @objc
     private func didEnterBackground(_ notification: Notification) {
         // Require main thread. Otherwise the microphone cannot be used in the background.
@@ -320,7 +320,7 @@ open class NetStream: NSObject {
             self.mixer.inBackgroundMode = false
         }
     }
-    #endif
+    #endif*/
 }
 
 extension NetStream: IOMixerDelegate {
