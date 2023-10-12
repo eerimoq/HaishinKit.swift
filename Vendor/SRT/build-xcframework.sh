@@ -1,14 +1,13 @@
 #!/bin/bash
 
-if which $(pwd)/OpenSSL >/dev/null; then
-  echo ""
-else
+set -e
+set -o pipefail
+
+if [ ! -e OpenSSL ] ; then
   git clone git@github.com:krzyzanowskim/OpenSSL.git
 fi
 
-if which $(pwd)/srt >/dev/null; then
-  echo ""
-else
+if [ ! -e srt ] ; then
   git clone git@github.com:Haivision/srt.git
   pushd srt
   git checkout refs/tags/v1.5.1
@@ -57,6 +56,9 @@ rm -f ./build/OS/libsrt-lipo.a
 lipo -create ./build/OS/arm64/libsrt.a -output ./build/OS/libsrt-lipo.a
 libtool -static -o ./build/OS/libsrt.a ./build/OS/libsrt-lipo.a ./OpenSSL/iphoneos/lib/libcrypto.a ./OpenSSL/iphoneos/lib/libssl.a
 
+# Copies too many files
+cp srt/srtcore/*.h Includes
+
 # make libsrt.xcframework
 rm -rf libsrt.xcframework
 xcodebuild -create-xcframework \
@@ -64,4 +66,3 @@ xcodebuild -create-xcframework \
     -library ./build/OS/libsrt.a -headers Includes \
     -library ./build/macosx/libsrt.a -headers Includes \
     -output libsrt.xcframework
-

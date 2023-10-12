@@ -18,8 +18,6 @@ final class SRTSocket {
     weak var delegate: (any SRTSocketDelegate)?
     private(set) var mode: SRTMode = .caller
     private(set) var perf: CBytePerfMon = .init()
-    // Padding so isRunning is not overwritten when reading bstats KEKW
-    private(set) var perfpad: CBytePerfMon = .init()
     private(set) var isRunning: Atomic<Bool> = .init(false)
     private(set) var socket: SRTSOCKET = SRT_INVALID_SOCK
     private(set) var status: SRT_SOCKSTATUS = SRTS_INIT {
