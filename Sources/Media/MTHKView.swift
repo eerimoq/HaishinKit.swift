@@ -8,7 +8,8 @@ public class MTHKView: MTKView {
     public var isMirrored = false
     /// Specifies how the video is displayed within a player layer’s bounds.
     public var videoGravity: AVLayerVideoGravity = .resizeAspect
-
+    public var fps: Double? = nil
+    private var nextTime = -1.0
     public var videoFormatDescription: CMVideoFormatDescription? {
         currentStream?.mixer.videoIO.formatDescription
     }
@@ -72,6 +73,16 @@ extension MTHKView: NetStreamDrawable {
 
     public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
         if Thread.isMainThread {
+            // Just approximate FPS for now.
+            if let fps {
+                guard let sampleBuffer else {
+                    return
+                }
+                if sampleBuffer.presentationTimeStamp.seconds < nextTime {
+                    return
+                }
+                nextTime = sampleBuffer.presentationTimeStamp.seconds + 1.0 / fps
+            }
             currentSampleBuffer = sampleBuffer
             #if os(macOS)
             self.needsDisplay = true
