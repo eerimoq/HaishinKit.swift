@@ -113,6 +113,7 @@ final class IOVideoUnit: NSObject, IOUnit {
     private var pixelBuffer: CVPixelBuffer?
     private var multiCamSampleBuffer: CMSampleBuffer?
 
+    /*
     deinit {
         if Thread.isMainThread {
             self.drawable?.attachStream(nil)
@@ -122,6 +123,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
         }
     }
+    */
 
     #if os(iOS) || os(macOS)
     func attachCamera(_ device: AVCaptureDevice?) throws {
