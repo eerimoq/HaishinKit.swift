@@ -424,18 +424,17 @@ public enum SRTSocketOption: String {
         return failures
     }
 
-    static func getQueryItems(uri: URL) -> [String: String] {
-        let url = uri.absoluteString
-        if !url.contains("?") {
+    func getQueryItems(uri: URL) -> [String: String] {
+        guard let urlComponent = URLComponents(string: uri.absoluteString) else {
             return [:]
         }
-        let queryString = url.split(separator: "?")[1]
-        let queries = queryString.split(separator: "&")
-        var paramsReturn: [String: String] = [:]
-        for q in queries {
-            let query = q.split(separator: "=", maxSplits: 1)
-            paramsReturn[String(query[0])] = String(query[1])
+        guard let queryItems = urlComponent.queryItems else {
+            return [:]
         }
-        return paramsReturn
+        var params: [String: String] = [:]
+        for item in queryItems {
+            params[item.name] = item.value ?? ""
+        }
+        return params
     }
 }
