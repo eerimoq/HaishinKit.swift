@@ -424,7 +424,7 @@ public enum SRTSocketOption: String {
         return failures
     }
 
-    func getQueryItems(uri: URL) -> [String: String] {
+    static func getQueryItems(uri: URL) -> [String: String] {
         guard let urlComponent = URLComponents(string: uri.absoluteString) else {
             return [:]
         }
