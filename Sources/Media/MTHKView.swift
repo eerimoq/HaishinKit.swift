@@ -14,10 +14,15 @@ public class MTHKView: MTKView {
         currentStream?.mixer.videoIO.formatDescription
     }
 
-    #if !os(tvOS)
-    public var videoOrientation: AVCaptureVideoOrientation = .portrait
+    #if os(iOS) || os(macOS)
+    /// Specifies the orientation of AVCaptureVideoOrientation.
+    public var videoOrientation: AVCaptureVideoOrientation = .portrait {
+        didSet {
+            currentStream?.mixer.videoIO.videoOrientation = videoOrientation
+        }
+    }
     #endif
-
+    
     private var currentSampleBuffer: CMSampleBuffer?
     private let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
 
