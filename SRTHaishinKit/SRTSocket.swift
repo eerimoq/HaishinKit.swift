@@ -10,11 +10,11 @@ protocol SRTSocketDelegate: AnyObject {
 }
 
 final class SRTSocket {
-    static let defaultOptions: [SRTSocketOption: Any] = [:]
+    static let defaultOptions: [SRTSocketOption: String] = [:]
     static let payloadSize: Int = 1316
 
     var timeout: Int = 0
-    var options: [SRTSocketOption: Any] = [:]
+    var options: [SRTSocketOption: String] = [:]
     weak var delegate: (any SRTSocketDelegate)?
     private(set) var mode: SRTMode = .caller
     private(set) var perf: CBytePerfMon = .init()
@@ -72,7 +72,7 @@ final class SRTSocket {
         startRunning()
     }
 
-    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: Any] = SRTSocket.defaultOptions) throws {
+    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: String] = SRTSocket.defaultOptions) throws {
         guard socket == SRT_INVALID_SOCK else {
             return
         }

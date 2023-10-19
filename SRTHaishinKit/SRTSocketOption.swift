@@ -7,12 +7,12 @@ private let enummapTranstype: [String: Any] = [
 ]
 
 public enum SRTSocketOption: String {
-    static func from(uri: URL?) -> [SRTSocketOption: Any] {
+    static func from(uri: URL?) -> [SRTSocketOption: String] {
         guard let uri = uri else {
             return [:]
         }
         let queryItems = getQueryItems(uri: uri)
-        var options: [SRTSocketOption: Any] = [:]
+        var options: [SRTSocketOption: String] = [:]
         for item in queryItems {
             guard let option = SRTSocketOption(rawValue: item.key) else { continue }
             options[option] = item.value
@@ -366,7 +366,7 @@ public enum SRTSocketOption: String {
         }
     }
 
-    func setOption(_ socket: SRTSOCKET, value: Any) -> Bool {
+    func setOption(_ socket: SRTSOCKET, value: String) -> Bool {
         guard let data = data(value) else {
             return false
         }
@@ -379,33 +379,30 @@ public enum SRTSocketOption: String {
         return result != -1
     }
 
-    func data(_ value: Any) -> Data? {
+    func data(_ value: String) -> Data? {
         switch type {
         case .string:
             return String(describing: value).data(using: .utf8)
         case .int:
-            var v: Int32 = 0
-            if let value = value as? Int {
-                v = Int32(value)
-            }
-            return .init(Data(bytes: &v, count: MemoryLayout.size(ofValue: v)))
-        case .int64:
-            guard var v = value as? Int64 else {
+            guard var value = Int32(value) else {
                 return nil
             }
-            return .init(Data(bytes: &v, count: MemoryLayout.size(ofValue: v)))
-        case .bool:
-            var v: Int32 = 0
-            if let value = value as? Bool {
-                v = value ? 1 : 0
+            return .init(Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
+        case .int64:
+            guard var value = Int64(value) else {
+                return nil
             }
-            return .init(Data(bytes: &v, count: MemoryLayout.size(ofValue: v)))
+            return .init(Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
+        case .bool:
+            guard var value = Int32(value) else {
+                return nil
+            }
+            value = (value != 0 ? 1 : 0)
+            return .init(Data(bytes: &value, count: MemoryLayout.size(ofValue: value)))
         case .enumeration:
             switch self {
             case .transtype:
-                guard let key = value as? String else {
-                    return nil
-                }
+                let key = value
                 guard var v = valmap?[key] as? SRT_TRANSTYPE else {
                     return nil
                 }
@@ -416,7 +413,7 @@ public enum SRTSocketOption: String {
         }
     }
 
-    static func configure(_ socket: SRTSOCKET, binding: Binding, options: [SRTSocketOption: Any]) -> [String] {
+    static func configure(_ socket: SRTSOCKET, binding: Binding, options: [SRTSocketOption: String]) -> [String] {
         var failures: [String] = []
         for (key, value) in options where key.binding == binding {
             if !key.setOption(socket, value: value) { failures.append(key.rawValue) }
