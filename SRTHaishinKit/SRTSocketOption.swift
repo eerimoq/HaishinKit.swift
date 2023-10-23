@@ -14,7 +14,10 @@ public enum SRTSocketOption: String {
         let queryItems = getQueryItems(uri: uri)
         var options: [SRTSocketOption: String] = [:]
         for item in queryItems {
-            guard let option = SRTSocketOption(rawValue: item.key) else { continue }
+            guard let option = SRTSocketOption(rawValue: item.key) else {
+                print("Unknown SRT option", item.key)
+                continue
+            }
             options[option] = item.value
         }
         return options
@@ -77,6 +80,7 @@ public enum SRTSocketOption: String {
     case transtype
     case kmrefreshrate
     case kmpreannounce
+    case maxrexmitbw
 
     public var symbol: SRT_SOCKOPT {
         switch self {
@@ -134,6 +138,8 @@ public enum SRTSocketOption: String {
             return SRTO_KMREFRESHRATE
         case .kmpreannounce:
             return SRTO_KMPREANNOUNCE
+        case .maxrexmitbw:
+            return SRTO_MAXREXMITBW
         case .sndsyn:
             return SRTO_SNDSYN
         case .isn:
@@ -176,7 +182,7 @@ public enum SRTSocketOption: String {
         case .rcvsyn:
             return .pre
         case .maxbw:
-            return .pre
+            return .post
         case .pbkeylen:
             return .pre
         case .passphrase:
@@ -227,6 +233,8 @@ public enum SRTSocketOption: String {
             return .pre
         case .kmpreannounce:
             return .pre
+        case .maxrexmitbw:
+            return .post
         case .sndsyn:
             return .post
         case .isn:
@@ -320,6 +328,8 @@ public enum SRTSocketOption: String {
             return .int
         case .kmpreannounce:
             return .int
+        case .maxrexmitbw:
+            return .int64
         case .sndsyn:
             return .bool
         case .isn:

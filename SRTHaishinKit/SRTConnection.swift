@@ -61,6 +61,21 @@ public class SRTConnection: NSObject {
         connected = false
     }
 
+    public func setOption(name: String, value: String) {
+        let uri = URL(string: "https:///?\(name)=\(value)")
+        let options = SRTSocketOption.from(uri: uri)
+        if let socket {
+            let failures = SRTSocketOption.configure(socket.socket,
+                                                     binding: .post,
+                                                     options: options)
+            if !failures.isEmpty {
+                print(failures)
+            }
+        } else {
+            print("No socket")
+        }
+    }
+    
     func removeStream() {
         stream?.close()
         stream = nil

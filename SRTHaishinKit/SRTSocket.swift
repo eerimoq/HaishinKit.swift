@@ -173,11 +173,11 @@ final class SRTSocket {
         srt_close(socket)
         socket = SRT_INVALID_SOCK
     }
-
+    
     func configure(_ binding: SRTSocketOption.Binding) -> Bool {
         let failures = SRTSocketOption.configure(socket, binding: binding, options: options)
         guard failures.isEmpty else {
-            logger.error(failures)
+            print(failures)
             return false
         }
         return true

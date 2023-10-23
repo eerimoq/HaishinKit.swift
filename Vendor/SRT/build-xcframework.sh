@@ -10,7 +10,7 @@ fi
 if [ ! -e srt ] ; then
   git clone git@github.com:Haivision/srt.git
   pushd srt
-  git checkout refs/tags/v1.5.1
+  git checkout refs/tags/v1.5.3
   popd
 fi
 
@@ -19,8 +19,8 @@ srt() {
 
   mkdir -p ./build/$2/$3
   pushd ./build/$2/$3
-  ../../../srt/configure --cmake-prefix-path=$IOS_OPENSSL --ios-disable-bitcode=1 --ios-platform=$2 --ios-arch=$3 --cmake-toolchain-file=scripts/iOS.cmake --USE_OPENSSL_PC=off
-  make
+  ../../../srt/configure --cmake-prefix-path=$IOS_OPENSSL --ios-disable-bitcode=1 --ios-platform=$2 --ios-arch=$3 --cmake-toolchain-file=scripts/iOS.cmake --USE_OPENSSL_PC=off --enable-maxrexmitbw=ON
+  make -j $(nproc)
   popd
 }
 
@@ -29,8 +29,8 @@ srt_macosx() {
 
   mkdir -p ./build/$1/$2
   pushd ./build/$1/$2
-  ../../../srt/configure --cmake-prefix-path=$OPENSSL --cmake-osx-architectures=$2 --USE_OPENSSL_PC=ON --ssl-include-dir=$OPENSSL/include --ssl-libraries=$OPENSSL/lib/libcrypto.a
-  make
+  ../../../srt/configure --cmake-prefix-path=$OPENSSL --cmake-osx-architectures=$2 --USE_OPENSSL_PC=ON --ssl-include-dir=$OPENSSL/include --ssl-libraries=$OPENSSL/lib/libcrypto.a --enable-maxrexmitbw=ON
+  make -j $(nproc)
   popd
 }
 
@@ -58,6 +58,9 @@ libtool -static -o ./build/OS/libsrt.a ./build/OS/libsrt-lipo.a ./OpenSSL/iphone
 
 # Copies too many files
 cp srt/srtcore/*.h Includes
+cp ./build/OS/arm64/version.h Includes/version.h
+
+echo "#define ENABLE_MAXREXMITBW 1" >> Includes/platform_sys.h
 
 # make libsrt.xcframework
 rm -rf libsrt.xcframework
