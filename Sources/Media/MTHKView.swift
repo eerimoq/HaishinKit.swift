@@ -1,6 +1,8 @@
 import AVFoundation
 import MetalKit
 
+private let imageQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.MTHKView")
+
 /**
  * A view that displays a video content of a NetStream object which uses Metal api.
  */
@@ -23,7 +25,7 @@ public class MTHKView: MTKView {
     }
     #endif
     
-    private var currentSampleBuffer: CMSampleBuffer?
+    private var currentDisplayImage: CIImage?
     private let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
 
     private lazy var commandQueue: (any MTLCommandQueue)? = {
@@ -77,18 +79,28 @@ extension MTHKView: NetStreamDrawable {
     }
 
     public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
-        if Thread.isMainThread {
-            // Just approximate FPS for now.
-            if let fps {
-                guard let sampleBuffer else {
-                    return
-                }
-                if sampleBuffer.presentationTimeStamp.seconds < nextTime {
-                    return
-                }
-                nextTime = sampleBuffer.presentationTimeStamp.seconds + 1.0 / fps
+        imageQueue.async {
+            guard let sampleBuffer else {
+                return
             }
-            currentSampleBuffer = sampleBuffer
+            guard let imageBuffer = sampleBuffer.imageBuffer else {
+                return
+            }
+            // Just approximate FPS for now.
+            if let fps = self.fps {
+                if sampleBuffer.presentationTimeStamp.seconds < self.nextTime {
+                    return
+                }
+                self.nextTime = sampleBuffer.presentationTimeStamp.seconds + 1.0 / fps
+            }
+            let displayImage = CIImage(cvPixelBuffer: imageBuffer)
+            self.enqueueDisplayImage(displayImage, sampleBuffer.presentationTimeStamp)
+        }
+    }
+
+    public func enqueueDisplayImage(_ displayImage: CIImage, _ presentationTimeStamp: CMTime) {
+        if Thread.isMainThread {
+            currentDisplayImage = displayImage
             #if os(macOS)
             self.needsDisplay = true
             #else
@@ -96,7 +108,7 @@ extension MTHKView: NetStreamDrawable {
             #endif
         } else {
             DispatchQueue.main.async {
-                self.enqueue(sampleBuffer)
+                self.enqueueDisplayImage(displayImage, presentationTimeStamp)
             }
         }
     }
@@ -119,16 +131,13 @@ extension MTHKView: MTKViewDelegate {
             let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: currentRenderPassDescriptor) {
             renderCommandEncoder.endEncoding()
         }
-        guard let imageBuffer = currentSampleBuffer?.imageBuffer else {
+        guard var displayImage = currentDisplayImage else {
             commandBuffer.present(currentDrawable)
             commandBuffer.commit()
             return
         }
-        let displayImage = CIImage(cvPixelBuffer: imageBuffer)
         var scaleX: CGFloat = 0
         var scaleY: CGFloat = 0
-        var translationX: CGFloat = 0
-        var translationY: CGFloat = 0
         switch videoGravity {
         case .resize:
             scaleX = drawableSize.width / displayImage.extent.width
@@ -137,29 +146,22 @@ extension MTHKView: MTKViewDelegate {
             let scale: CGFloat = min(drawableSize.width / displayImage.extent.width, drawableSize.height / displayImage.extent.height)
             scaleX = scale
             scaleY = scale
-            translationX = (drawableSize.width - displayImage.extent.width * scale) / scaleX / 2
-            translationY = (drawableSize.height - displayImage.extent.height * scale) / scaleY / 2
         case .resizeAspectFill:
             let scale: CGFloat = max(drawableSize.width / displayImage.extent.width, drawableSize.height / displayImage.extent.height)
             scaleX = scale
             scaleY = scale
-            translationX = (drawableSize.width - displayImage.extent.width * scale) / scaleX / 2
-            translationY = (drawableSize.height - displayImage.extent.height * scale) / scaleY / 2
         default:
             break
         }
-        let bounds = CGRect(origin: .zero, size: drawableSize)
-        var scaledImage: CIImage = displayImage
 
         if isMirrored {
-            scaledImage = scaledImage.oriented(.upMirrored)
+            displayImage = displayImage.oriented(.upMirrored)
         }
 
-        scaledImage = scaledImage
-            .transformed(by: CGAffineTransform(translationX: translationX, y: translationY))
-            .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        displayImage = displayImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
 
-        context.render(scaledImage, to: currentDrawable.texture, commandBuffer: commandBuffer, bounds: bounds, colorSpace: colorSpace)
+        let bounds = CGRect(origin: .zero, size: drawableSize)
+        context.render(displayImage, to: currentDrawable.texture, commandBuffer: commandBuffer, bounds: bounds, colorSpace: colorSpace)
         commandBuffer.present(currentDrawable)
         commandBuffer.commit()
     }
