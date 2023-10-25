@@ -9,9 +9,10 @@ protocol SRTSocketDelegate: AnyObject {
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket)
 }
 
+public var payloadSize: Int = 1316
+
 final class SRTSocket {
     static let defaultOptions: [SRTSocketOption: String] = [:]
-    static let payloadSize: Int = 1316
 
     var timeout: Int = 0
     var options: [SRTSocketOption: String] = [:]
@@ -123,7 +124,7 @@ final class SRTSocket {
             if pid == TSWriter.defaultVideoPID {
                 if let videoData = self.videoData[0] {
                     let restData = Data(videoData[self.videoDataOffset...])
-                    for data in restData.chunk(SRTSocket.payloadSize) {
+                    for data in restData.chunk(payloadSize) {
                         _ = self.sendmsg2(data)
                     }
                 }
@@ -131,8 +132,8 @@ final class SRTSocket {
                 self.videoData[1] = data
                 self.videoDataOffset = 0
             } else if let videoData = self.videoData[0] {
-                for var data in data.chunk(SRTSocket.payloadSize) {
-                    let free = SRTSocket.payloadSize - data.count
+                for var data in data.chunk(payloadSize) {
+                    let free = payloadSize - data.count
                     if free > 0 {
                         let endOffset = min(self.videoDataOffset + free, videoData.count)
                         if self.videoDataOffset != endOffset {
@@ -148,7 +149,7 @@ final class SRTSocket {
                     self.videoDataOffset = 0
                 }
             } else {
-                for data in data.chunk(SRTSocket.payloadSize) {
+                for data in data.chunk(payloadSize) {
                     _ = self.sendmsg2(data)
                 }
             }
