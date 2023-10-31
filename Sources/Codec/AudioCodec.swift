@@ -72,7 +72,7 @@ public class AudioCodec {
             settings.apply(audioConverter, oldValue: oldValue)
         }
     }
-    var effects: Set<AudioEffect> = []
+    var effects: [AudioEffect] = []
     var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioCodec.lock")
     var inSourceFormat: AudioStreamBasicDescription? {
         didSet {

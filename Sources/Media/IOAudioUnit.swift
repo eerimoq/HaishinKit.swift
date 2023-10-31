@@ -93,11 +93,21 @@ final class IOAudioUnit: NSObject, IOUnit {
     }
 
     func registerEffect(_ effect: AudioEffect) -> Bool {
-        codec.effects.insert(effect).inserted
+        if codec.effects.contains(effect) {
+            return false
+        } else {
+            codec.effects.append(effect)
+            return true
+        }
     }
 
     func unregisterEffect(_ effect: AudioEffect) -> Bool {
-        codec.effects.remove(effect) != nil
+        if let index = codec.effects.firstIndex(of: effect) {
+            codec.effects.remove(at: index)
+            return true
+        } else {
+            return false
+        }
     }
 
     private func numGapSamples(_ sampleBuffer: CMSampleBuffer) -> Int {
@@ -156,6 +166,17 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
     }
+        let volume: Int16 = 1
+        if volume != 1, let dataBuffer = sampleBuffer.dataBuffer {
+            if var data = dataBuffer.data {
+                for i in stride(from: 0, to: data.count, by: 2) {
+                    var sample = data.getInt16(offset: i)
+                    sample /= volume
+                    data.setInt16(value: sample, offset: i)
+                }
+                data.replaceBlockBuffer(blockBuffer: dataBuffer)
+            }
+        }
         if let mixer {
             var audioLevel: Float
             if muted {
@@ -166,6 +187,7 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
                     audioLevel += channel.averagePowerLevel
                 }
                 audioLevel /= Float(connection.audioChannels.count)
+                audioLevel *= Float(volume)
             }
             mixer.delegate?.mixer(mixer, audioLevel: audioLevel)
         }
