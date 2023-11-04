@@ -4,10 +4,20 @@ import AVFoundation
 import SwiftPMSupport
 #endif
 
+public enum GeneratorMode {
+    case off
+    case squareWave
+}
+
+public var audioGeneratorMode: GeneratorMode = .off
+public var squareWaveGeneratorAmplitude: Int16 = 200
+public var squareWaveGeneratorInterval: UInt64 = 60
+
 final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
-
+    private var generatorCount: UInt64 = 0
+    
     lazy var codec: AudioCodec = {
         var codec = AudioCodec()
         codec.lockQueue = lockQueue
@@ -123,6 +133,24 @@ final class IOAudioUnit: NSObject, IOUnit {
         let diff = CMTime(seconds: sampleBuffer.presentationTimeStamp.seconds, preferredTimescale: sampleRate) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
     }
+
+    private func generateSquareWave(sampleBuffer: CMSampleBuffer) {
+        if let dataBuffer = sampleBuffer.dataBuffer {
+            if var data = dataBuffer.data {
+                for i in stride(from: 0, to: data.count, by: 2) {
+                    var sample = data.getInt16(offset: i)
+                    if (generatorCount % squareWaveGeneratorInterval) < 30 {
+                        sample = squareWaveGeneratorAmplitude
+                    } else {
+                        sample = -squareWaveGeneratorAmplitude
+                    }
+                    data.setInt16(value: sample, offset: i)
+                    generatorCount += 1
+                }
+                data.replaceBlockBuffer(blockBuffer: dataBuffer)
+            }
+        }
+    }
 }
 
 extension IOAudioUnit: IOUnitEncoding {
@@ -166,16 +194,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
     }
-        let volume: Int16 = 1
-        if volume != 1, let dataBuffer = sampleBuffer.dataBuffer {
-            if var data = dataBuffer.data {
-                for i in stride(from: 0, to: data.count, by: 2) {
-                    var sample = data.getInt16(offset: i)
-                    sample /= volume
-                    data.setInt16(value: sample, offset: i)
-                }
-                data.replaceBlockBuffer(blockBuffer: dataBuffer)
-            }
+        switch audioGeneratorMode {
+        case .squareWave:
+            generateSquareWave(sampleBuffer: sampleBuffer)
+        default:
+            break
         }
         if let mixer {
             var audioLevel: Float
@@ -189,7 +212,6 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
                     audioLevel += channel.averagePowerLevel
                 }
                 audioLevel /= Float(connection.audioChannels.count)
-                audioLevel *= Float(volume)
             }
             mixer.delegate?.mixer(mixer, audioLevel: audioLevel)
         }
