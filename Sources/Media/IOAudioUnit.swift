@@ -181,6 +181,8 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             var audioLevel: Float
             if muted {
                 audioLevel = .nan
+            } else if connection.audioChannels.count > 1 {
+                audioLevel = .infinity
             } else {
                 audioLevel = 0.0
                 for channel in connection.audioChannels {
