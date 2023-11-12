@@ -55,8 +55,9 @@ public class SRTConnection: NSObject {
         for client in clients {
             client.close()
         }
-        stream?.close()
+        removeStream()
         socket?.close()
+        socket = nil
         clients.removeAll()
         connected = false
     }
