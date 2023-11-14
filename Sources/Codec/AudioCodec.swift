@@ -195,11 +195,11 @@ public class AudioCodec {
             logger.info("cannot create")
             return nil
         }
-        logger.debug("inputFormat: \(inputFormat)")
-        logger.debug("outputFormat: \(outputFormat)")
+        logger.info("inputFormat: \(inputFormat)")
+        logger.info("outputFormat: \(outputFormat)")
         let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
         let channelMap = Self.makeChannelMap(inChannels: Int(inputFormat.channelCount), outChannels: Int(outputFormat.channelCount), outputChannelsMap: settings.outputChannelsMap)
-        logger.debug("channelMap: \(channelMap)")
+        logger.info("channelMap: \(channelMap)")
         converter?.channelMap = channelMap
         settings.apply(converter, oldValue: nil)
         if converter == nil {
