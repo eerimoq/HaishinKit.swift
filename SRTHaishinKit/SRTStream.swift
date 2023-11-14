@@ -190,6 +190,7 @@ extension SRTStream: TSWriterDelegate {
     // MARK: TSWriterDelegate
     public func writer(_ writer: TSWriter, didOutput data: Data) {
         guard readyState == .publishing else {
+            logger.info("not publishing")
             return
         }
         connection?.socket?.doOutput(data: data)

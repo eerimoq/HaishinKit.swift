@@ -81,6 +81,7 @@ public class AudioCodec {
             }
             outputBuffers.removeAll()
             ringBuffer = .init(&inSourceFormat)
+            logger.info("Creating audio converter")
             audioConverter = makeAudioConverter(&inSourceFormat)
         }
     }
@@ -96,11 +97,13 @@ public class AudioCodec {
         switch settings.format {
         case .aac:
             guard let audioConverter, let ringBuffer else {
+                logger.info("audioConverter or ringBuffer missing")
                 return
             }
             let numSamples = ringBuffer.appendSampleBuffer(sampleBuffer, offset: offset)
             if ringBuffer.isReady {
                 guard let buffer = getOutputBuffer() else {
+                    logger.info("no output buffer")
                     return
                 }
                 for effect in effects {
@@ -189,6 +192,7 @@ public class AudioCodec {
         guard
             let inputFormat = Self.makeAudioFormat(&inSourceFormat),
             let outputFormat = settings.format.makeAudioFormat(inSourceFormat) else {
+            logger.info("cannot create")
             return nil
         }
         logger.debug("inputFormat: \(inputFormat)")

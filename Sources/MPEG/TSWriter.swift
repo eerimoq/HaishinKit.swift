@@ -109,6 +109,7 @@ public class TSWriter: Running {
     // swiftlint:disable:next function_parameter_count
     final func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
         guard canWriteFor else {
+            logger.info("Cannot write buffer for pid \(PID)")
             return
         }
 
@@ -126,6 +127,7 @@ public class TSWriter: Running {
                 PCRTimestamp = presentationTimeStamp
             }
         default:
+            logger.info("bad pid \(PID)")
             break
         }
 
@@ -137,6 +139,7 @@ public class TSWriter: Running {
                 timestamp: PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp,
                 config: streamID == 192 ? audioConfig : videoConfig,
                 randomAccessIndicator: randomAccessIndicator) else {
+            logger.info("craete PES")
             return
         }
 
@@ -220,9 +223,11 @@ public class TSWriter: Running {
 extension TSWriter: AudioCodecDelegate {
     // MARK: AudioCodecDelegate
     public func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error) {
+        logger.error("Audio error \(error)")
     }
 
     public func audioCodec(_ codec: AudioCodec, didOutput outputFormat: AVAudioFormat) {
+        logger.info("Audio setup \(outputFormat) (forcing AAC)")
         var data = ESSpecificData()
         data.streamType = .adtsAac
         data.elementaryPID = TSWriter.defaultAudioPID
@@ -233,9 +238,11 @@ extension TSWriter: AudioCodecDelegate {
 
     public func audioCodec(_ codec: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
         guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
+            logger.info("Audio output no buffer")
             return
         }
         guard canWriteFor else {
+            logger.info("Audio output cannot write")
             return
         }
         writeSampleBuffer(
@@ -298,6 +305,7 @@ extension TSWriter: VideoCodecDelegate {
     }
 
     public func videoCodec(_ codec: VideoCodec, errorOccurred error: VideoCodec.Error) {
+        logger.error("Video error \(error)")
     }
 
     public func videoCodecWillDropFame(_ codec: VideoCodec) -> Bool {

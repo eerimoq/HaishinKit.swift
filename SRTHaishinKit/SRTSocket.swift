@@ -210,6 +210,7 @@ final class SRTSocket {
     private func sendmsg2(_ data: Data) -> Int32 {
         return data.withUnsafeBytes { pointer in
             guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
+                logger.info("error buffer size \(data.count)")
                 return SRT_ERROR
             }
             return srt_sendmsg2(socket, buffer, Int32(data.count), nil)
