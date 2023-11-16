@@ -146,6 +146,12 @@ public struct VideoCodecSettings {
             if let status = codec.session?.setOption(option), status != noErr {
                 codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: option))
             }
+
+            let dataRateLimits = [NSNumber(value: bitRate / 8), NSNumber(value: 1)] as! CFArray
+            let optionLimit = VTSessionOption(key: .dataRateLimits, value: dataRateLimits)
+            if let status = codec.session?.setOption(optionLimit), status != noErr {
+                codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: optionLimit))
+            }
         }
     }
 
