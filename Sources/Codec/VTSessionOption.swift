@@ -4,6 +4,11 @@ import Foundation
 public struct VTSessionOption {
     let key: VTSessionOptionKey
     let value: AnyObject
+
+    public init(key: VTSessionOptionKey, value: AnyObject) {
+        self.key = key
+        self.value = value
+    }
 }
 
 extension VTSessionOption: Hashable {

@@ -2,7 +2,7 @@ import Foundation
 import VideoToolbox
 
 /// The VideoCodecSettings class  specifying video compression settings.
-public struct VideoCodecSettings: Codable {
+public struct VideoCodecSettings {
     /// The defulat value.
     public static let `default` = VideoCodecSettings()
 
@@ -97,6 +97,8 @@ public struct VideoCodecSettings: Codable {
     }
     /// Specifies the HardwareEncoder is enabled(TRUE), or not(FALSE) for macOS.
     public var isHardwareEncoderEnabled = true
+    /// Specifies extra options. Overrides any other options.
+    public var extraOptions: Set<VTSessionOption>?
 
     var format: Format = .h264
 
@@ -109,7 +111,8 @@ public struct VideoCodecSettings: Codable {
         scalingMode: ScalingMode = .trim,
         bitRateMode: BitRateMode = .average,
         allowFrameReordering: Bool? = nil, // swiftlint:disable:this discouraged_optional_boolean
-        isHardwareEncoderEnabled: Bool = true
+        isHardwareEncoderEnabled: Bool = true,
+        extraOptions: Set<VTSessionOption>? = nil
     ) {
         self.videoSize = videoSize
         self.profileLevel = profileLevel
@@ -119,6 +122,7 @@ public struct VideoCodecSettings: Codable {
         self.bitRateMode = bitRateMode
         self.allowFrameReordering = allowFrameReordering
         self.isHardwareEncoderEnabled = isHardwareEncoderEnabled
+        self.extraOptions = extraOptions
         if profileLevel.contains("HEVC") {
             self.format = .hevc
         }
@@ -131,7 +135,8 @@ public struct VideoCodecSettings: Codable {
                     allowFrameReordering == rhs.allowFrameReordering &&
                     bitRateMode == rhs.bitRateMode &&
                     profileLevel == rhs.profileLevel &&
-                    isHardwareEncoderEnabled == rhs.isHardwareEncoderEnabled
+                    isHardwareEncoderEnabled == rhs.isHardwareEncoderEnabled &&
+                    extraOptions == rhs.extraOptions
         )
     }
 
@@ -168,6 +173,10 @@ public struct VideoCodecSettings: Codable {
         if !isBaseline {
             options.insert(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }
+        if let extraOptions {
+            options = options.union(extraOptions)
+        }
+        logger.info("Video options: \(options)")
         return options
     }
 }

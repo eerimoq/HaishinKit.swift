@@ -34,7 +34,7 @@ public class VideoCodec {
         /// The VideoCodec failed to prepare the VTSession.
         case failedToPrepare(status: OSStatus)
         /// The VideoCodec failed to encode or decode a flame.
-        case failedToFlame(status: OSStatus)
+        case failedToFlame(status: OSStatus, gotBuffer: Bool = false)
         /// The VideoCodec failed to set an option.
         case failedToSetOption(status: OSStatus, option: VTSessionOption)
     }
@@ -105,7 +105,7 @@ public class VideoCodec {
             duration: duration
         ) { [unowned self] status, _, sampleBuffer in
             guard let sampleBuffer, status == noErr else {
-                delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status))
+                delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status, gotBuffer: sampleBuffer != nil))
                 return
             }
             formatDescription = sampleBuffer.formatDescription
@@ -126,7 +126,7 @@ public class VideoCodec {
         }
         _ = session?.decodeFrame(sampleBuffer) { [unowned self] status, _, imageBuffer, presentationTimeStamp, duration in
             guard let imageBuffer, status == noErr else {
-                self.delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status))
+                self.delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status, gotBuffer: imageBuffer != nil))
                 return
             }
             var timingInfo = CMSampleTimingInfo(
@@ -156,7 +156,7 @@ public class VideoCodec {
                 sampleBufferOut: &sampleBuffer
             )
             guard let buffer = sampleBuffer, status == noErr else {
-                delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status))
+                delegate?.videoCodec(self, errorOccurred: .failedToFlame(status: status, gotBuffer: sampleBuffer != nil))
                 return
             }
             delegate?.videoCodec(self, didOutput: buffer)
