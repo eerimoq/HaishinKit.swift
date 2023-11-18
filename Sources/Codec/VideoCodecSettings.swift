@@ -141,17 +141,21 @@ public struct VideoCodecSettings {
     }
 
     func apply(_ codec: VideoCodec, rhs: VideoCodecSettings) {
-        if bitRate != rhs.bitRate {
-            let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
-            if let status = codec.session?.setOption(option), status != noErr {
-                codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: option))
-            }
+        guard bitRate != rhs.bitRate else {
+            return
+        }
 
-            let dataRateLimits = [NSNumber(value: bitRate / 8), NSNumber(value: 1)] as! CFArray
-            let optionLimit = VTSessionOption(key: .dataRateLimits, value: dataRateLimits)
-            if let status = codec.session?.setOption(optionLimit), status != noErr {
-                codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: optionLimit))
-            }
+        logger.debug("Setting video bitrate \(bitRate)")
+
+        let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
+        if let status = codec.session?.setOption(option), status != noErr {
+            codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: option))
+        }
+
+        let dataRateLimits = [NSNumber(value: bitRate / 8), NSNumber(value: 1)] as! CFArray
+        let optionLimit = VTSessionOption(key: .dataRateLimits, value: dataRateLimits)
+        if let status = codec.session?.setOption(optionLimit), status != noErr {
+            codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: optionLimit))
         }
     }
 
