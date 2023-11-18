@@ -106,7 +106,6 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     var multiCamCaptureSettings: MultiCamCaptureSettings = .default
 
-    private var pixelBuffer: CVPixelBuffer?
     private var multiCamSampleBuffer: CMSampleBuffer?
 
     /*
@@ -259,21 +258,16 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
             multiCamPixelBuffer.unlockBaseAddress()
         }
-        if drawable != nil || !effects.isEmpty {
-            if !effects.isEmpty {
-                let image = effect(imageBuffer, info: sampleBuffer)
-                extent = image.extent
-                if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
-                    logger.info("effect image wrong size")
-                    return
-                }
-                context.render(image, to: imageBuffer)
+        if !effects.isEmpty {
+            let image = effect(imageBuffer, info: sampleBuffer)
+            extent = image.extent
+            if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
+                logger.info("effect image wrong size")
+                return
             }
-            drawable?.enqueue(sampleBuffer)
+            context.render(image, to: imageBuffer)
         }
-        if muted, let pixelBuffer {
-            imageBuffer = pixelBuffer
-        }
+        drawable?.enqueue(sampleBuffer)
         codec.appendImageBuffer(
             imageBuffer,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
@@ -283,9 +277,6 @@ final class IOVideoUnit: NSObject, IOUnit {
             imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
-        if !muted {
-            pixelBuffer = imageBuffer
-        }
     }
 }
 
@@ -299,7 +290,6 @@ extension IOVideoUnit: IOUnitEncoding {
     func stopEncoding() {
         codec.stopRunning()
         codec.delegate = nil
-        pixelBuffer = nil
     }
 }
 
@@ -313,7 +303,6 @@ extension IOVideoUnit: IOUnitDecoding {
     func stopDecoding() {
         codec.stopRunning()
         drawable?.enqueue(nil)
-        pixelBuffer = nil
     }
 }
 
