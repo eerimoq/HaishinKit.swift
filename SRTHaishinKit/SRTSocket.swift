@@ -178,7 +178,7 @@ final class SRTSocket {
     func configure(_ binding: SRTSocketOption.Binding) -> Bool {
         let failures = SRTSocketOption.configure(socket, binding: binding, options: options)
         guard failures.isEmpty else {
-            print(failures)
+            logger.error("configure failures: \(failures)")
             return false
         }
         return true

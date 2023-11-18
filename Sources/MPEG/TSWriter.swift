@@ -283,13 +283,13 @@ extension TSWriter: VideoCodecDelegate {
         guard CMBlockBufferGetDataPointer(dataBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &buffer) == noErr else {
             return
         }
-        guard let bytes = buffer else {
+        guard let buffer else {
             return
         }
         writeSampleBuffer(
             TSWriter.defaultVideoPID,
             streamID: 224,
-            bytes: UnsafeRawPointer(bytes).bindMemory(to: UInt8.self, capacity: length),
+            bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,

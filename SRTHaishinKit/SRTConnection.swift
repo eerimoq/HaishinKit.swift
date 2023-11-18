@@ -70,10 +70,10 @@ public class SRTConnection: NSObject {
                                                      binding: .post,
                                                      options: options)
             if !failures.isEmpty {
-                print(failures)
+                logger.error("set option failure: \(failures)")
             }
         } else {
-            print("No socket")
+            logger.info("No socket")
         }
     }
     
