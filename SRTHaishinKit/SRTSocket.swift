@@ -119,7 +119,7 @@ final class SRTSocket {
     private var videoDataOffset: Int = 0
 
     func doOutput(data: Data) {
-        outgoingQueue.async {
+        outgoingQueue.sync {
             let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
             if pid == TSWriter.defaultVideoPID {
                 if let videoData = self.videoData[0] {
