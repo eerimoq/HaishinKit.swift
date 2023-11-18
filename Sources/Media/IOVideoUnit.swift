@@ -233,61 +233,58 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard let buffer = sampleBuffer.imageBuffer else {
+        guard var imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
-        var imageBuffer: CVImageBuffer?
-        buffer.lockBaseAddress()
+        imageBuffer.lockBaseAddress()
         defer {
-            buffer.unlockBaseAddress()
-            imageBuffer?.unlockBaseAddress()
+            imageBuffer.unlockBaseAddress()
         }
         #if os(macOS)
         if capture.isVideoMirrored == true {
-            buffer.reflectHorizontal()
+            imageBuffer.reflectHorizontal()
         }
         #endif
         if let multiCamPixelBuffer = multiCamSampleBuffer?.imageBuffer {
             multiCamPixelBuffer.lockBaseAddress()
             switch multiCamCaptureSettings.mode {
             case .pip:
-                buffer.over(
+                imageBuffer.over(
                     multiCamPixelBuffer,
                     regionOfInterest: multiCamCaptureSettings.regionOfInterest,
                     radius: multiCamCaptureSettings.cornerRadius
                 )
             case .splitView:
-                buffer.split(multiCamPixelBuffer, direction: multiCamCaptureSettings.direction)
+                imageBuffer.split(multiCamPixelBuffer, direction: multiCamCaptureSettings.direction)
             }
             multiCamPixelBuffer.unlockBaseAddress()
         }
         if drawable != nil || !effects.isEmpty {
             if !effects.isEmpty {
-                let image = effect(buffer, info: sampleBuffer)
+                let image = effect(imageBuffer, info: sampleBuffer)
                 extent = image.extent
-                if buffer.width != Int(extent.width) || buffer.height != Int(extent.height) {
+                if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
                     logger.info("effect image wrong size")
                     return
                 }
-                imageBuffer?.lockBaseAddress()
-                context.render(image, to: imageBuffer ?? buffer)
+                context.render(image, to: imageBuffer)
             }
             drawable?.enqueue(sampleBuffer)
         }
-        if muted {
+        if muted, let pixelBuffer {
             imageBuffer = pixelBuffer
         }
         codec.appendImageBuffer(
-            imageBuffer ?? buffer,
+            imageBuffer,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             duration: sampleBuffer.duration
         )
         mixer?.recorder.appendPixelBuffer(
-            imageBuffer ?? buffer,
+            imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
         if !muted {
-            pixelBuffer = buffer
+            pixelBuffer = imageBuffer
         }
     }
 }
