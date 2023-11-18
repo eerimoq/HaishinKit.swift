@@ -145,8 +145,6 @@ public struct VideoCodecSettings {
             return
         }
 
-        logger.debug("Setting video bitrate \(bitRate)")
-
         let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
         if let status = codec.session?.setOption(option), status != noErr {
             codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: option))
@@ -185,10 +183,6 @@ public struct VideoCodecSettings {
         }
         if let extraOptions {
             options = options.union(extraOptions)
-        }
-        logger.info("Video options:")
-        for option in options {
-            logger.info("  \(option.key.CFString): \(option.value)")
         }
         return options
     }
