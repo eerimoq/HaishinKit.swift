@@ -107,7 +107,7 @@ public class TSWriter: Running {
     }
 
     // swiftlint:disable:next function_parameter_count
-    final func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
+    private func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
         guard canWriteFor else {
             logger.info("Cannot write buffer for pid \(PID)")
             return
@@ -241,10 +241,6 @@ extension TSWriter: AudioCodecDelegate {
             logger.info("Audio output no buffer")
             return
         }
-        guard canWriteFor else {
-            logger.info("Audio output cannot write")
-            return
-        }
         writeSampleBuffer(
             TSWriter.defaultAudioPID,
             streamID: 192,
@@ -288,9 +284,6 @@ extension TSWriter: VideoCodecDelegate {
             return
         }
         guard let bytes = buffer else {
-            return
-        }
-        guard canWriteFor else {
             return
         }
         writeSampleBuffer(
