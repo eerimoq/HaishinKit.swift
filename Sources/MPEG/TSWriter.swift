@@ -26,6 +26,9 @@ public class TSWriter: Running {
     public static let defaultVideoPID: UInt16 = 256
     public static let defaultAudioPID: UInt16 = 257
 
+    private static let audioStreamId: UInt8 = 192
+    private static let videoStreamId: UInt8 = 224
+
     public static let defaultSegmentDuration: Double = 2
 
     /// The delegate instance.
@@ -137,7 +140,7 @@ public class TSWriter: Running {
                 presentationTimeStamp: presentationTimeStamp,
                 decodeTimeStamp: decodeTimeStamp,
                 timestamp: PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp,
-                config: streamID == 192 ? audioConfig : videoConfig,
+                config: streamID == TSWriter.audioStreamId ? audioConfig : videoConfig,
                 randomAccessIndicator: randomAccessIndicator) else {
             logger.info("craete PES")
             return
@@ -243,7 +246,7 @@ extension TSWriter: AudioCodecDelegate {
         }
         writeSampleBuffer(
             TSWriter.defaultAudioPID,
-            streamID: 192,
+            streamID: TSWriter.audioStreamId,
             bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,
@@ -288,7 +291,7 @@ extension TSWriter: VideoCodecDelegate {
         }
         writeSampleBuffer(
             TSWriter.defaultVideoPID,
-            streamID: 224,
+            streamID: TSWriter.videoStreamId,
             bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
