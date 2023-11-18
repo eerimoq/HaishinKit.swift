@@ -266,9 +266,9 @@ final class IOVideoUnit: NSObject, IOUnit {
             multiCamPixelBuffer.unlockBaseAddress()
         }
         if drawable != nil || !effects.isEmpty {
-            let image = effect(buffer, info: sampleBuffer)
-            extent = image.extent
             if !effects.isEmpty {
+                let image = effect(buffer, info: sampleBuffer)
+                extent = image.extent
                 #if os(macOS)
                 pixelBufferPool?.createPixelBuffer(&imageBuffer)
                 #else
