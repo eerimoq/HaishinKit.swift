@@ -182,7 +182,10 @@ public struct VideoCodecSettings {
         if let extraOptions {
             options = options.union(extraOptions)
         }
-        logger.info("Video options: \(options)")
+        logger.info("Video options:")
+        for option in options {
+            logger.info("  \(option.key.CFString): \(option.value)")
+        }
         return options
     }
 }
