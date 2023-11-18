@@ -52,8 +52,6 @@ final class IOVideoUnit: NSObject, IOUnit {
             guard extent != oldValue else {
                 return
             }
-            CVPixelBufferPoolCreate(nil, nil, attributes as CFDictionary?, &pixelBufferPool)
-            pixelBufferPool?.createPixelBuffer(&pixelBuffer)
         }
     }
 
@@ -63,8 +61,6 @@ final class IOVideoUnit: NSObject, IOUnit {
         attributes[kCVPixelBufferHeightKey] = NSNumber(value: Int(extent.height))
         return attributes
     }
-
-    private var pixelBufferPool: CVPixelBufferPool?
 
     #if os(iOS) || os(macOS)
     var frameRate = IOMixer.defaultFrameRate {
@@ -269,13 +265,10 @@ final class IOVideoUnit: NSObject, IOUnit {
             if !effects.isEmpty {
                 let image = effect(buffer, info: sampleBuffer)
                 extent = image.extent
-                #if os(macOS)
-                pixelBufferPool?.createPixelBuffer(&imageBuffer)
-                #else
                 if buffer.width != Int(extent.width) || buffer.height != Int(extent.height) {
-                    pixelBufferPool?.createPixelBuffer(&imageBuffer)
+                    logger.info("effect image wrong size")
+                    return
                 }
-                #endif
                 imageBuffer?.lockBaseAddress()
                 context.render(image, to: imageBuffer ?? buffer)
             }
