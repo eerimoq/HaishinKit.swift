@@ -91,13 +91,13 @@ final class IOAudioUnit: NSObject, IOUnit {
                 guard let gapSampleBuffer = CMAudioSampleBufferFactory.makeSampleBuffer(sampleBuffer, numSamples: numSamples, presentationTimeStamp: gapPresentationTimeStamp) else {
                     continue
                 }
-                mixer?.recorder.appendSampleBuffer(gapSampleBuffer)
+                //mixer?.recorder.appendSampleBuffer(gapSampleBuffer)
                 codec.appendSampleBuffer(gapSampleBuffer)
                 gapPresentationTimeStamp = CMTimeAdd(gapPresentationTimeStamp, gapSampleBuffer.duration)
             }
         }
-        monitor.appendSampleBuffer(sampleBuffer)
-        mixer?.recorder.appendSampleBuffer(sampleBuffer)
+        //monitor.appendSampleBuffer(sampleBuffer)
+        //mixer?.recorder.appendSampleBuffer(sampleBuffer)
         codec.appendSampleBuffer(sampleBuffer)
         presentationTimeStamp = sampleBuffer.presentationTimeStamp
     }

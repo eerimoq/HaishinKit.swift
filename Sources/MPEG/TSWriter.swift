@@ -11,7 +11,7 @@ public var payloadSize: Int = 1316
 /// The interface an MPEG-2 TS (Transport Stream) writer uses to inform its delegates.
 public protocol TSWriterDelegate: AnyObject {
     func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime)
-    func writer(_ writer: TSWriter, didOutput data: Data)
+    func writer(_ writer: TSWriter, doOutput data: Data)
 }
 
 public extension TSWriterDelegate {
@@ -168,7 +168,7 @@ public class TSWriter: Running {
     }
 
     private func writePacket(_ data: Data) {
-        delegate?.writer(self, didOutput: data)
+        delegate?.writer(self, doOutput: data)
     }
 
     private func writeBytes(_ data: Data) {

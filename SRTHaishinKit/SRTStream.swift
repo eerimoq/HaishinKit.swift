@@ -188,7 +188,7 @@ public class SRTStream: NetStream {
 
 extension SRTStream: TSWriterDelegate {
     // MARK: TSWriterDelegate
-    public func writer(_ writer: TSWriter, didOutput data: Data) {
+    public func writer(_ writer: TSWriter, doOutput data: Data) {
         guard readyState == .publishing else {
             logger.info("not publishing")
             return
