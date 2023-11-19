@@ -17,30 +17,42 @@ protocol IOCaptureUnit {
 extension IOCaptureUnit {
     func attachSession(_ session: AVCaptureSession?) {
         guard let session else {
+            logger.error("No session to attach to")
             return
         }
         if let connection {
             if let input, session.canAddInput(input) {
                 session.addInputWithNoConnections(input)
+            } else {
+                logger.error("Cannot add input with no connections")
             }
             if let output, session.canAddOutput(output) {
                 session.addOutputWithNoConnections(output)
+            } else {
+                logger.error("Cannot add output with no connections")
             }
             if session.canAddConnection(connection) {
                 session.addConnection(connection)
+            } else {
+                logger.error("Cannot add connection")
             }
         } else {
             if let input, session.canAddInput(input) {
                 session.addInput(input)
+            } else {
+                logger.error("Cannot add input")
             }
             if let output, session.canAddOutput(output) {
                 session.addOutput(output)
+            } else {
+                logger.error("Cannot add output")
             }
         }
     }
 
     func detachSession(_ session: AVCaptureSession?) {
         guard let session else {
+            logger.error("No session to detach from")
             return
         }
         if let connection {
@@ -95,7 +107,6 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
     }
 
-    #if os(iOS)
     /// Specifies the preferredVideoStabilizationMode most appropriate for use with the connection.
     public var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .off {
         didSet {
@@ -104,7 +115,6 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             }
         }
     }
-    #endif
 
     func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
         setSampleBufferDelegate(nil)
@@ -140,11 +150,9 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             if $0.isVideoOrientationSupported {
                 $0.videoOrientation = videoOrientation
             }
-            #if os(iOS)
             if $0.isVideoStabilizationSupported {
                 $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
             }
-            #endif
         }
         setSampleBufferDelegate(videoUnit)
     }
