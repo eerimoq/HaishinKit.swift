@@ -65,19 +65,8 @@ public class TSWriter: Running {
     private var audioTimestamp: CMTime = .invalid
     private var PCRTimestamp = CMTime.zero
     private var canWriteFor: Bool {
-        if expectedMedias.isEmpty {
-            return true
-        }
-        if expectedMedias.contains(.audio) && expectedMedias.contains(.video) {
-            return audioConfig != nil && videoConfig != nil
-        }
-        if expectedMedias.contains(.video) {
-            return videoConfig != nil
-        }
-        if expectedMedias.contains(.audio) {
-            return audioConfig != nil
-        }
-        return false
+        return (expectedMedias.contains(.audio) == (audioConfig != nil))
+          && (expectedMedias.contains(.video) == (videoConfig != nil))
     }
 
     public init(segmentDuration: Double = TSWriter.defaultSegmentDuration) {
