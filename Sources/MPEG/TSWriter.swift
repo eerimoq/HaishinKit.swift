@@ -45,7 +45,6 @@ public class TSWriter: Running {
     var PCRPID: UInt16 = TSWriter.defaultVideoPID
     var rotatedTimestamp = CMTime.zero
     var segmentDuration: Double = TSWriter.defaultSegmentDuration
-    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.TSWriter.lock")
     private let outgoingQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.TSWriter", qos: .userInitiated)
 
     private var videoData: [Data?] = [nil, nil]
@@ -113,7 +112,7 @@ public class TSWriter: Running {
                                    timestamp: CMTime,
                                    config: Any?,
                                    decodeTimeStamp: CMTime,
-                                   randomAccessIndicator: Bool) {
+                                   randomAccessIndicator: Bool) -> Data? {
         guard var PES = PacketizedElementaryStream.create(
                 bytes,
                 count: count,
@@ -123,7 +122,7 @@ public class TSWriter: Running {
                 config: config,
                 randomAccessIndicator: randomAccessIndicator) else {
             logger.info("craete PES")
-            return
+            return nil
         }
 
         PES.streamID = streamID
@@ -149,7 +148,7 @@ public class TSWriter: Running {
             bytes.append(packet.data)
         }
 
-        writePayload(data: bytes)
+        return bytes
     }
 
     func rotateFileHandle(_ timestamp: CMTime) {
@@ -164,8 +163,8 @@ public class TSWriter: Running {
 
     func write(_ data: Data) {
         outgoingQueue.sync {
-            for data in data.chunk(payloadSize) {
-                self.writePacket(data)
+            for packet in data.chunks(payloadSize) {
+                self.writePacket(packet)
             }
         }
     }
@@ -174,39 +173,46 @@ public class TSWriter: Running {
         delegate?.writer(self, didOutput: data)
     }
 
-    private func writePayload(data: Data) {
+    private func appendVideoData(data: Data?) {
+        self.videoData[0] = self.videoData[1]
+        self.videoData[1] = data
+        self.videoDataOffset = 0
+    }
+    
+    private func writeVideoPayload(data: Data) {
         outgoingQueue.sync {
-            let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
-            if pid == TSWriter.defaultVideoPID {
-                if let videoData = self.videoData[0] {
-                    let restData = Data(videoData[self.videoDataOffset...])
-                    for data in restData.chunk(payloadSize) {
-                        self.writePacket(data)
-                    }
+            if var videoData = self.videoData[0] {
+                if videoDataOffset != 0 {
+                    videoData = Data(videoData[self.videoDataOffset...])
                 }
-                self.videoData[0] = self.videoData[1]
-                self.videoData[1] = data
-                self.videoDataOffset = 0
-            } else if let videoData = self.videoData[0] {
-                for var data in data.chunk(payloadSize) {
-                    let free = payloadSize - data.count
-                    if free > 0 {
-                        let endOffset = min(self.videoDataOffset + free, videoData.count)
+                for packet in videoData.chunks(payloadSize) {
+                    self.writePacket(packet)
+                }
+            }
+            self.appendVideoData(data: data)
+        }
+    }
+
+    private func writeAudioPayload(data: Data) {
+        outgoingQueue.sync {
+            if let videoData = self.videoData[0] {
+                for var packet in data.chunks(payloadSize) {
+                    let videoSize = payloadSize - packet.count
+                    if videoSize > 0 {
+                        let endOffset = min(self.videoDataOffset + videoSize, videoData.count)
                         if self.videoDataOffset != endOffset {
-                            data = videoData[self.videoDataOffset..<endOffset] + data
+                            packet = videoData[self.videoDataOffset..<endOffset] + packet
                             self.videoDataOffset = endOffset
                         }
                     }
-                    self.writePacket(data)
+                    self.writePacket(packet)
                 }
                 if self.videoDataOffset == videoData.count {
-                    self.videoData[0] = self.videoData[1]
-                    self.videoData[1] = nil
-                    self.videoDataOffset = 0
+                    self.appendVideoData(data: nil)
                 }
             } else {
-                for data in data.chunk(payloadSize) {
-                    self.writePacket(data)
+                for packet in data.chunks(payloadSize) {
+                    self.writePacket(packet)
                 }
             }
         }
@@ -280,7 +286,7 @@ extension TSWriter: AudioCodecDelegate {
                 PCRTimestamp = audioTimestamp
             }
         }
-        writeSampleBuffer(
+        if let bytes = writeSampleBuffer(
             TSWriter.defaultAudioPID,
             streamID: TSWriter.audioStreamId,
             bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
@@ -290,7 +296,9 @@ extension TSWriter: AudioCodecDelegate {
             config: audioConfig,
             decodeTimeStamp: .invalid,
             randomAccessIndicator: true
-        )
+           ) {
+            self.writeAudioPayload(data: bytes)
+        }
         codec.releaseOutputBuffer(audioBuffer)
     }
 }
@@ -337,7 +345,7 @@ extension TSWriter: VideoCodecDelegate {
                 PCRTimestamp = videoTimestamp
             }
         }
-        writeSampleBuffer(
+        if let bytes = writeSampleBuffer(
             TSWriter.defaultVideoPID,
             streamID: TSWriter.videoStreamId,
             bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
@@ -347,7 +355,9 @@ extension TSWriter: VideoCodecDelegate {
             config: videoConfig,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             randomAccessIndicator: !sampleBuffer.isNotSync
-        )
+           ) {
+            self.writeVideoPayload(data: bytes)
+        }
     }
 
     public func videoCodec(_ codec: VideoCodec, errorOccurred error: VideoCodec.Error) {

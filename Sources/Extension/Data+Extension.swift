@@ -73,7 +73,7 @@ extension Data {
         ) }
     }
 
-    func chunk(_ size: Int) -> [Data] {
+    func chunks(_ size: Int) -> [Data] {
         if count < size {
             return [self]
         }
