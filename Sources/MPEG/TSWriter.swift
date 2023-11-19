@@ -104,6 +104,8 @@ public class TSWriter: Running {
                                    bytes: UnsafePointer<UInt8>?,
                                    count: UInt32,
                                    presentationTimeStamp: CMTime,
+                                   timestamp: CMTime,
+                                   config: Any?,
                                    decodeTimeStamp: CMTime,
                                    randomAccessIndicator: Bool) {
         guard var PES = PacketizedElementaryStream.create(
@@ -111,8 +113,8 @@ public class TSWriter: Running {
                 count: count,
                 presentationTimeStamp: presentationTimeStamp,
                 decodeTimeStamp: decodeTimeStamp,
-                timestamp: PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp,
-                config: streamID == TSWriter.audioStreamId ? audioConfig : videoConfig,
+                timestamp: timestamp,
+                config: config,
                 randomAccessIndicator: randomAccessIndicator) else {
             logger.info("craete PES")
             return
@@ -232,6 +234,8 @@ extension TSWriter: AudioCodecDelegate {
             bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,
+            timestamp: audioTimestamp,
+            config: audioConfig,
             decodeTimeStamp: .invalid,
             randomAccessIndicator: true
         )
@@ -287,6 +291,8 @@ extension TSWriter: VideoCodecDelegate {
             bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
+            timestamp: videoTimestamp,
+            config: videoConfig,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             randomAccessIndicator: !sampleBuffer.isNotSync
         )
