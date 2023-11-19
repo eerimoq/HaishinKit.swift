@@ -9,8 +9,6 @@ protocol SRTSocketDelegate: AnyObject {
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket)
 }
 
-public var payloadSize: Int = 1316
-
 final class SRTSocket {
     static let defaultOptions: [SRTSocketOption: String] = [:]
 
@@ -56,7 +54,6 @@ final class SRTSocket {
     }
     private var windowSizeC: Int32 = 1024 * 4
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
-    private let outgoingQueue: DispatchQueue = .init(label: "com.haishinkit.SRTHaishinKit.SRTSocket.outgoing", qos: .userInitiated)
     private let incomingQueue: DispatchQueue = .init(label: "com.haishinkit.SRTHaishinKit.SRTSocket.incoming", qos: .userInitiated)
 
     init() {
@@ -115,45 +112,8 @@ final class SRTSocket {
         startRunning()
     }
 
-    private var videoData: [Data?] = [nil, nil]
-    private var videoDataOffset: Int = 0
-
     func doOutput(data: Data) {
-        outgoingQueue.sync {
-            let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
-            if pid == TSWriter.defaultVideoPID {
-                if let videoData = self.videoData[0] {
-                    let restData = Data(videoData[self.videoDataOffset...])
-                    for data in restData.chunk(payloadSize) {
-                        _ = self.sendmsg2(data)
-                    }
-                }
-                self.videoData[0] = self.videoData[1]
-                self.videoData[1] = data
-                self.videoDataOffset = 0
-            } else if let videoData = self.videoData[0] {
-                for var data in data.chunk(payloadSize) {
-                    let free = payloadSize - data.count
-                    if free > 0 {
-                        let endOffset = min(self.videoDataOffset + free, videoData.count)
-                        if self.videoDataOffset != endOffset {
-                            data = videoData[self.videoDataOffset..<endOffset] + data
-                            self.videoDataOffset = endOffset
-                        }
-                    }
-                    _ = self.sendmsg2(data)
-                }
-                if self.videoDataOffset == videoData.count {
-                    self.videoData[0] = self.videoData[1]
-                    self.videoData[1] = nil
-                    self.videoDataOffset = 0
-                }
-            } else {
-                for data in data.chunk(payloadSize) {
-                    _ = self.sendmsg2(data)
-                }
-            }
-        }
+        _ = self.sendmsg2(data)
     }
 
     func doInput() {

@@ -6,6 +6,8 @@ import Foundation
 import SwiftPMSupport
 #endif
 
+public var payloadSize: Int = 1316
+
 /// The interface an MPEG-2 TS (Transport Stream) writer uses to inform its delegates.
 public protocol TSWriterDelegate: AnyObject {
     func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime)
@@ -44,6 +46,10 @@ public class TSWriter: Running {
     var rotatedTimestamp = CMTime.zero
     var segmentDuration: Double = TSWriter.defaultSegmentDuration
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.TSWriter.lock")
+    private let outgoingQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.TSWriter", qos: .userInitiated)
+
+    private var videoData: [Data?] = [nil, nil]
+    private var videoDataOffset: Int = 0
 
     private(set) var PAT: TSProgramAssociation = {
         let PAT: TSProgramAssociation = .init()
@@ -143,7 +149,7 @@ public class TSWriter: Running {
             bytes.append(packet.data)
         }
 
-        write(bytes)
+        writePayload(data: bytes)
     }
 
     func rotateFileHandle(_ timestamp: CMTime) {
@@ -157,7 +163,53 @@ public class TSWriter: Running {
     }
 
     func write(_ data: Data) {
+        outgoingQueue.sync {
+            for data in data.chunk(payloadSize) {
+                self.writePacket(data)
+            }
+        }
+    }
+
+    private func writePacket(_ data: Data) {
         delegate?.writer(self, didOutput: data)
+    }
+
+    private func writePayload(data: Data) {
+        outgoingQueue.sync {
+            let pid = UInt32(data[1] & 0x1f) << 8 | UInt32(data[2])
+            if pid == TSWriter.defaultVideoPID {
+                if let videoData = self.videoData[0] {
+                    let restData = Data(videoData[self.videoDataOffset...])
+                    for data in restData.chunk(payloadSize) {
+                        self.writePacket(data)
+                    }
+                }
+                self.videoData[0] = self.videoData[1]
+                self.videoData[1] = data
+                self.videoDataOffset = 0
+            } else if let videoData = self.videoData[0] {
+                for var data in data.chunk(payloadSize) {
+                    let free = payloadSize - data.count
+                    if free > 0 {
+                        let endOffset = min(self.videoDataOffset + free, videoData.count)
+                        if self.videoDataOffset != endOffset {
+                            data = videoData[self.videoDataOffset..<endOffset] + data
+                            self.videoDataOffset = endOffset
+                        }
+                    }
+                    self.writePacket(data)
+                }
+                if self.videoDataOffset == videoData.count {
+                    self.videoData[0] = self.videoData[1]
+                    self.videoData[1] = nil
+                    self.videoDataOffset = 0
+                }
+            } else {
+                for data in data.chunk(payloadSize) {
+                    self.writePacket(data)
+                }
+            }
+        }
     }
 
     final func writeProgram() {
