@@ -99,30 +99,13 @@ public class TSWriter: Running {
     }
 
     // swiftlint:disable:next function_parameter_count
-    private func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
-        guard canWriteFor else {
-            logger.info("Cannot write buffer for pid \(PID)")
-            return
-        }
-
-        switch PID {
-        case TSWriter.defaultAudioPID:
-            guard audioTimestamp == .invalid else { break }
-            audioTimestamp = presentationTimeStamp
-            if PCRPID == PID {
-                PCRTimestamp = presentationTimeStamp
-            }
-        case TSWriter.defaultVideoPID:
-            guard videoTimestamp == .invalid else { break }
-            videoTimestamp = presentationTimeStamp
-            if PCRPID == PID {
-                PCRTimestamp = presentationTimeStamp
-            }
-        default:
-            logger.info("bad pid \(PID)")
-            break
-        }
-
+    private func writeSampleBuffer(_ PID: UInt16,
+                                   streamID: UInt8,
+                                   bytes: UnsafePointer<UInt8>?,
+                                   count: UInt32,
+                                   presentationTimeStamp: CMTime,
+                                   decodeTimeStamp: CMTime,
+                                   randomAccessIndicator: Bool) {
         guard var PES = PacketizedElementaryStream.create(
                 bytes,
                 count: count,
@@ -233,6 +216,16 @@ extension TSWriter: AudioCodecDelegate {
             logger.info("Audio output no buffer")
             return
         }
+        guard canWriteFor else {
+            logger.info("Cannot write audio buffer")
+            return
+        }
+        if audioTimestamp == .invalid {
+            audioTimestamp = presentationTimeStamp
+            if PCRPID == TSWriter.defaultAudioPID {
+                PCRTimestamp = audioTimestamp
+            }
+        }
         writeSampleBuffer(
             TSWriter.defaultAudioPID,
             streamID: TSWriter.audioStreamId,
@@ -277,6 +270,16 @@ extension TSWriter: VideoCodecDelegate {
         }
         guard let buffer else {
             return
+        }
+        guard canWriteFor else {
+            logger.info("Cannot write video buffer")
+            return
+        }
+        if videoTimestamp == .invalid {
+            videoTimestamp = sampleBuffer.presentationTimeStamp
+            if PCRPID == TSWriter.defaultVideoPID {
+                PCRTimestamp = videoTimestamp
+            }
         }
         writeSampleBuffer(
             TSWriter.defaultVideoPID,
