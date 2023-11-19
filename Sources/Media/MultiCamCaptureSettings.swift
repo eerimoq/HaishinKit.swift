@@ -15,10 +15,10 @@ public struct MultiCamCaptureSettings: Codable {
     /// The default setting for the stream.
     public static let `default` = MultiCamCaptureSettings(
         mode: .pip,
-        cornerRadius: 16.0,
+        cornerRadius: 0.0,
         regionOfInterest: .init(
-            origin: CGPoint(x: 16, y: 16),
-            size: .init(width: 160, height: 160)
+            origin: CGPoint(x: 0, y: 0),
+            size: .init(width: 640, height: 360)
         ),
         direction: .east
     )

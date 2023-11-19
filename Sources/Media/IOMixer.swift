@@ -90,9 +90,7 @@ public class IOMixer {
             guard oldValue != isMultiCamSessionEnabled else {
                 return
             }
-            #if os(iOS)
-            session = makeSession()
-            #endif
+            // session = makeSession()
         }
     }
 
@@ -228,33 +226,24 @@ public class IOMixer {
         }
     }
 
-    #if os(iOS)
     private func makeSession() -> AVCaptureSession {
         let session: AVCaptureSession
-        if isMultiCamSessionEnabled, #available(iOS 13.0, *) {
+        if #available(iOS 13.0, *) {
             session = AVCaptureMultiCamSession()
+            if session.canSetSessionPreset(sessionPreset) {
+                session.sessionPreset = sessionPreset
+            } else {
+                logger.info("Cannot set preset \(sessionPreset)")
+            }
+            if isMultitaskingCameraAccessEnabled && session.isMultitaskingCameraAccessSupported {
+                session.isMultitaskingCameraAccessEnabled = true
+            }
         } else {
+            logger.error("Should never be executed.")
             session = AVCaptureSession()
         }
-        if session.canSetSessionPreset(sessionPreset) {
-            session.sessionPreset = sessionPreset
-        }
-        if isMultitaskingCameraAccessEnabled && session.isMultitaskingCameraAccessSupported {
-            session.isMultitaskingCameraAccessEnabled = true
-        }
         return session
     }
-    #endif
-
-    #if os(macOS)
-    private func makeSession() -> AVCaptureSession {
-        let session = AVCaptureSession()
-        if session.canSetSessionPreset(sessionPreset) {
-            session.sessionPreset = sessionPreset
-        }
-        return session
-    }
-    #endif
 }
 
 extension IOMixer: IOUnitEncoding {
