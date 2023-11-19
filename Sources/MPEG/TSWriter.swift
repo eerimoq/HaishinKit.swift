@@ -163,9 +163,7 @@ public class TSWriter: Running {
 
     func write(_ data: Data) {
         outgoingQueue.sync {
-            for packet in data.chunks(payloadSize) {
-                self.writePacket(packet)
-            }
+            self.writeBytes(data)
         }
     }
 
@@ -173,21 +171,25 @@ public class TSWriter: Running {
         delegate?.writer(self, didOutput: data)
     }
 
-    private func appendVideoData(data: Data?) {
-        self.videoData[0] = self.videoData[1]
-        self.videoData[1] = data
-        self.videoDataOffset = 0
+    private func writeBytes(_ data: Data) {
+        for packet in data.chunks(payloadSize) {
+            self.writePacket(packet)
+        }
     }
-    
+
+    private func appendVideoData(data: Data?) {
+        videoData[0] = videoData[1]
+        videoData[1] = data
+        videoDataOffset = 0
+    }
+
     private func writeVideoPayload(data: Data) {
         outgoingQueue.sync {
-            if var videoData = self.videoData[0] {
+            if var videoData = videoData[0] {
                 if videoDataOffset != 0 {
-                    videoData = Data(videoData[self.videoDataOffset...])
+                    videoData = Data(videoData[videoDataOffset...])
                 }
-                for packet in videoData.chunks(payloadSize) {
-                    self.writePacket(packet)
-                }
+                self.writeBytes(videoData)
             }
             self.appendVideoData(data: data)
         }
@@ -195,25 +197,23 @@ public class TSWriter: Running {
 
     private func writeAudioPayload(data: Data) {
         outgoingQueue.sync {
-            if let videoData = self.videoData[0] {
+            if let videoData = videoData[0] {
                 for var packet in data.chunks(payloadSize) {
                     let videoSize = payloadSize - packet.count
                     if videoSize > 0 {
-                        let endOffset = min(self.videoDataOffset + videoSize, videoData.count)
-                        if self.videoDataOffset != endOffset {
-                            packet = videoData[self.videoDataOffset..<endOffset] + packet
-                            self.videoDataOffset = endOffset
+                        let endOffset = min(videoDataOffset + videoSize, videoData.count)
+                        if videoDataOffset != endOffset {
+                            packet = videoData[videoDataOffset..<endOffset] + packet
+                            videoDataOffset = endOffset
                         }
                     }
                     self.writePacket(packet)
                 }
-                if self.videoDataOffset == videoData.count {
+                if videoDataOffset == videoData.count {
                     self.appendVideoData(data: nil)
                 }
             } else {
-                for packet in data.chunks(payloadSize) {
-                    self.writePacket(packet)
-                }
+                self.writeBytes(data)
             }
         }
     }
