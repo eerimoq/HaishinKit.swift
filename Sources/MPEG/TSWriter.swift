@@ -45,7 +45,7 @@ public class TSWriter: Running {
     var PCRPID: UInt16 = TSWriter.defaultVideoPID
     var rotatedTimestamp = CMTime.zero
     var segmentDuration: Double = TSWriter.defaultSegmentDuration
-    private let outgoingQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.TSWriter", qos: .userInitiated)
+    private let outputLock: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.TSWriter", qos: .userInitiated)
 
     private var videoData: [Data?] = [nil, nil]
     private var videoDataOffset: Int = 0
@@ -162,7 +162,7 @@ public class TSWriter: Running {
     }
 
     func write(_ data: Data) {
-        outgoingQueue.sync {
+        outputLock.sync {
             self.writeBytes(data)
         }
     }
@@ -183,8 +183,8 @@ public class TSWriter: Running {
         videoDataOffset = 0
     }
 
-    private func writeVideoPayload(data: Data) {
-        outgoingQueue.sync {
+    private func writeVideo(data: Data) {
+        outputLock.sync {
             if var videoData = videoData[0] {
                 if videoDataOffset != 0 {
                     videoData = Data(videoData[videoDataOffset...])
@@ -195,8 +195,8 @@ public class TSWriter: Running {
         }
     }
 
-    private func writeAudioPayload(data: Data) {
-        outgoingQueue.sync {
+    private func writeAudio(data: Data) {
+        outputLock.sync {
             if let videoData = videoData[0] {
                 for var packet in data.chunks(payloadSize) {
                     let videoSize = payloadSize - packet.count
@@ -297,7 +297,7 @@ extension TSWriter: AudioCodecDelegate {
             decodeTimeStamp: .invalid,
             randomAccessIndicator: true
            ) {
-            self.writeAudioPayload(data: bytes)
+            self.writeAudio(data: bytes)
         }
         codec.releaseOutputBuffer(audioBuffer)
     }
@@ -356,7 +356,7 @@ extension TSWriter: VideoCodecDelegate {
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             randomAccessIndicator: !sampleBuffer.isNotSync
            ) {
-            self.writeVideoPayload(data: bytes)
+            self.writeVideo(data: bytes)
         }
     }
 
