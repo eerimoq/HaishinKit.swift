@@ -23,9 +23,7 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     weak var drawable: (any NetStreamDrawable)? {
         didSet {
-            #if os(iOS) || os(macOS)
             drawable?.videoOrientation = videoOrientation
-            #endif
         }
     }
 
@@ -62,7 +60,6 @@ final class IOVideoUnit: NSObject, IOUnit {
         return attributes
     }
 
-    #if os(iOS) || os(macOS)
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
             capture.setFrameRate(frameRate)
@@ -102,7 +99,6 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     private(set) var capture: IOVideoCaptureUnit = .init()
     private(set) var multiCamCapture: IOVideoCaptureUnit = .init()
-    #endif
 
     var multiCamCaptureSettings: MultiCamCaptureSettings = .default
 
@@ -239,11 +235,6 @@ final class IOVideoUnit: NSObject, IOUnit {
         defer {
             imageBuffer.unlockBaseAddress()
         }
-        #if os(macOS)
-        if capture.isVideoMirrored == true {
-            imageBuffer.reflectHorizontal()
-        }
-        #endif
         if let multiCamPixelBuffer = multiCamSampleBuffer?.imageBuffer {
             multiCamPixelBuffer.lockBaseAddress()
             switch multiCamCaptureSettings.mode {
@@ -306,7 +297,6 @@ extension IOVideoUnit: IOUnitDecoding {
     }
 }
 
-#if os(iOS) || os(macOS)
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
     // MARK: AVCaptureVideoDataOutputSampleBufferDelegate
     func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -320,7 +310,6 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
-#endif
 
 extension IOVideoUnit: VideoCodecDelegate {
     // MARK: VideoCodecDelegate
