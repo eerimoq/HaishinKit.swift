@@ -45,7 +45,7 @@ struct PESOptionalHeader {
     init() {
     }
 
-    init?(data: Data) {
+    init(data: Data) {
         self.data = data
     }
 
@@ -220,8 +220,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
         data.append(contentsOf: config.makeHeader(Int(count)))
         data.append(bytes, count: Int(count))
         optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader?.dataAlignmentIndicator = true
-        optionalPESHeader?.setTimestamp(
+        optionalPESHeader!.dataAlignmentIndicator = true
+        optionalPESHeader!.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: CMTime.invalid
@@ -252,8 +252,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
             data.append(stream.toByteStream())
         }
         optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader?.dataAlignmentIndicator = true
-        optionalPESHeader?.setTimestamp(
+        optionalPESHeader!.dataAlignmentIndicator = true
+        optionalPESHeader!.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: decodeTimeStamp
@@ -287,8 +287,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
             data.append(stream.toByteStream())
         }
         optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader?.dataAlignmentIndicator = true
-        optionalPESHeader?.setTimestamp(
+        optionalPESHeader!.dataAlignmentIndicator = true
+        optionalPESHeader!.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: decodeTimeStamp
@@ -300,18 +300,18 @@ struct PacketizedElementaryStream: PESPacketHeader {
     }
 
     func arrayOfPackets(_ PID: UInt16, PCR: UInt64?) -> [TSPacket] {
-        let payload: Data = self.payload
+        let payload = self.payload
         var packets: [TSPacket] = []
 
         // start
         var packet = TSPacket()
         packet.pid = PID
-        if let PCR: UInt64 = PCR {
+        if let PCR {
             packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
-            packet.adaptationField?.pcrFlag = true
-            packet.adaptationField?.pcr = TSProgramClockReference.encode(PCR, 0)
-            packet.adaptationField?.compute()
+            packet.adaptationField!.pcrFlag = true
+            packet.adaptationField!.pcr = TSProgramClockReference.encode(PCR, 0)
+            packet.adaptationField!.compute()
         }
         packet.payloadUnitStartIndicator = true
         let position: Int = packet.fill(payload, useAdaptationField: true)
@@ -336,14 +336,14 @@ struct PacketizedElementaryStream: PESPacketHeader {
             packet.pid = PID
             packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
-            packet.adaptationField?.compute()
+            packet.adaptationField!.compute()
             _ = packet.fill(remain, useAdaptationField: true)
             packets.append(packet)
             packet = TSPacket()
             packet.pid = PID
             packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
-            packet.adaptationField?.compute()
+            packet.adaptationField!.compute()
             _ = packet.fill(Data([payload[payload.count - 1]]), useAdaptationField: true)
             packets.append(packet)
         default:
@@ -352,7 +352,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
             packet.pid = PID
             packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
-            packet.adaptationField?.compute()
+            packet.adaptationField!.compute()
             _ = packet.fill(remain, useAdaptationField: true)
             packets.append(packet)
         }

@@ -24,7 +24,7 @@ class TSAdaptationField {
     init() {
     }
 
-    init?(data: Data) {
+    init(data: Data) {
         self.data = data
     }
 
