@@ -23,7 +23,7 @@ final class IOAudioUnit: NSObject, IOUnit {
         codec.lockQueue = lockQueue
         return codec
     }()
-    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOComponent.lock")
+    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var soundTransform: SoundTransform = .init() {
         didSet {
             soundTransform.apply(mixer?.mediaLink.playerNode)
@@ -31,19 +31,8 @@ final class IOAudioUnit: NSObject, IOUnit {
     }
     var muted = false
     weak var mixer: IOMixer?
-    var loopback = false {
-        didSet {
-            if loopback {
-                monitor.startRunning()
-            } else {
-                monitor.stopRunning()
-            }
-        }
-    }
-    private var monitor: IOAudioMonitor = .init()
-    #if os(iOS) || os(macOS)
+    var loopback = false
     private(set) var capture: IOAudioCaptureUnit = .init()
-    #endif
     private var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard inSourceFormat != oldValue else {
@@ -51,12 +40,10 @@ final class IOAudioUnit: NSObject, IOUnit {
             }
             presentationTimeStamp = Self.defaultPresentationTimeStamp
             codec.inSourceFormat = inSourceFormat
-            monitor.inSourceFormat = inSourceFormat
         }
     }
     private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
-    #if os(iOS) || os(macOS)
     func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool) throws {
         guard let mixer else {
             return
@@ -70,11 +57,8 @@ final class IOAudioUnit: NSObject, IOUnit {
             return
         }
         try capture.attachDevice(device, audioUnit: self)
-        #if os(iOS)
         mixer.session.automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
-        #endif
     }
-    #endif
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
@@ -91,13 +75,10 @@ final class IOAudioUnit: NSObject, IOUnit {
                 guard let gapSampleBuffer = CMAudioSampleBufferFactory.makeSampleBuffer(sampleBuffer, numSamples: numSamples, presentationTimeStamp: gapPresentationTimeStamp) else {
                     continue
                 }
-                //mixer?.recorder.appendSampleBuffer(gapSampleBuffer)
                 codec.appendSampleBuffer(gapSampleBuffer)
                 gapPresentationTimeStamp = CMTimeAdd(gapPresentationTimeStamp, gapSampleBuffer.duration)
             }
         }
-        //monitor.appendSampleBuffer(sampleBuffer)
-        //mixer?.recorder.appendSampleBuffer(sampleBuffer)
         codec.appendSampleBuffer(sampleBuffer)
         presentationTimeStamp = sampleBuffer.presentationTimeStamp
     }
@@ -187,7 +168,6 @@ extension IOAudioUnit: IOUnitDecoding {
     }
 }
 
-#if os(iOS) || os(macOS)
 extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
     // MARK: AVCaptureAudioDataOutputSampleBufferDelegate
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -218,11 +198,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         appendSampleBuffer(sampleBuffer)
     }
 }
-#endif
 
 extension IOAudioUnit: AudioCodecDelegate {
     // MARK: AudioConverterDelegate
     func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error) {
+        logger.info("Failed to convert audio with error: \(error)")
     }
 
     func audioCodec(_ codec: AudioCodec, didOutput audioFormat: AVAudioFormat) {
