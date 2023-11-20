@@ -78,7 +78,6 @@ public class IOMixer {
         return IOMixer.audioEngineHolder.retain()
     }()
 
-    #if os(iOS) || os(macOS)
     var isMultitaskingCameraAccessEnabled = true
 
     var isMultiCamSessionEnabled = false {
@@ -102,26 +101,6 @@ public class IOMixer {
         }
     }
 
-    var inBackgroundMode = false {
-        didSet {
-            guard inBackgroundMode != oldValue else {
-                return
-            }
-            if inBackgroundMode {
-                if !session.isMultitaskingCameraAccessEnabled {
-                    videoIO.multiCamCapture.detachSession(session)
-                    videoIO.capture.detachSession(session)
-                }
-            } else {
-                startCaptureSessionIfNeeded()
-                if !session.isMultitaskingCameraAccessEnabled {
-                    videoIO.capture.attachSession(session)
-                    videoIO.multiCamCapture.attachSession(session)
-                }
-            }
-        }
-    }
-
     /// The capture session instance.
     public internal(set) lazy var session: AVCaptureSession = makeSession() {
         didSet {
@@ -138,7 +117,6 @@ public class IOMixer {
             videoIO.capture.attachSession(session)
         }
     }
-    #endif
 
     public private(set) var isRunning: Atomic<Bool> = .init(false)
     /// The recorder instance.
