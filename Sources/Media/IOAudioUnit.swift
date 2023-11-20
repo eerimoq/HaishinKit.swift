@@ -135,7 +135,6 @@ final class IOAudioUnit: NSObject, IOUnit {
 }
 
 extension IOAudioUnit: IOUnitEncoding {
-    // MARK: IOUnitEncoding
     func startEncoding(_ delegate: any AVCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
@@ -149,7 +148,6 @@ extension IOAudioUnit: IOUnitEncoding {
 }
 
 extension IOAudioUnit: IOUnitDecoding {
-    // MARK: IOUnitDecoding
     func startDecoding() {
         if let playerNode = mixer?.mediaLink.playerNode {
             mixer?.audioEngine?.attach(playerNode)
@@ -169,11 +167,10 @@ extension IOAudioUnit: IOUnitDecoding {
 }
 
 extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
-    // MARK: AVCaptureAudioDataOutputSampleBufferDelegate
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
-    }
+        }
         switch audioGeneratorMode {
         case .squareWave:
             generateSquareWave(sampleBuffer: sampleBuffer)
@@ -200,7 +197,6 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
 }
 
 extension IOAudioUnit: AudioCodecDelegate {
-    // MARK: AudioConverterDelegate
     func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error) {
         logger.info("Failed to convert audio with error: \(error)")
     }
