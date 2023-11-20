@@ -265,15 +265,10 @@ final class IOVideoUnit: NSObject, IOUnit {
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             duration: sampleBuffer.duration
         )
-        /*mixer?.recorder.appendPixelBuffer(
-            imageBuffer,
-            withPresentationTime: sampleBuffer.presentationTimeStamp
-        )*/
     }
 }
 
 extension IOVideoUnit: IOUnitEncoding {
-    // MARK: IOUnitEncoding
     func startEncoding(_ delegate: any AVCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
@@ -286,7 +281,6 @@ extension IOVideoUnit: IOUnitEncoding {
 }
 
 extension IOVideoUnit: IOUnitDecoding {
-    // MARK: IOUnitDecoding
     func startDecoding() {
         codec.delegate = self
         codec.startRunning()
@@ -299,7 +293,6 @@ extension IOVideoUnit: IOUnitDecoding {
 }
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
-    // MARK: AVCaptureVideoDataOutputSampleBufferDelegate
     func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         if capture.output == captureOutput {
             guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true else {
