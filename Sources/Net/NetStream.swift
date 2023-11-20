@@ -219,14 +219,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Attaches the screen input object.
-    @available(iOS, unavailable)
-    open func attachScreen(_ input: AVCaptureScreenInput?) {
-        lockQueue.async {
-            self.mixer.videoIO.attachScreen(input)
-        }
-    }
-
     /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture(for index: Int) -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {

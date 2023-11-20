@@ -104,19 +104,6 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     private var multiCamSampleBuffer: CMSampleBuffer?
 
-    /*
-    deinit {
-        if Thread.isMainThread {
-            self.drawable?.attachStream(nil)
-        } else {
-            DispatchQueue.main.sync {
-                self.drawable?.attachStream(nil)
-            }
-        }
-    }
-    */
-
-    #if os(iOS) || os(macOS)
     func attachCamera(_ device: AVCaptureDevice?) throws {
         guard let mixer, self.capture.device != device else {
             return
@@ -176,28 +163,10 @@ final class IOVideoUnit: NSObject, IOUnit {
         try multiCamCapture.attachDevice(device, videoUnit: self)
     }
 
-    @available(iOS, unavailable)
-    func attachScreen(_ input: AVCaptureScreenInput?) {
-        guard let mixer else {
-            return
-        }
-        mixer.session.beginConfiguration()
-        defer {
-            mixer.session.commitConfiguration()
-        }
-        guard let input else {
-            mixer.mediaSync = .passthrough
-            return
-        }
-        mixer.mediaSync = .video
-        multiCamCapture.attachScreen(input, videoUnit: self)
-    }
-
     func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
         capture.setTorchMode(torchMode)
         multiCamCapture.setTorchMode(torchMode)
     }
-    #endif
 
     @inline(__always)
     func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
