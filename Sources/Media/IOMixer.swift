@@ -90,7 +90,7 @@ public class IOMixer {
             guard oldValue != isMultiCamSessionEnabled else {
                 return
             }
-            // session = makeSession()
+            session = makeSession()
         }
     }
 
@@ -229,7 +229,13 @@ public class IOMixer {
     private func makeSession() -> AVCaptureSession {
         let session: AVCaptureSession
         if #available(iOS 13.0, *) {
-            session = AVCaptureMultiCamSession()
+            if isMultiCamSessionEnabled {
+                logger.info("Multi camera session")
+                session = AVCaptureMultiCamSession()
+            } else {
+                logger.info("Single camera session")
+                session = AVCaptureSession()
+            }
             if session.canSetSessionPreset(sessionPreset) {
                 session.sessionPreset = sessionPreset
             } else {
