@@ -165,7 +165,6 @@ public class VideoCodec {
         }
     }
 
-    #if os(iOS)
     @objc
     private func applicationWillEnterForeground(_ notification: Notification) {
         invalidateSession = true
@@ -186,15 +185,12 @@ public class VideoCodec {
             break
         }
     }
-    #endif
 }
 
 extension VideoCodec: Running {
-    // MARK: Running
     public func startRunning() {
         lockQueue.async {
             self.isRunning.mutate { $0 = true }
-            #if os(iOS)
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(self.didAudioSessionInterruption),
@@ -207,7 +203,6 @@ extension VideoCodec: Running {
                 name: UIApplication.willEnterForegroundNotification,
                 object: nil
             )
-            #endif
         }
     }
 
@@ -217,10 +212,8 @@ extension VideoCodec: Running {
             self.invalidateSession = true
             self.needsSync.mutate { $0 = true }
             self.formatDescription = nil
-            #if os(iOS)
             NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
             NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
-            #endif
             self.isRunning.mutate { $0 = false }
         }
     }
