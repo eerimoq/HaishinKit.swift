@@ -4,9 +4,7 @@ import CoreMedia
 #if canImport(ScreenCaptureKit)
 import ScreenCaptureKit
 #endif
-#if os(iOS)
 import UIKit
-#endif
 
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
@@ -64,7 +62,6 @@ open class NetStream: NSObject {
         }
     }
 
-    #if os(iOS) || os(macOS)
     /// Specifiet the device torch indicating wheter the turn on(TRUE) or not(FALSE).
     public var torch: Bool {
         get {
@@ -132,7 +129,6 @@ open class NetStream: NSObject {
             mixer.videoIO.multiCamCaptureSettings = newValue
         }
     }
-    #endif
 
     /// Specifies the hasAudio indicies whether no signal audio or not.
     public var hasAudio: Bool {
@@ -177,10 +173,6 @@ open class NetStream: NSObject {
     /// Creates a NetStream object.
     override public init() {
         super.init()
-        /*#if os(iOS)
-        NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackground(_:)), name: UIApplication.didEnterBackgroundNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground(_:)), name: UIApplication.willEnterForegroundNotification, object: nil)
-        #endif*/
     }
 
     /// Attaches the primary camera object.
@@ -304,25 +296,9 @@ open class NetStream: NSObject {
     public func stopRecording() {
         mixer.recorder.stopRunning()
     }
-
-    /*#if os(iOS)
-    @objc
-    private func didEnterBackground(_ notification: Notification) {
-        // Require main thread. Otherwise the microphone cannot be used in the background.
-        mixer.inBackgroundMode = true
-    }
-
-    @objc
-    private func willEnterForeground(_ notification: Notification) {
-        lockQueue.async {
-            self.mixer.inBackgroundMode = false
-        }
-    }
-    #endif*/
 }
 
 extension NetStream: IOMixerDelegate {
-    // MARK: IOMixerDelegate
     func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer) {
     }
 
@@ -343,7 +319,6 @@ extension NetStream: IOMixerDelegate {
 }
 
 extension NetStream: IOScreenCaptureUnitDelegate {
-    // MARK: IOScreenCaptureUnitDelegate
     public func session(_ session: any IOScreenCaptureUnit, didOutput pixelBuffer: CVPixelBuffer, presentationTime: CMTime) {
         var timingInfo = CMSampleTimingInfo(
             duration: .invalid,
