@@ -147,21 +147,22 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     @available(iOS 13.0, *)
     func attachMultiCamera(_ device: AVCaptureDevice?) throws {
-        #if os(iOS)
+        logger.info("attach multi camera")
         guard AVCaptureMultiCamSession.isMultiCamSupported else {
             throw Error.multiCamNotSupported
         }
-        #endif
         guard let mixer, multiCamCapture.device != device else {
             return
         }
         guard let device else {
+            logger.info("not device")
             mixer.session.beginConfiguration()
             defer {
                 mixer.session.commitConfiguration()
             }
             multiCamCapture.detachSession(mixer.session)
             try multiCamCapture.attachDevice(nil, videoUnit: self)
+            mixer.isMultiCamSessionEnabled = false
             return
         }
         mixer.isMultiCamSessionEnabled = true

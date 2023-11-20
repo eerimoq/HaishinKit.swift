@@ -13,12 +13,8 @@ extension AVCaptureSession.Preset {
 #endif
 
 protocol IOMixerDelegate: AnyObject {
-    func mixer(_ mixer: IOMixer, didOutput audio: AVAudioPCMBuffer, presentationTimeStamp: CMTime)
-    func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer)
-    #if os(iOS)
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
-    #endif
     func mixer(_ mixer: IOMixer, audioLevel: Float)
 }
 
@@ -90,6 +86,7 @@ public class IOMixer {
             guard oldValue != isMultiCamSessionEnabled else {
                 return
             }
+            logger.info("did set isMultiCamSessionEnabled to \(isMultiCamSessionEnabled)")
             session = makeSession()
         }
     }
@@ -303,7 +300,6 @@ extension IOMixer: IOUnitDecoding {
 extension IOMixer: MediaLinkDelegate {
     // MARK: MediaLinkDelegate
     func mediaLink(_ mediaLink: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
-        delegate?.mixer(self, didOutput: sampleBuffer)
         drawable?.enqueue(sampleBuffer)
     }
 

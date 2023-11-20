@@ -240,9 +240,6 @@ extension IOAudioUnit: AudioCodecDelegate {
         guard let audioBuffer = audioBuffer as? AVAudioPCMBuffer else {
             return
         }
-        if let mixer = mixer {
-            mixer.delegate?.mixer(mixer, didOutput: audioBuffer, presentationTimeStamp: presentationTimeStamp)
-        }
         mixer?.mediaLink.enqueueAudio(audioBuffer)
     }
 }

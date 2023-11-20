@@ -10,16 +10,10 @@ import UIKit
 
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
-    /// Tells the receiver to playback an audio packet incoming.
-    func stream(_ stream: NetStream, didOutput audio: AVAudioBuffer, presentationTimeStamp: CMTime)
-    /// Tells the receiver to playback a video packet incoming.
-    func stream(_ stream: NetStream, didOutput video: CMSampleBuffer)
-    #if os(iOS)
     /// Tells the receiver to session was interrupted.
     func stream(_ stream: NetStream, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
     /// Tells the receiver to session interrupted ended.
     func stream(_ stream: NetStream, sessionInterruptionEnded session: AVCaptureSession)
-    #endif
     /// Tells the receiver to video codec error occured.
     func stream(_ stream: NetStream, videoCodecErrorOccurred error: VideoCodec.Error)
     /// Tells the receiver to audio codec error occured.
@@ -189,11 +183,12 @@ open class NetStream: NSObject {
         #endif*/
     }
 
-    #if os(iOS) || os(macOS)
     /// Attaches the primary camera object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     open func attachCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil, onSuccess: (() -> Void)? = nil) {
+        logger.info("attacCamera")
         lockQueue.async {
+            logger.info("attacCamera locked")
             do {
                 try self.mixer.videoIO.attachCamera(device)
                 onSuccess?()
@@ -207,19 +202,23 @@ open class NetStream: NSObject {
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     @available(iOS 13.0, *)
     open func attachMultiCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil) {
+        logger.info("attachMultiCamera")
         lockQueue.async {
+            logger.info("attachMultiCamera locked")
             do {
                 try self.mixer.videoIO.attachMultiCamera(device)
             } catch {
                 onError?(error)
             }
         }
+        logger.info("attachMultiCamera 3")
     }
 
     /// Attaches the audio capture object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     open func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = false, onError: ((_ error: Error) -> Void)? = nil) {
         lockQueue.sync {
+            logger.info("Audio sync")
             do {
                 try self.mixer.audioIO.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession)
             } catch {
@@ -249,7 +248,6 @@ open class NetStream: NSObject {
             }
         }
     }
-    #endif
 
     /// Append a CMSampleBuffer?.
     /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
@@ -326,14 +324,11 @@ open class NetStream: NSObject {
 extension NetStream: IOMixerDelegate {
     // MARK: IOMixerDelegate
     func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer) {
-        delegate?.stream(self, didOutput: video)
     }
 
     func mixer(_ mixer: IOMixer, didOutput audio: AVAudioPCMBuffer, presentationTimeStamp: CMTime) {
-        delegate?.stream(self, didOutput: audio, presentationTimeStamp: presentationTimeStamp)
     }
 
-    #if os(iOS)
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?) {
         delegate?.stream(self, sessionWasInterrupted: session, reason: reason)
     }
@@ -341,8 +336,7 @@ extension NetStream: IOMixerDelegate {
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession) {
         delegate?.stream(self, sessionInterruptionEnded: session)
     }
-    #endif
-    
+
     func mixer(_ mixer: IOMixer, audioLevel: Float) {
         delegate?.stream(self, audioLevel: audioLevel)
     }
@@ -382,21 +376,3 @@ extension NetStream: IOScreenCaptureUnitDelegate {
         appendSampleBuffer(sampleBuffer)
     }
 }
-
-#if os(macOS)
-extension NetStream: SCStreamOutput {
-    @available(macOS 12.3, *)
-    public func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        if #available(macOS 13.0, *) {
-            switch type {
-            case .screen:
-                appendSampleBuffer(sampleBuffer)
-            default:
-                appendSampleBuffer(sampleBuffer)
-            }
-        } else {
-            appendSampleBuffer(sampleBuffer)
-        }
-    }
-}
-#endif
