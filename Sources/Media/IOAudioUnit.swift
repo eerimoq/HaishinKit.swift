@@ -31,7 +31,6 @@ final class IOAudioUnit: NSObject, IOUnit {
     }
     var muted = false
     weak var mixer: IOMixer?
-    var loopback = false
     private(set) var capture: IOAudioCaptureUnit = .init()
     private var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
