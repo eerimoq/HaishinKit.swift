@@ -178,9 +178,7 @@ open class NetStream: NSObject {
         onError: ((_ error: Error) -> Void)? = nil,
         onSuccess: (() -> Void)? = nil
     ) {
-        logger.info("attacCamera")
         lockQueue.async {
-            logger.info("attacCamera locked")
             do {
                 try self.mixer.videoIO.attachCamera(device)
                 onSuccess?()
@@ -193,16 +191,13 @@ open class NetStream: NSObject {
     /// Attaches the 2ndary camera  object for picture in picture.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     open func attachMultiCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil) {
-        logger.info("attachMultiCamera")
         lockQueue.async {
-            logger.info("attachMultiCamera locked")
             do {
                 try self.mixer.videoIO.attachMultiCamera(device)
             } catch {
                 onError?(error)
             }
         }
-        logger.info("attachMultiCamera 3")
     }
 
     /// Attaches the audio capture object.
@@ -213,7 +208,6 @@ open class NetStream: NSObject {
         onError: ((_ error: Error) -> Void)? = nil
     ) {
         lockQueue.sync {
-            logger.info("Audio sync")
             do {
                 try self.mixer.audioIO.attachAudio(
                     device,

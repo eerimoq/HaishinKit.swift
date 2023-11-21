@@ -99,9 +99,7 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     private(set) var capture: IOVideoCaptureUnit = .init()
     private(set) var multiCamCapture: IOVideoCaptureUnit = .init()
-
     var multiCamCaptureSettings: MultiCamCaptureSettings = .default
-
     private var multiCamSampleBuffer: CMSampleBuffer?
 
     func attachCamera(_ device: AVCaptureDevice?) throws {
@@ -109,6 +107,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             return
         }
         guard let device else {
+            logger.info("Detaching camera")
             mixer.mediaSync = .passthrough
             mixer.session.beginConfiguration()
             defer {
@@ -118,6 +117,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             try capture.attachDevice(nil, videoUnit: self)
             return
         }
+        logger.info("Attaching camera")
         mixer.mediaSync = .video
         mixer.session.beginConfiguration()
         defer {
@@ -133,7 +133,6 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func attachMultiCamera(_ device: AVCaptureDevice?) throws {
-        logger.info("attach multi camera")
         guard AVCaptureMultiCamSession.isMultiCamSupported else {
             throw Error.multiCamNotSupported
         }
@@ -141,7 +140,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             return
         }
         guard let device else {
-            logger.info("not device")
+            logger.info("Detaching multi camera")
             mixer.session.beginConfiguration()
             defer {
                 mixer.session.commitConfiguration()
@@ -151,6 +150,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             mixer.isMultiCamSessionEnabled = false
             return
         }
+        logger.info("Attaching multi camera")
         mixer.isMultiCamSessionEnabled = true
         mixer.session.beginConfiguration()
         defer {
