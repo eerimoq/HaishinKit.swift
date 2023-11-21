@@ -131,7 +131,7 @@ public class SRTStream: NetStream {
         super.attachAudio(audio, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession, onError: onError)
     }
 
-    /// Sends streaming audio, vidoe and data message from client.
+    /// Sends streaming audio, video and data message from client.
     public func publish(_ name: String? = "") {
         lockQueue.async {
             guard let name else {
@@ -187,7 +187,6 @@ public class SRTStream: NetStream {
 }
 
 extension SRTStream: TSWriterDelegate {
-    // MARK: TSWriterDelegate
     public func writer(_ writer: TSWriter, doOutput data: Data) {
         guard readyState == .publishing else {
             logger.info("not publishing")
@@ -198,7 +197,6 @@ extension SRTStream: TSWriterDelegate {
 }
 
 extension SRTStream: TSReaderDelegate {
-    // MARK: TSReaderDelegate
     public func reader(_ reader: TSReader, id: UInt16, didRead formatDescription: CMFormatDescription) {
         guard readyState == .playing else {
             return

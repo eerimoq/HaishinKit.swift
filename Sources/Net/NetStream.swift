@@ -211,33 +211,16 @@ open class NetStream: NSObject {
     }
 
     /// Returns the IOVideoCaptureUnit by index.
-    public func videoCapture(for index: Int) -> IOVideoCaptureUnit? {
+    public func videoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
-            switch index {
-            case 0:
-                return self.mixer.videoIO.capture
-            case 1:
-                return self.mixer.videoIO.multiCamCapture
-            default:
-                return nil
-            }
+            return self.mixer.videoIO.capture
         }
     }
 
-    /// Append a CMSampleBuffer?.
-    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    open func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, options: [NSObject: AnyObject]? = nil) {
-        switch sampleBuffer.formatDescription?._mediaType {
-        case kCMMediaType_Audio:
-            mixer.audioIO.lockQueue.async {
-                self.mixer.audioIO.appendSampleBuffer(sampleBuffer)
-            }
-        case kCMMediaType_Video:
-            mixer.videoIO.lockQueue.async {
-                self.mixer.videoIO.appendSampleBuffer(sampleBuffer)
-            }
-        default:
-            break
+    /// Returns the IOVideoCaptureUnit by index.
+    public func multiVideoCapture() -> IOVideoCaptureUnit? {
+        return mixer.videoIO.lockQueue.sync {
+            return self.mixer.videoIO.multiCamCapture
         }
     }
 
@@ -271,12 +254,6 @@ open class NetStream: NSObject {
 }
 
 extension NetStream: IOMixerDelegate {
-    func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer) {
-    }
-
-    func mixer(_ mixer: IOMixer, didOutput audio: AVAudioPCMBuffer, presentationTimeStamp: CMTime) {
-    }
-
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?) {
         delegate?.stream(self, sessionWasInterrupted: session, reason: reason)
     }
@@ -287,39 +264,5 @@ extension NetStream: IOMixerDelegate {
 
     func mixer(_ mixer: IOMixer, audioLevel: Float) {
         delegate?.stream(self, audioLevel: audioLevel)
-    }
-}
-
-extension NetStream: IOScreenCaptureUnitDelegate {
-    public func session(_ session: any IOScreenCaptureUnit, didOutput pixelBuffer: CVPixelBuffer, presentationTime: CMTime) {
-        var timingInfo = CMSampleTimingInfo(
-            duration: .invalid,
-            presentationTimeStamp: presentationTime,
-            decodeTimeStamp: .invalid
-        )
-        var videoFormatDescription: CMVideoFormatDescription?
-        var status = CMVideoFormatDescriptionCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            formatDescriptionOut: &videoFormatDescription
-        )
-        guard status == noErr else {
-            return
-        }
-        var sampleBuffer: CMSampleBuffer?
-        status = CMSampleBufferCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            dataReady: true,
-            makeDataReadyCallback: nil,
-            refcon: nil,
-            formatDescription: videoFormatDescription!,
-            sampleTiming: &timingInfo,
-            sampleBufferOut: &sampleBuffer
-        )
-        guard let sampleBuffer, status == noErr else {
-            return
-        }
-        appendSampleBuffer(sampleBuffer)
     }
 }

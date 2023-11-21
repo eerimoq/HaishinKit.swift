@@ -3,14 +3,10 @@ import AVFoundation
 import SwiftPMSupport
 #endif
 
-#if os(iOS)
 import UIKit
-#endif
-#if os(iOS) || os(macOS)
 extension AVCaptureSession.Preset {
     static let `default`: AVCaptureSession.Preset = .hd1280x720
 }
-#endif
 
 protocol IOMixerDelegate: AnyObject {
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
@@ -152,14 +148,12 @@ public class IOMixer {
         return mediaLink
     }()
 
-    #if os(iOS) || os(macOS)
     deinit {
         if session.isRunning {
             session.stopRunning()
         }
         IOMixer.audioEngineHolder.release(audioEngine)
     }
-    #endif
 
     private var audioTimeStamp = CMTime.zero
     private var videoTimeStamp = CMTime.zero
@@ -284,7 +278,6 @@ extension IOMixer: MediaLinkDelegate {
     }
 }
 
-#if os(iOS) || os(macOS)
 extension IOMixer: Running {
     // MARK: Running
     public func startRunning() {
@@ -377,7 +370,6 @@ extension IOMixer: Running {
         }
     }
 
-    #if os(iOS)
     @objc
     private func sessionWasInterrupted(_ notification: Notification) {
         guard let session = notification.object as? AVCaptureSession else {
@@ -396,17 +388,4 @@ extension IOMixer: Running {
     private func sessionInterruptionEnded(_ notification: Notification) {
         delegate?.mixer(self, sessionInterruptionEnded: session)
     }
-    #endif
 }
-#else
-extension IOMixer: Running {
-    public func startRunning() {
-    }
-
-    public func stopRunning() {
-    }
-
-    func startCaptureSession() {
-    }
-}
-#endif
