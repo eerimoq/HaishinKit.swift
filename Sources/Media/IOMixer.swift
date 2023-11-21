@@ -308,10 +308,8 @@ extension IOMixer: Running {
 
     private func addSessionObservers(_ session: AVCaptureSession) {
         NotificationCenter.default.addObserver(self, selector: #selector(sessionRuntimeError(_:)), name: .AVCaptureSessionRuntimeError, object: session)
-        #if os(iOS)
         NotificationCenter.default.addObserver(self, selector: #selector(sessionInterruptionEnded(_:)), name: .AVCaptureSessionInterruptionEnded, object: session)
         NotificationCenter.default.addObserver(self, selector: #selector(sessionWasInterrupted(_:)), name: .AVCaptureSessionWasInterrupted, object: session)
-        #endif
     }
 
     private func removeSessionObservers(_ session: AVCaptureSession) {
