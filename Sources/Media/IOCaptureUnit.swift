@@ -121,35 +121,26 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
     func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
         setSampleBufferDelegate(nil)
         detachSession(videoUnit.mixer?.session)
+        self.device = device
         guard let device else {
-            self.device = nil
             input = nil
             output = nil
             connection = nil
             return
         }
-        self.device = device
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureVideoDataOutput()
-        #if os(iOS)
-            if let output, #available(iOS 13, *),
-               let port = input?.ports
-               .first(where: {
-                   $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
-                       .sourceDevicePosition == device.position
-               })
-            {
-                connection = AVCaptureConnection(inputPorts: [port], output: output)
-            } else {
-                connection = nil
-            }
-        #else
-            if let output, let port = input?.ports.first(where: { $0.mediaType == .video }) {
-                connection = AVCaptureConnection(inputPorts: [port], output: output)
-            } else {
-                connection = nil
-            }
-        #endif
+        if let output, #available(iOS 13, *),
+           let port = input?.ports
+           .first(where: {
+               $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
+                   .sourceDevicePosition == device.position
+           })
+        {
+            connection = AVCaptureConnection(inputPorts: [port], output: output)
+        } else {
+            connection = nil
+        }
         attachSession(videoUnit.mixer?.session)
         output?.connections.forEach {
             if $0.isVideoMirroringSupported {
