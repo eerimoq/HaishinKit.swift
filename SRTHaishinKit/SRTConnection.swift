@@ -106,8 +106,6 @@ public class SRTConnection: NSObject {
 }
 
 extension SRTConnection: SRTSocketDelegate {
-    // MARK: SRTSocketDelegate
-
     func socket(_ socket: SRTSocket, status _: SRT_SOCKSTATUS) {
         connected = socket.status == SRTS_CONNECTED
     }

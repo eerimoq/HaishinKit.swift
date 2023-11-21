@@ -8,7 +8,7 @@ private let enummapTranstype: [String: Any] = [
 
 public enum SRTSocketOption: String {
     static func from(uri: URL?) -> [SRTSocketOption: String] {
-        guard let uri = uri else {
+        guard let uri else {
             return [:]
         }
         let queryItems = getQueryItems(uri: uri)
