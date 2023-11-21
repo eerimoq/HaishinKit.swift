@@ -55,7 +55,7 @@ extension IOCaptureUnit {
             return
         }
         if let connection {
-            if output?.connections.contains(connection) {
+            if output?.connections.contains(connection) == true {
                 session.removeConnection(connection)
             }
         }

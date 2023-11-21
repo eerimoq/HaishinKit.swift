@@ -5,17 +5,14 @@ import PackageDescription
 let package = Package(
     name: "HaishinKit",
     platforms: [
-        .iOS(.v11),
-        .tvOS(.v11),
-        .macOS(.v10_13),
-        .macCatalyst(.v14)
+        .iOS(.v14)
     ],
     products: [
         .library(name: "HaishinKit", targets: ["HaishinKit"]),
         .library(name: "SRTHaishinKit", targets: ["SRTHaishinKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/shogo4405/Logboard.git", "2.3.1"..<"2.4.0")
+        .package(url: "https://github.com/shogo4405/Logboard.git", "2.4.1"..<"2.5.0")
     ],
     targets: [
         .binaryTarget(
