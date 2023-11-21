@@ -13,6 +13,7 @@ public protocol EventDispatcherConvertible: AnyObject {
 }
 
 // MARK: -
+
 /// The Event interface is used to provide information.
 open class Event {
     /// A structure that defines the name of an event.
@@ -34,14 +35,15 @@ open class Event {
         }
 
         public init(stringLiteral value: String) {
-            self.rawValue = value
+            rawValue = value
         }
     }
 
     public static func from(_ notification: Notification) -> Event {
         guard
             let userInfo: [AnyHashable: Any] = notification.userInfo,
-            let event: Event = userInfo["event"] as? Event else {
+            let event: Event = userInfo["event"] as? Event
+        else {
             return Event(type: .event)
         }
         return event
@@ -69,12 +71,14 @@ open class Event {
 
 extension Event: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
 
 // MARK: -
+
 /**
  * The EventDispatcher interface is in implementation which supports the DOM Event Model.
  */
@@ -82,8 +86,7 @@ open class EventDispatcher: EventDispatcherConvertible {
     private weak var target: AnyObject?
 
     /// Creates a new event dispatcher.
-    public init() {
-    }
+    public init() {}
 
     /// Creates a new event dispatcher to proxy target.
     public init(target: AnyObject) {
@@ -95,16 +98,28 @@ open class EventDispatcher: EventDispatcherConvertible {
     }
 
     /// Registers the event listeners on the event target.
-    public func addEventListener(_ type: Event.Name, selector: Selector, observer: AnyObject? = nil, useCapture: Bool = false) {
+    public func addEventListener(
+        _ type: Event.Name,
+        selector: Selector,
+        observer: AnyObject? = nil,
+        useCapture: Bool = false
+    ) {
         NotificationCenter.default.addObserver(
-            observer ?? target ?? self, selector: selector, name: Notification.Name(rawValue: "\(type.rawValue)/\(useCapture)"), object: target ?? self
+            observer ?? target ?? self, selector: selector,
+            name: Notification.Name(rawValue: "\(type.rawValue)/\(useCapture)"), object: target ?? self
         )
     }
 
     /// Unregister the event listeners on the event target.
-    public func removeEventListener(_ type: Event.Name, selector: Selector, observer: AnyObject? = nil, useCapture: Bool = false) {
+    public func removeEventListener(
+        _ type: Event.Name,
+        selector _: Selector,
+        observer: AnyObject? = nil,
+        useCapture: Bool = false
+    ) {
         NotificationCenter.default.removeObserver(
-            observer ?? target ?? self, name: Notification.Name(rawValue: "\(type.rawValue)/\(useCapture)"), object: target ?? self
+            observer ?? target ?? self, name: Notification.Name(rawValue: "\(type.rawValue)/\(useCapture)"),
+            object: target ?? self
         )
     }
 
@@ -112,7 +127,8 @@ open class EventDispatcher: EventDispatcherConvertible {
     open func dispatch(event: Event) {
         event.target = target ?? self
         NotificationCenter.default.post(
-            name: Notification.Name(rawValue: "\(event.type.rawValue)/false"), object: target ?? self, userInfo: ["event": event]
+            name: Notification.Name(rawValue: "\(event.type.rawValue)/false"), object: target ?? self,
+            userInfo: ["event": event]
         )
         event.target = nil
     }

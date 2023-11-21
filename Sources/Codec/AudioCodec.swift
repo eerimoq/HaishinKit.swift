@@ -13,6 +13,7 @@ public protocol AudioCodecDelegate: AnyObject {
 }
 
 // MARK: -
+
 /**
  * The AudioCodec translate audio data to another format.
  * - seealso: https://developer.apple.com/library/ios/technotes/tn2236/_index.html
@@ -25,17 +26,30 @@ public class AudioCodec {
     }
 
     static func makeAudioFormat(_ inSourceFormat: inout AudioStreamBasicDescription) -> AVAudioFormat? {
-        if inSourceFormat.mFormatID == kAudioFormatLinearPCM && kLinearPCMFormatFlagIsBigEndian == (inSourceFormat.mFormatFlags & kLinearPCMFormatFlagIsBigEndian) {
+        if inSourceFormat.mFormatID == kAudioFormatLinearPCM,
+           kLinearPCMFormatFlagIsBigEndian ==
+           (inSourceFormat.mFormatFlags & kLinearPCMFormatFlagIsBigEndian)
+        {
             // ReplayKit audioApp.
             guard inSourceFormat.mBitsPerChannel == 16 else {
                 return nil
             }
-            if let layout = Self.makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
-                return .init(commonFormat: .pcmFormatInt16, sampleRate: inSourceFormat.mSampleRate, interleaved: true, channelLayout: layout)
+            if let layout = makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
+                return .init(
+                    commonFormat: .pcmFormatInt16,
+                    sampleRate: inSourceFormat.mSampleRate,
+                    interleaved: true,
+                    channelLayout: layout
+                )
             }
-            return AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: inSourceFormat.mSampleRate, channels: inSourceFormat.mChannelsPerFrame, interleaved: true)
+            return AVAudioFormat(
+                commonFormat: .pcmFormatInt16,
+                sampleRate: inSourceFormat.mSampleRate,
+                channels: inSourceFormat.mChannelsPerFrame,
+                interleaved: true
+            )
         }
-        if let layout = Self.makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
+        if let layout = makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
             return .init(streamDescription: &inSourceFormat, channelLayout: layout)
         }
         return .init(streamDescription: &inSourceFormat)
@@ -49,12 +63,14 @@ public class AudioCodec {
     }
 
     /// Creates a channel map for specific input and output format
-    static func makeChannelMap(inChannels: Int, outChannels: Int, outputChannelsMap: [Int: Int]) -> [NSNumber] {
+    static func makeChannelMap(inChannels: Int, outChannels: Int,
+                               outputChannelsMap: [Int: Int]) -> [NSNumber]
+    {
         var result = Array(repeating: -1, count: outChannels)
-        for inputIndex in 0..<min(inChannels, outChannels) {
+        for inputIndex in 0 ..< min(inChannels, outChannels) {
             result[inputIndex] = inputIndex
         }
-        for currentIndex in 0..<outChannels {
+        for currentIndex in 0 ..< outChannels {
             if let inputIndex = outputChannelsMap[currentIndex], inputIndex < inChannels {
                 result[currentIndex] = inputIndex
             }
@@ -72,6 +88,7 @@ public class AudioCodec {
             settings.apply(audioConverter, oldValue: oldValue)
         }
     }
+
     var effects: [AudioEffect] = []
     var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioCodec.lock")
     var inSourceFormat: AudioStreamBasicDescription? {
@@ -85,6 +102,7 @@ public class AudioCodec {
             audioConverter = makeAudioConverter(&inSourceFormat)
         }
     }
+
     private var ringBuffer: AudioCodecRingBuffer?
     private var outputBuffers: [AVAudioBuffer] = []
     private var audioConverter: AVAudioConverter?
@@ -107,7 +125,10 @@ public class AudioCodec {
                     return
                 }
                 for effect in effects {
-                    effect.execute(ringBuffer.current, presentationTimeStamp: ringBuffer.presentationTimeStamp)
+                    effect.execute(
+                        ringBuffer.current,
+                        presentationTimeStamp: ringBuffer.presentationTimeStamp
+                    )
                 }
                 var error: NSError?
                 audioConverter.convert(to: buffer, error: &error) { _, status in
@@ -117,7 +138,11 @@ public class AudioCodec {
                 if let error {
                     delegate?.audioCodec(self, errorOccurred: .failedToConvert(error: error))
                 } else {
-                    delegate?.audioCodec(self, didOutput: buffer, presentationTimeStamp: ringBuffer.presentationTimeStamp)
+                    delegate?.audioCodec(
+                        self,
+                        didOutput: buffer,
+                        presentationTimeStamp: ringBuffer.presentationTimeStamp
+                    )
                 }
                 ringBuffer.next()
             }
@@ -127,19 +152,34 @@ public class AudioCodec {
         case .pcm:
             var offset = 0
             var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-            for i in 0..<sampleBuffer.numSamples {
+            for i in 0 ..< sampleBuffer.numSamples {
                 guard let buffer = makeInputBuffer() as? AVAudioCompressedBuffer else {
                     continue
                 }
                 let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
                 let byteCount = sampleSize - ADTSHeader.size
-                buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
+                buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
+                    mStartOffset: 0,
+                    mVariableFramesInPacket: 0,
+                    mDataByteSize: UInt32(byteCount)
+                )
                 buffer.packetCount = 1
                 buffer.byteLength = UInt32(byteCount)
                 if let blockBuffer = sampleBuffer.dataBuffer {
-                    CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
+                    CMBlockBufferCopyDataBytes(
+                        blockBuffer,
+                        atOffset: offset + ADTSHeader.size,
+                        dataLength: byteCount,
+                        destination: buffer.data
+                    )
                     appendAudioBuffer(buffer, presentationTimeStamp: presentationTimeStamp)
-                    presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+                    presentationTimeStamp = CMTimeAdd(
+                        presentationTimeStamp,
+                        CMTime(
+                            value: CMTimeValue(1024),
+                            timescale: sampleBuffer.presentationTimeStamp.timescale
+                        )
+                    )
                     offset += sampleSize
                 }
             }
@@ -188,17 +228,24 @@ public class AudioCodec {
         return outputBuffers.removeFirst()
     }
 
-    private func makeAudioConverter(_ inSourceFormat: inout AudioStreamBasicDescription) -> AVAudioConverter? {
+    private func makeAudioConverter(_ inSourceFormat: inout AudioStreamBasicDescription)
+        -> AVAudioConverter?
+    {
         guard
             let inputFormat = Self.makeAudioFormat(&inSourceFormat),
-            let outputFormat = settings.format.makeAudioFormat(inSourceFormat) else {
+            let outputFormat = settings.format.makeAudioFormat(inSourceFormat)
+        else {
             logger.info("cannot create")
             return nil
         }
         logger.info("inputFormat: \(inputFormat)")
         logger.info("outputFormat: \(outputFormat)")
         let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
-        let channelMap = Self.makeChannelMap(inChannels: Int(inputFormat.channelCount), outChannels: Int(outputFormat.channelCount), outputChannelsMap: settings.outputChannelsMap)
+        let channelMap = Self.makeChannelMap(
+            inChannels: Int(inputFormat.channelCount),
+            outChannels: Int(outputFormat.channelCount),
+            outputChannelsMap: settings.outputChannelsMap
+        )
         logger.info("channelMap: \(channelMap)")
         converter?.channelMap = channelMap
         settings.apply(converter, oldValue: nil)
@@ -213,6 +260,7 @@ public class AudioCodec {
 
 extension AudioCodec: Running {
     // MARK: Running
+
     public func startRunning() {
         lockQueue.async {
             guard !self.isRunning.value else {

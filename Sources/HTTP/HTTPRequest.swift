@@ -10,6 +10,7 @@ protocol HTTPRequestCompatible: CustomStringConvertible {
 
 extension HTTPRequestCompatible {
     // MARK: CustomStringConvertible
+
     public var description: String {
         Mirror(reflecting: self).debugDescription
     }
@@ -29,13 +30,13 @@ extension HTTPRequestCompatible {
         set {
             var lines: [String] = []
             let bytes: [Data.SubSequence] = newValue.split(separator: HTTPRequest.separator)
-            for i in 0..<bytes.count {
+            for i in 0 ..< bytes.count {
                 guard let line = String(bytes: [UInt8](bytes[i]), encoding: .utf8) else {
                     continue
                 }
                 let newLine: String = line.trimmingCharacters(in: .newlines)
                 if newLine.isEmpty {
-                    body = Data(bytes[i + 1..<bytes.count].joined(separator: [HTTPRequest.separator]))
+                    body = Data(bytes[i + 1 ..< bytes.count].joined(separator: [HTTPRequest.separator]))
                     break
                 }
                 lines.append(newLine)
@@ -48,7 +49,7 @@ extension HTTPRequestCompatible {
             method = first[0]
             uri = first[1]
             version = first[2]
-            for i in 1..<lines.count {
+            for i in 1 ..< lines.count {
                 if lines[i].isEmpty {
                     continue
                 }
@@ -60,10 +61,11 @@ extension HTTPRequestCompatible {
 }
 
 // MARK: -
+
 /// A URL load request.
 public struct HTTPRequest: HTTPRequestCompatible {
     /// The separator value is 0x0a.
-    public static let separator: UInt8 = 0x0a
+    public static let separator: UInt8 = 0x0A
     /// Specifies the uri to request.
     public var uri: String = "/"
     /// Specifies the http method.

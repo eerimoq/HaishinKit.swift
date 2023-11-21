@@ -9,6 +9,7 @@ protocol HTTPResponseCompatible: CustomDebugStringConvertible {
 
 extension HTTPResponseCompatible {
     // MARK: CustomDebugStringConvertible
+
     public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
@@ -34,7 +35,7 @@ extension HTTPResponseCompatible {
             var count: Int = 0
             var lines: [String] = []
             let bytes: [Data.SubSequence] = newValue.split(separator: HTTPRequest.separator)
-            for i in 0..<bytes.count {
+            for i in 0 ..< bytes.count {
                 count += bytes[i].count + 1
                 guard let line = String(bytes: Array(bytes[i]), encoding: .utf8), line != "\r" else {
                     break
@@ -49,21 +50,22 @@ extension HTTPResponseCompatible {
             version = first[0]
             statusCode = first[1]
 
-            for i in 1..<lines.count {
+            for i in 1 ..< lines.count {
                 let pairs: [String] = lines[i].components(separatedBy: ": ")
                 headerFields[pairs[0]] = pairs[1]
             }
 
-            body = Data(newValue[count..<newValue.count])
+            body = Data(newValue[count ..< newValue.count])
         }
     }
 }
 
 // MARK: -
+
 /// A URL load response.
 public struct HTTPResponse: HTTPResponseCompatible, ExpressibleByDictionaryLiteral {
     /// The boundary for head or body.
-    static let separator: [UInt8] = [0x0d, 0x0a, 0x0d, 0x0a]
+    static let separator: [UInt8] = [0x0D, 0x0A, 0x0D, 0x0A]
 
     /// Specifies the version of the HTTP.
     public var version: String = HTTPVersion.version11.rawValue

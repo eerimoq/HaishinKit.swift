@@ -9,6 +9,7 @@ protocol TSPSIPointer {
 }
 
 // MARK: -
+
 protocol TSPSITableHeader {
     var tableId: UInt8 { get set }
     var sectionSyntaxIndicator: Bool { get set }
@@ -17,6 +18,7 @@ protocol TSPSITableHeader {
 }
 
 // MARK: -
+
 protocol TSPSITableSyntax {
     var tableIdExtension: UInt16 { get set }
     var versionNumber: UInt8 { get set }
@@ -28,21 +30,25 @@ protocol TSPSITableSyntax {
 }
 
 // MARK: -
+
 class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
     static let reservedBits: UInt8 = 0x03
     static let defaultTableIDExtension: UInt16 = 1
 
     // MARK: PSIPointer
+
     var pointerField: UInt8 = 0
     var pointerFillerBytes = Data()
 
     // MARK: PSITableHeader
+
     var tableId: UInt8 = 0
     var sectionSyntaxIndicator = false
     var privateBit = false
     var sectionLength: UInt16 = 0
 
     // MARK: PSITableSyntax
+
     var tableIdExtension: UInt16 = TSProgram.defaultTableIDExtension
     var versionNumber: UInt8 = 0
     var currentNextIndicator = true
@@ -51,8 +57,7 @@ class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
     var tableData: Data = .init()
     var crc32: UInt32 = 0
 
-    init() {
-    }
+    init() {}
 
     init?(_ data: Data) {
         self.data = data
@@ -108,7 +113,7 @@ extension TSProgram: DataConvertible {
                 tableIdExtension = try buffer.readUInt16()
                 versionNumber = try buffer.readUInt8()
                 currentNextIndicator = (versionNumber & 0x01) == 0x01
-                versionNumber = (versionNumber & 0b00111110) >> 1
+                versionNumber = (versionNumber & 0b0011_1110) >> 1
                 sectionNumber = try buffer.readUInt8()
                 lastSectionNumber = try buffer.readUInt8()
                 tableData = try buffer.readBytes(Int(sectionLength - 9))
@@ -122,12 +127,14 @@ extension TSProgram: DataConvertible {
 
 extension TSProgram: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
 
 // MARK: -
+
 final class TSProgramAssociation: TSProgram {
     static let tableID: UInt8 = 0
 
@@ -137,15 +144,15 @@ final class TSProgramAssociation: TSProgram {
         get {
             let buffer = ByteArray()
             for (number, programMapPID) in programs {
-                buffer.writeUInt16(number).writeUInt16(programMapPID | 0xe000)
+                buffer.writeUInt16(number).writeUInt16(programMapPID | 0xE000)
             }
             return buffer.data
         }
         set {
             let buffer = ByteArray(data: newValue)
             do {
-                for _ in 0..<newValue.count / 4 {
-                    programs[try buffer.readUInt16()] = try buffer.readUInt16() & 0x1fff
+                for _ in 0 ..< newValue.count / 4 {
+                    try programs[buffer.readUInt16()] = try buffer.readUInt16() & 0x1FFF
                 }
             } catch {
                 logger.error("\(buffer)")
@@ -155,9 +162,10 @@ final class TSProgramAssociation: TSProgram {
 }
 
 // MARK: -
+
 final class TSProgramMap: TSProgram {
     static let tableID: UInt8 = 2
-    static let unusedPCRID: UInt16 = 0x1fff
+    static let unusedPCRID: UInt16 = 0x1FFF
 
     var PCRPID: UInt16 = 0
     var programInfoLength: UInt16 = 0
@@ -183,21 +191,21 @@ final class TSProgramMap: TSProgram {
                 bytes.append(essd.data)
             }
             return ByteArray()
-                .writeUInt16(PCRPID | 0xe000)
-                .writeUInt16(programInfoLength | 0xf000)
+                .writeUInt16(PCRPID | 0xE000)
+                .writeUInt16(programInfoLength | 0xF000)
                 .writeBytes(bytes)
                 .data
         }
         set {
             let buffer = ByteArray(data: newValue)
             do {
-                PCRPID = try buffer.readUInt16() & 0x1fff
-                programInfoLength = try buffer.readUInt16() & 0x03ff
+                PCRPID = try buffer.readUInt16() & 0x1FFF
+                programInfoLength = try buffer.readUInt16() & 0x03FF
                 buffer.position += Int(programInfoLength)
                 var position = 0
-                while 0 < buffer.bytesAvailable {
+                while buffer.bytesAvailable > 0 {
                     position = buffer.position
-                    guard let data = ESSpecificData(try buffer.readBytes(buffer.bytesAvailable)) else {
+                    guard let data = try ESSpecificData(buffer.readBytes(buffer.bytesAvailable)) else {
                         break
                     }
                     buffer.position = position + ESSpecificData.fixedHeaderSize + Int(data.esInfoLength)

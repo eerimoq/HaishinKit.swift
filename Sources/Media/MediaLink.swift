@@ -1,7 +1,7 @@
 import AVFoundation
 
 #if canImport(SwiftPMSupport)
-import SwiftPMSupport
+    import SwiftPMSupport
 #endif
 
 protocol MediaLinkDelegate: AnyObject {
@@ -30,6 +30,7 @@ final class MediaLink {
             })
         }
     }
+
     var hasVideo = false
     var bufferTime = MediaLink.bufferTime
     weak var delegate: (any MediaLinkDelegate)?
@@ -44,12 +45,14 @@ final class MediaLink {
             delegate?.mediaLink(self, didBufferingChanged: isBuffering)
         }
     }
+
     private var bufferingTime = MediaLink.bufferingTime
     private lazy var choreographer: any Choreographer = {
         var choreographer = DisplayLinkChoreographer()
         choreographer.delegate = self
         return choreographer
     }()
+
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.DisplayLinkedQueue.lock")
     private var bufferQueue: CMBufferQueue?
     private var scheduledAudioBuffers: Atomic<Int> = .init(0)
@@ -82,7 +85,7 @@ final class MediaLink {
         nstry({
             self.scheduledAudioBuffers.mutate { $0 += 1 }
             self.playerNode.scheduleBuffer(buffer, completionHandler: self.didAVAudioNodeCompletion)
-            if !self.hasVideo && !self.playerNode.isPlaying && 10 <= self.scheduledAudioBuffers.value {
+            if !self.hasVideo, !self.playerNode.isPlaying, self.scheduledAudioBuffers.value >= 10 {
                 self.playerNode.play()
             }
         }, { exeption in
@@ -92,7 +95,9 @@ final class MediaLink {
 
     private func duration(_ duraiton: Double) -> Double {
         if playerNode.isPlaying {
-            guard let nodeTime = playerNode.lastRenderTime, let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
+            guard let nodeTime = playerNode.lastRenderTime,
+                  let playerTime = playerNode.playerTime(forNodeTime: nodeTime)
+            else {
                 return 0.0
             }
             return TimeInterval(playerTime.sampleTime) / playerTime.sampleRate
@@ -121,7 +126,8 @@ final class MediaLink {
 
 extension MediaLink: ChoreographerDelegate {
     // MARK: ChoreographerDelegate
-    func choreographer(_ choreographer: any Choreographer, didFrame duration: Double) {
+
+    func choreographer(_: any Choreographer, didFrame duration: Double) {
         guard let bufferQueue else {
             return
         }
@@ -137,7 +143,7 @@ extension MediaLink: ChoreographerDelegate {
                 frameCount += 1
                 CMBufferQueueDequeue(bufferQueue)
             } else {
-                if 2 < frameCount {
+                if frameCount > 2 {
                     logger.info("droppedFrame: \(frameCount)")
                 }
                 return
@@ -149,6 +155,7 @@ extension MediaLink: ChoreographerDelegate {
 
 extension MediaLink: Running {
     // MARK: Running
+
     func startRunning() {
         lockQueue.async {
             guard !self.isRunning.value else {

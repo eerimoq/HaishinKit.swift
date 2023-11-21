@@ -3,7 +3,7 @@ import CoreFoundation
 import VideoToolbox
 
 #if os(iOS)
-import UIKit
+    import UIKit
 #endif
 
 /**
@@ -21,6 +21,7 @@ public protocol VideoCodecDelegate: AnyObject {
 }
 
 // MARK: -
+
 /**
  * The VideoCodec class provides methods for encode or decode for video.
  */
@@ -44,7 +45,7 @@ public class VideoCodec {
     /// The videoCodec's attributes value.
     public static var defaultAttributes: [NSString: AnyObject]? = [
         kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
-        kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue
+        kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
     ]
 
     /// Specifies the settings for a VideoCodec.
@@ -72,6 +73,7 @@ public class VideoCodec {
             delegate?.videoCodec(self, didOutput: formatDescription)
         }
     }
+
     var needsSync: Atomic<Bool> = .init(true)
     var attributes: [NSString: AnyObject]? {
         guard VideoCodec.defaultAttributes != nil else {
@@ -85,6 +87,7 @@ public class VideoCodec {
         attributes[kCVPixelBufferHeightKey] = NSNumber(value: settings.videoSize.height)
         return attributes
     }
+
     weak var delegate: (any VideoCodecDelegate)?
     private(set) var session: (any VTSessionConvertible)? {
         didSet {
@@ -92,6 +95,7 @@ public class VideoCodec {
             invalidateSession = false
         }
     }
+
     private var invalidateSession = true
 
     func appendImageBuffer(_ imageBuffer: CVImageBuffer, presentationTimeStamp: CMTime, duration: CMTime) {
@@ -107,7 +111,10 @@ public class VideoCodec {
             duration: duration
         ) { [unowned self] status, _, sampleBuffer in
             guard let sampleBuffer, status == noErr else {
-                delegate?.videoCodec(self, errorOccurred: .failedToEncodeFrame(status: status, gotBuffer: sampleBuffer != nil))
+                delegate?.videoCodec(
+                    self,
+                    errorOccurred: .failedToEncodeFrame(status: status, gotBuffer: sampleBuffer != nil)
+                )
                 return
             }
             formatDescription = sampleBuffer.formatDescription
@@ -126,47 +133,56 @@ public class VideoCodec {
         if !sampleBuffer.isNotSync {
             needsSync.mutate { $0 = false }
         }
-        _ = session?.decodeFrame(sampleBuffer) { [unowned self] status, _, imageBuffer, presentationTimeStamp, duration in
-            guard let imageBuffer, status == noErr else {
-                self.delegate?.videoCodec(self, errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: imageBuffer != nil))
-                return
+        _ = session?
+            .decodeFrame(sampleBuffer) { [
+                unowned self
+            ] status, _, imageBuffer, presentationTimeStamp, duration in
+                guard let imageBuffer, status == noErr else {
+                    self.delegate?.videoCodec(
+                        self,
+                        errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: imageBuffer != nil)
+                    )
+                    return
+                }
+                var timingInfo = CMSampleTimingInfo(
+                    duration: duration,
+                    presentationTimeStamp: presentationTimeStamp,
+                    decodeTimeStamp: sampleBuffer.decodeTimeStamp
+                )
+                var videoFormatDescription: CMVideoFormatDescription?
+                var status = CMVideoFormatDescriptionCreateForImageBuffer(
+                    allocator: kCFAllocatorDefault,
+                    imageBuffer: imageBuffer,
+                    formatDescriptionOut: &videoFormatDescription
+                )
+                guard status == noErr else {
+                    delegate?.videoCodec(self, errorOccurred: .failedToDecodeFrame(status: status))
+                    return
+                }
+                var sampleBuffer: CMSampleBuffer?
+                status = CMSampleBufferCreateForImageBuffer(
+                    allocator: kCFAllocatorDefault,
+                    imageBuffer: imageBuffer,
+                    dataReady: true,
+                    makeDataReadyCallback: nil,
+                    refcon: nil,
+                    formatDescription: videoFormatDescription!,
+                    sampleTiming: &timingInfo,
+                    sampleBufferOut: &sampleBuffer
+                )
+                guard let buffer = sampleBuffer, status == noErr else {
+                    delegate?.videoCodec(
+                        self,
+                        errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: sampleBuffer != nil)
+                    )
+                    return
+                }
+                delegate?.videoCodec(self, didOutput: buffer)
             }
-            var timingInfo = CMSampleTimingInfo(
-                duration: duration,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: sampleBuffer.decodeTimeStamp
-            )
-            var videoFormatDescription: CMVideoFormatDescription?
-            var status = CMVideoFormatDescriptionCreateForImageBuffer(
-                allocator: kCFAllocatorDefault,
-                imageBuffer: imageBuffer,
-                formatDescriptionOut: &videoFormatDescription
-            )
-            guard status == noErr else {
-                delegate?.videoCodec(self, errorOccurred: .failedToDecodeFrame(status: status))
-                return
-            }
-            var sampleBuffer: CMSampleBuffer?
-            status = CMSampleBufferCreateForImageBuffer(
-                allocator: kCFAllocatorDefault,
-                imageBuffer: imageBuffer,
-                dataReady: true,
-                makeDataReadyCallback: nil,
-                refcon: nil,
-                formatDescription: videoFormatDescription!,
-                sampleTiming: &timingInfo,
-                sampleBufferOut: &sampleBuffer
-            )
-            guard let buffer = sampleBuffer, status == noErr else {
-                delegate?.videoCodec(self, errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: sampleBuffer != nil))
-                return
-            }
-            delegate?.videoCodec(self, didOutput: buffer)
-        }
     }
 
     @objc
-    private func applicationWillEnterForeground(_ notification: Notification) {
+    private func applicationWillEnterForeground(_: Notification) {
         invalidateSession = true
     }
 
@@ -175,7 +191,8 @@ public class VideoCodec {
         guard
             let userInfo: [AnyHashable: Any] = notification.userInfo,
             let value: NSNumber = userInfo[AVAudioSessionInterruptionTypeKey] as? NSNumber,
-            let type = AVAudioSession.InterruptionType(rawValue: value.uintValue) else {
+            let type = AVAudioSession.InterruptionType(rawValue: value.uintValue)
+        else {
             return
         }
         switch type {
@@ -212,8 +229,16 @@ extension VideoCodec: Running {
             self.invalidateSession = true
             self.needsSync.mutate { $0 = true }
             self.formatDescription = nil
-            NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
-            NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
+            NotificationCenter.default.removeObserver(
+                self,
+                name: AVAudioSession.interruptionNotification,
+                object: nil
+            )
+            NotificationCenter.default.removeObserver(
+                self,
+                name: UIApplication.willEnterForegroundNotification,
+                object: nil
+            )
             self.isRunning.mutate { $0 = false }
         }
     }

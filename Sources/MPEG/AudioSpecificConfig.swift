@@ -152,8 +152,9 @@ struct AudioSpecificConfig: Equatable {
     init?(bytes: [UInt8]) {
         guard
             let type = AudioObjectType(rawValue: bytes[0] >> 3),
-            let frequency = SamplingFrequency(rawValue: (bytes[0] & 0b00000111) << 1 | (bytes[1] >> 7)),
-            let channel = ChannelConfiguration(rawValue: (bytes[1] & 0b01111000) >> 3) else {
+            let frequency = SamplingFrequency(rawValue: (bytes[0] & 0b0000_0111) << 1 | (bytes[1] >> 7)),
+            let channel = ChannelConfiguration(rawValue: (bytes[1] & 0b0111_1000) >> 3)
+        else {
             return nil
         }
         self.type = type
@@ -168,7 +169,8 @@ struct AudioSpecificConfig: Equatable {
     }
 
     init(formatDescription: CMFormatDescription) {
-        let asbd: AudioStreamBasicDescription = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)!.pointee
+        let asbd: AudioStreamBasicDescription =
+            CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)!.pointee
         type = AudioObjectType(objectID: MPEG4ObjectID(rawValue: Int(asbd.mFormatFlags))!)
         frequency = SamplingFrequency(sampleRate: asbd.mSampleRate)
         channel = ChannelConfiguration(rawValue: UInt8(asbd.mChannelsPerFrame))!
@@ -183,7 +185,7 @@ struct AudioSpecificConfig: Equatable {
         adts[2] = (type.rawValue - 1) << 6 | (frequency.rawValue << 2) | (channel.rawValue >> 2)
         adts[3] = (channel.rawValue & 3) << 6 | UInt8(fullSize >> 11)
         adts[4] = UInt8((fullSize & 0x7FF) >> 3)
-        adts[5] = ((UInt8(fullSize & 7)) << 5) + 0x1F
+        adts[5] = (UInt8(fullSize & 7) << 5) + 0x1F
         adts[6] = 0xFC
         return adts
     }
@@ -205,6 +207,7 @@ struct AudioSpecificConfig: Equatable {
 
 extension AudioSpecificConfig: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }

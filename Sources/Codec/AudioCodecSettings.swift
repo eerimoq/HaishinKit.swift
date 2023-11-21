@@ -66,7 +66,7 @@ public struct AudioCodecSettings: Codable {
             case .aac:
                 return 0
             case .pcm:
-                return (bitsPerChannel / 8)
+                return bitsPerChannel / 8
             }
         }
 
@@ -75,14 +75,18 @@ public struct AudioCodecSettings: Codable {
             case .aac:
                 return 0
             case .pcm:
-                return (bitsPerChannel / 8)
+                return bitsPerChannel / 8
             }
         }
 
         func makeAudioBuffer(_ format: AVAudioFormat) -> AVAudioBuffer? {
             switch self {
             case .aac:
-                return AVAudioCompressedBuffer(format: format, packetCapacity: 1, maximumPacketSize: 1024 * Int(format.channelCount))
+                return AVAudioCompressedBuffer(
+                    format: format,
+                    packetCapacity: 1,
+                    maximumPacketSize: 1024 * Int(format.channelCount)
+                )
             case .pcm:
                 return AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)
             }
@@ -101,7 +105,10 @@ public struct AudioCodecSettings: Codable {
                     mBytesPerPacket: bytesPerPacket,
                     mFramesPerPacket: framesPerPacket,
                     mBytesPerFrame: bytesPerFrame,
-                    mChannelsPerFrame: min(inSourceFormat.mChannelsPerFrame, AudioCodecSettings.maximumNumberOfChannels),
+                    mChannelsPerFrame: min(
+                        inSourceFormat.mChannelsPerFrame,
+                        AudioCodecSettings.maximumNumberOfChannels
+                    ),
                     mBitsPerChannel: bitsPerChannel,
                     mReserved: 0
                 )
@@ -110,7 +117,10 @@ public struct AudioCodecSettings: Codable {
                 return AVAudioFormat(
                     commonFormat: .pcmFormatFloat32,
                     sampleRate: inSourceFormat.mSampleRate,
-                    channels: min(inSourceFormat.mChannelsPerFrame, AudioCodecSettings.maximumNumberOfChannels),
+                    channels: min(
+                        inSourceFormat.mChannelsPerFrame,
+                        AudioCodecSettings.maximumNumberOfChannels
+                    ),
                     interleaved: true
                 )
             }
@@ -141,10 +151,10 @@ public struct AudioCodecSettings: Codable {
         }
         if bitRate != oldValue?.bitRate {
             let minAvailableBitRate = converter.applicableEncodeBitRates?.min(by: { a, b in
-                return a.intValue < b.intValue
+                a.intValue < b.intValue
             })?.intValue ?? bitRate
             let maxAvailableBitRate = converter.applicableEncodeBitRates?.max(by: { a, b in
-                return a.intValue < b.intValue
+                a.intValue < b.intValue
             })?.intValue ?? bitRate
             converter.bitRate = min(maxAvailableBitRate, max(minAvailableBitRate, bitRate))
         }

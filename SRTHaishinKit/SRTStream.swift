@@ -7,12 +7,12 @@ import libsrt
 public class SRTStream: NetStream {
     private enum ReadyState: UInt8 {
         case initialized = 0
-        case open        = 1
-        case play        = 2
-        case playing     = 3
-        case publish     = 4
-        case publishing  = 5
-        case closed      = 6
+        case open = 1
+        case play = 2
+        case playing = 3
+        case publish = 4
+        case publishing = 5
+        case closed = 6
     }
 
     private var name: String?
@@ -113,7 +113,11 @@ public class SRTStream: NetStream {
         writer.expectedMedias.remove(type)
     }
 
-    override public func attachCamera(_ camera: AVCaptureDevice?, onError: ((Error) -> Void)? = nil, onSuccess: (() -> Void)? = nil) {
+    override public func attachCamera(
+        _ camera: AVCaptureDevice?,
+        onError: ((Error) -> Void)? = nil,
+        onSuccess: (() -> Void)? = nil
+    ) {
         if camera == nil {
             writer.expectedMedias.remove(.video)
         } else {
@@ -122,13 +126,21 @@ public class SRTStream: NetStream {
         super.attachCamera(camera, onError: onError, onSuccess: onSuccess)
     }
 
-    override public func attachAudio(_ audio: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = true, onError: ((Error) -> Void)? = nil) {
+    override public func attachAudio(
+        _ audio: AVCaptureDevice?,
+        automaticallyConfiguresApplicationAudioSession: Bool = true,
+        onError: ((Error) -> Void)? = nil
+    ) {
         if audio == nil {
             writer.expectedMedias.remove(.audio)
         } else {
             writer.expectedMedias.insert(.audio)
         }
-        super.attachAudio(audio, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession, onError: onError)
+        super.attachAudio(
+            audio,
+            automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession,
+            onError: onError
+        )
     }
 
     /// Sends streaming audio, video and data message from client.
@@ -187,7 +199,7 @@ public class SRTStream: NetStream {
 }
 
 extension SRTStream: TSWriterDelegate {
-    public func writer(_ writer: TSWriter, doOutput data: Data) {
+    public func writer(_: TSWriter, doOutput data: Data) {
         guard readyState == .publishing else {
             logger.info("not publishing")
             return
@@ -197,7 +209,7 @@ extension SRTStream: TSWriterDelegate {
 }
 
 extension SRTStream: TSReaderDelegate {
-    public func reader(_ reader: TSReader, id: UInt16, didRead formatDescription: CMFormatDescription) {
+    public func reader(_: TSReader, id _: UInt16, didRead formatDescription: CMFormatDescription) {
         guard readyState == .playing else {
             return
         }
@@ -209,7 +221,7 @@ extension SRTStream: TSReaderDelegate {
         }
     }
 
-    public func reader(_ reader: TSReader, id: UInt16, didRead sampleBuffer: CMSampleBuffer) {
+    public func reader(_: TSReader, id _: UInt16, didRead sampleBuffer: CMSampleBuffer) {
         guard readyState == .playing else {
             return
         }

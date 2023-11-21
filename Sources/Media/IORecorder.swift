@@ -1,6 +1,6 @@
 import AVFoundation
 #if canImport(SwiftPMSupport)
-import SwiftPMSupport
+    import SwiftPMSupport
 #endif
 
 /// The interface an IORecorder uses to inform its delegate.
@@ -12,6 +12,7 @@ public protocol IORecorderDelegate: AnyObject {
 }
 
 // MARK: -
+
 /// The IORecorder class represents video and audio recorder.
 public class IORecorder {
     /// The IORecorder error domain codes.
@@ -31,13 +32,13 @@ public class IORecorder {
         .audio: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 0,
-            AVNumberOfChannelsKey: 0
+            AVNumberOfChannelsKey: 0,
         ],
         .video: [
             AVVideoCodecKey: AVVideoCodecType.h264,
             AVVideoHeightKey: 0,
-            AVVideoWidthKey: 0
-        ]
+            AVVideoWidthKey: 0,
+        ],
     ]
 
     /// Specifies the delegate.
@@ -54,6 +55,7 @@ public class IORecorder {
         }
         return outputSettings.count == writer.inputs.count
     }
+
     private var writer: AVAssetWriter?
     private var writerInputs: [AVMediaType: AVAssetWriterInput] = [:]
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
@@ -62,13 +64,15 @@ public class IORecorder {
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
 
     #if os(iOS)
-    private lazy var moviesDirectory: URL = {
-        URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0])
-    }()
+        private lazy var moviesDirectory: URL = {
+            URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask,
+                                                                     true)[0])
+        }()
     #else
-    private lazy var moviesDirectory: URL = {
-        URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.moviesDirectory, .userDomainMask, true)[0])
-    }()
+        private lazy var moviesDirectory: URL = {
+            URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.moviesDirectory, .userDomainMask,
+                                                                     true)[0])
+        }()
     #endif
 
     /// Append a sample buffer for recording.
@@ -76,12 +80,14 @@ public class IORecorder {
         guard isRunning.value else {
             return
         }
-        let mediaType: AVMediaType = (sampleBuffer.formatDescription?._mediaType == kCMMediaType_Video) ? .video : .audio
+        let mediaType: AVMediaType = (sampleBuffer.formatDescription?._mediaType == kCMMediaType_Video) ?
+            .video : .audio
         lockQueue.async {
             guard
                 let writer = self.writer,
                 let input = self.makeWriterInput(mediaType, sourceFormatHint: sampleBuffer.formatDescription),
-                self.isReadyForStartWriting else {
+                self.isReadyForStartWriting
+            else {
                 return
             }
 
@@ -127,7 +133,9 @@ public class IORecorder {
                 let writer = self.writer,
                 let input = self.makeWriterInput(.video, sourceFormatHint: nil),
                 let adaptor = self.makePixelBufferAdaptor(input),
-                self.isReadyForStartWriting && self.videoPresentationTime.seconds < withPresentationTime.seconds else {
+                self.isReadyForStartWriting,
+                self.videoPresentationTime.seconds < withPresentationTime.seconds
+            else {
                 return
             }
 
@@ -169,7 +177,9 @@ public class IORecorder {
         dispatchGroup.wait()
     }
 
-    private func makeWriterInput(_ mediaType: AVMediaType, sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
+    private func makeWriterInput(_ mediaType: AVMediaType,
+                                 sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput?
+    {
         guard writerInputs[mediaType] == nil else {
             return writerInputs[mediaType]
         }
@@ -180,7 +190,8 @@ public class IORecorder {
             case .audio:
                 guard
                     let format = sourceFormatHint,
-                    let inSourceFormat = format.streamBasicDescription?.pointee else {
+                    let inSourceFormat = format.streamBasicDescription?.pointee
+                else {
                     break
                 }
                 for (key, value) in defaultOutputSettings {
@@ -188,7 +199,8 @@ public class IORecorder {
                     case AVSampleRateKey:
                         outputSettings[key] = AnyUtil.isZero(value) ? inSourceFormat.mSampleRate : value
                     case AVNumberOfChannelsKey:
-                        outputSettings[key] = AnyUtil.isZero(value) ? Int(inSourceFormat.mChannelsPerFrame) : value
+                        outputSettings[key] = AnyUtil
+                            .isZero(value) ? Int(inSourceFormat.mChannelsPerFrame) : value
                     default:
                         outputSettings[key] = value
                     }
@@ -210,7 +222,11 @@ public class IORecorder {
         }
         var input: AVAssetWriterInput?
         nstry {
-            input = AVAssetWriterInput(mediaType: mediaType, outputSettings: outputSettings, sourceFormatHint: sourceFormatHint)
+            input = AVAssetWriterInput(
+                mediaType: mediaType,
+                outputSettings: outputSettings,
+                sourceFormatHint: sourceFormatHint
+            )
             input?.expectsMediaDataInRealTime = true
             self.writerInputs[mediaType] = input
             if let input {
@@ -222,14 +238,19 @@ public class IORecorder {
         return input
     }
 
-    private func makePixelBufferAdaptor(_ writerInput: AVAssetWriterInput?) -> AVAssetWriterInputPixelBufferAdaptor? {
+    private func makePixelBufferAdaptor(_ writerInput: AVAssetWriterInput?)
+        -> AVAssetWriterInputPixelBufferAdaptor?
+    {
         guard pixelBufferAdaptor == nil else {
             return pixelBufferAdaptor
         }
         guard let writerInput = writerInput else {
             return nil
         }
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: writerInput, sourcePixelBufferAttributes: [:])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: writerInput,
+            sourcePixelBufferAttributes: [:]
+        )
         pixelBufferAdaptor = adaptor
         return adaptor
     }
@@ -237,6 +258,7 @@ public class IORecorder {
 
 extension IORecorder: Running {
     // MARK: Running
+
     public func startRunning() {
         lockQueue.async {
             guard !self.isRunning.value else {
@@ -245,7 +267,8 @@ extension IORecorder: Running {
             do {
                 self.videoPresentationTime = .zero
                 self.audioPresentationTime = .zero
-                let url = self.moviesDirectory.appendingPathComponent((UUID().uuidString)).appendingPathExtension("mp4")
+                let url = self.moviesDirectory.appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension("mp4")
                 self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
                 self.isRunning.mutate { $0 = true }
             } catch {

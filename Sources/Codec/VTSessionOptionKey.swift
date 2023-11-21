@@ -2,48 +2,73 @@ import Foundation
 import VideoToolbox
 
 public struct VTSessionOptionKey {
-    static public let depth = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_Depth)
-    static public let profileLevel = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ProfileLevel)
-    static public let H264EntropyMode = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_H264EntropyMode)
-    static public let numberOfPendingFrames = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_NumberOfPendingFrames)
-    static public let pixelBufferPoolIsShared = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelBufferPoolIsShared)
-    static public let videoEncoderPixelBufferAttributes = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_VideoEncoderPixelBufferAttributes)
-    static public let aspectRatio16x9 = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AspectRatio16x9)
-    static public let cleanAperture = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_CleanAperture)
-    static public let fieldCount = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_FieldCount)
-    static public let fieldDetail = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_FieldDetail)
-    static public let pixelAspectRatio = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelAspectRatio)
-    static public let progressiveScan = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ProgressiveScan)
-    static public let colorPrimaries = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ColorPrimaries)
-    static public let transferFunction = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_TransferFunction)
-    static public let YCbCrMatrix = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_YCbCrMatrix)
-    static public let ICCProfile = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ICCProfile)
-    static public let expectedDuration = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ExpectedDuration)
-    static public let expectedFrameRate = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ExpectedFrameRate)
-    static public let sourceFrameCount = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_SourceFrameCount)
-    static public let allowFrameReordering = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AllowFrameReordering)
-    static public let allowTemporalCompression = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AllowTemporalCompression)
-    static public let maxKeyFrameInterval = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameInterval)
-    static public let maxKeyFrameIntervalDuration = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration)
+    public static let depth = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_Depth)
+    public static let profileLevel = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ProfileLevel)
+    public static let H264EntropyMode =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_H264EntropyMode)
+    public static let numberOfPendingFrames =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_NumberOfPendingFrames)
+    public static let pixelBufferPoolIsShared =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelBufferPoolIsShared)
+    public static let videoEncoderPixelBufferAttributes =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_VideoEncoderPixelBufferAttributes)
+    public static let aspectRatio16x9 =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AspectRatio16x9)
+    public static let cleanAperture = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_CleanAperture)
+    public static let fieldCount = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_FieldCount)
+    public static let fieldDetail = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_FieldDetail)
+    public static let pixelAspectRatio =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelAspectRatio)
+    public static let progressiveScan =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ProgressiveScan)
+    public static let colorPrimaries = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ColorPrimaries)
+    public static let transferFunction =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_TransferFunction)
+    public static let YCbCrMatrix = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_YCbCrMatrix)
+    public static let ICCProfile = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ICCProfile)
+    public static let expectedDuration =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ExpectedDuration)
+    public static let expectedFrameRate =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ExpectedFrameRate)
+    public static let sourceFrameCount =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_SourceFrameCount)
+    public static let allowFrameReordering =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AllowFrameReordering)
+    public static let allowTemporalCompression =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AllowTemporalCompression)
+    public static let maxKeyFrameInterval =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameInterval)
+    public static let maxKeyFrameIntervalDuration =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration)
     #if os(macOS)
-    static public let usingHardwareAcceleratedVideoEncoder = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder)
-    static public let requireHardwareAcceleratedVideoEncoder = VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder)
-    static public let enableHardwareAcceleratedVideoEncoder = VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder)
+        public static let usingHardwareAcceleratedVideoEncoder =
+            VTSessionOptionKey(CFString: kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder)
+        public static let requireHardwareAcceleratedVideoEncoder =
+            VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder)
+        public static let enableHardwareAcceleratedVideoEncoder =
+            VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder)
     #endif
-    static public let multiPassStorage = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MultiPassStorage)
-    static public let forceKeyFrame = VTSessionOptionKey(CFString: kVTEncodeFrameOptionKey_ForceKeyFrame)
-    static public let pixelTransferProperties = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelTransferProperties)
-    static public let averageBitRate = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AverageBitRate)
-    static public let dataRateLimits = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_DataRateLimits)
-    static public let moreFramesAfterEnd = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MoreFramesAfterEnd)
-    static public let moreFramesBeforeStart = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MoreFramesBeforeStart)
-    static public let quality = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_Quality)
-    static public let realTime = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_RealTime)
-    static public let maxH264SliceBytes = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxH264SliceBytes)
-    static public let maxFrameDelayCount = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxFrameDelayCount)
-    static public let encoderID = VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_EncoderID)
+    public static let multiPassStorage =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MultiPassStorage)
+    public static let forceKeyFrame = VTSessionOptionKey(CFString: kVTEncodeFrameOptionKey_ForceKeyFrame)
+    public static let pixelTransferProperties =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_PixelTransferProperties)
+    public static let averageBitRate = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_AverageBitRate)
+    public static let dataRateLimits = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_DataRateLimits)
+    public static let moreFramesAfterEnd =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MoreFramesAfterEnd)
+    public static let moreFramesBeforeStart =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MoreFramesBeforeStart)
+    public static let quality = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_Quality)
+    public static let realTime = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_RealTime)
+    public static let maxH264SliceBytes =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxH264SliceBytes)
+    public static let maxFrameDelayCount =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxFrameDelayCount)
+    public static let encoderID = VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_EncoderID)
     @available(iOS 16.0, tvOS 16.0, macOS 13.0, *)
-    static public let constantBitRate = VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ConstantBitRate)
+    public static let constantBitRate =
+        VTSessionOptionKey(CFString: kVTCompressionPropertyKey_ConstantBitRate)
 
     let CFString: CFString
 }

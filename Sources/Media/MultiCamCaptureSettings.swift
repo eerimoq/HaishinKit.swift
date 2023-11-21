@@ -6,7 +6,8 @@ import Foundation
 public struct MultiCamCaptureSettings: Codable {
     /// The type of image display mode.
     public enum Mode: String, Codable {
-        /// The picture in picture mode means video stream playing within an inset window, freeing the rest of the screen for other tasks.
+        /// The picture in picture mode means video stream playing within an inset window, freeing the rest of
+        /// the screen for other tasks.
         case pip
         /// The split view means video stream playing within two individual windows.
         case splitView

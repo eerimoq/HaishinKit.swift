@@ -6,7 +6,7 @@ open class HLSService: HTTPService {
 
     /// Add a http stream.
     open func addHTTPStream(_ stream: HTTPStream) {
-        for i in 0..<streams.count where stream.name == streams[i].name {
+        for i in 0 ..< streams.count where stream.name == streams[i].name {
             return
         }
         streams.append(stream)
@@ -14,7 +14,7 @@ open class HLSService: HTTPService {
 
     /// Remove a http stream.
     open func removeHTTPStream(_ stream: HTTPStream) {
-        for i in 0..<streams.count where stream.name == streams[i].name {
+        for i in 0 ..< streams.count where stream.name == streams[i].name {
             streams.remove(at: i)
             return
         }
@@ -28,7 +28,7 @@ open class HLSService: HTTPService {
             "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Expose-Headers": "*",
-            "Connection": "close"
+            "Connection": "close",
         ]
 
         defer {
@@ -51,8 +51,10 @@ open class HLSService: HTTPService {
                 response.headerFields["Content-Type"] = mime.rawValue
                 switch mime {
                 case .videoMP2T:
-                    if let info: [FileAttributeKey: Any] = try? FileManager.default.attributesOfItem(atPath: resource),
-                       let length: Any = info[FileAttributeKey.size] {
+                    if let info: [FileAttributeKey: Any] = try? FileManager.default
+                        .attributesOfItem(atPath: resource),
+                        let length: Any = info[FileAttributeKey.size]
+                    {
                         response.headerFields["Content-Length"] = String(describing: length)
                     }
                     client.doOutput(data: response.data)
@@ -76,12 +78,12 @@ open class HLSService: HTTPService {
                 fileHandle.closeFile()
             }
             let endOfFile = Int(fileHandle.seekToEndOfFile())
-            for i in 0..<Int(endOfFile / length) {
+            for i in 0 ..< Int(endOfFile / length) {
                 fileHandle.seek(toFileOffset: UInt64(i * length))
                 client.doOutput(data: fileHandle.readData(ofLength: length))
             }
             let remain: Int = endOfFile % length
-            if 0 < remain {
+            if remain > 0 {
                 client.doOutput(data: fileHandle.readData(ofLength: remain))
             }
         } catch {

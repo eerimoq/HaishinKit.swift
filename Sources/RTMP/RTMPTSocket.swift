@@ -77,13 +77,19 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         config.httpShouldUsePipelining = true
         config.httpAdditionalHeaders = [
             "Content-Type": RTMPTSocket.contentType,
-            "User-Agent": "Shockwave Flash"
+            "User-Agent": "Shockwave Flash",
         ]
         let scheme: String = securityLevel == .none ? "http" : "https"
         session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
         baseURL = URL(string: "\(scheme)://\(withName):\(port)")!
         doRequest("/fcs/ident2", Data([0x00]), didIdent2)
-        timer = Timer(timeInterval: 0.1, target: self, selector: #selector(on(timer:)), userInfo: nil, repeats: true)
+        timer = Timer(
+            timeInterval: 0.1,
+            target: self,
+            selector: #selector(on(timer:)),
+            userInfo: nil,
+            repeats: true
+        )
     }
 
     @discardableResult
@@ -123,14 +129,18 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         lastResponse = Date()
 
         if logger.isEnabledFor(level: .trace) {
-            logger.trace("\(String(describing: data)): \(String(describing: response)): \(String(describing: error))")
+            logger
+                .trace(
+                    "\(String(describing: data)): \(String(describing: response)): \(String(describing: error))"
+                )
         }
 
         if let error: Error = error {
             logger.error("\(error)")
 
-            if let lastRequestPathComponent: String = self.lastRequestPathComponent,
-               let lastRequestData: Data = self.lastRequestData, !isRetryingRequest {
+            if let lastRequestPathComponent: String = lastRequestPathComponent,
+               let lastRequestData: Data = lastRequestData, !isRetryingRequest
+            {
                 if logger.isEnabledFor(level: .trace) {
                     logger.trace("Will retry request for path=\(lastRequestPathComponent)")
                 }
@@ -157,7 +167,8 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         guard
             let response: HTTPURLResponse = response as? HTTPURLResponse,
             let contentType: String = response.allHeaderFields["Content-Type"] as? String,
-            let data: Data = data, contentType == RTMPTSocket.contentType else {
+            let data: Data = data, contentType == RTMPTSocket.contentType
+        else {
             return
         }
 
@@ -172,7 +183,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
                 break
             }
             c2packet = handshake.c2packet(inputBuffer)
-            inputBuffer.removeSubrange(0...RTMPHandshake.sigSize)
+            inputBuffer.removeSubrange(0 ... RTMPHandshake.sigSize)
             readyState = .ackSent
             fallthrough
         case .ackSent:
@@ -251,7 +262,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     }
 
     @objc
-    private func on(timer: Timer) {
+    private func on(timer _: Timer) {
         guard (Double(delay) / 10) < abs(lastResponse.timeIntervalSinceNow), !isRequesting else {
             return
         }
@@ -268,7 +279,11 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         return data.count
     }
 
-    private func doRequest(_ pathComponent: String, _ data: Data, _ completionHandler: @escaping ((Data?, URLResponse?, Error?) -> Void)) {
+    private func doRequest(
+        _ pathComponent: String,
+        _ data: Data,
+        _ completionHandler: @escaping ((Data?, URLResponse?, Error?) -> Void)
+    ) {
         isRequesting = true
         lastRequestPathComponent = pathComponent
         lastRequestData = data
@@ -276,14 +291,21 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         request.httpMethod = "POST"
         session.uploadTask(with: request, from: data, completionHandler: completionHandler).resume()
         if logger.isEnabledFor(level: .trace) {
-            logger.trace("\(String(describing: self.request))")
+            logger.trace("\(String(describing: request))")
         }
     }
 }
 
 // MARK: -
+
 extension RTMPTSocket: URLSessionTaskDelegate {
-    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+    func urlSession(
+        _: URLSession,
+        task _: URLSessionTask,
+        didSendBodyData bytesSent: Int64,
+        totalBytesSent _: Int64,
+        totalBytesExpectedToSend _: Int64
+    ) {
         totalBytesOut.mutate { $0 += bytesSent }
     }
 }

@@ -26,7 +26,7 @@ open class VideoEffect: NSObject {
     public var ciContext: CIContext?
 
     /// Executes to apply a video effect.
-    open func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
+    open func execute(_ image: CIImage, info _: CMSampleBuffer?) -> CIImage {
         image
     }
 }

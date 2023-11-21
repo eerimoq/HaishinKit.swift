@@ -3,7 +3,7 @@ import CoreMedia
 import Foundation
 
 #if canImport(SwiftPMSupport)
-import SwiftPMSupport
+    import SwiftPMSupport
 #endif
 
 public var payloadSize: Int = 1316
@@ -16,7 +16,7 @@ public protocol TSWriterDelegate: AnyObject {
 
 public extension TSWriterDelegate {
     // default implementation noop
-    func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime) {
+    func writer(_: TSWriter, didRotateFileHandle _: CMTime) {
         // noop
     }
 }
@@ -45,7 +45,10 @@ public class TSWriter: Running {
     var PCRPID: UInt16 = TSWriter.defaultVideoPID
     var rotatedTimestamp = CMTime.zero
     var segmentDuration: Double = TSWriter.defaultSegmentDuration
-    private let outputLock: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.TSWriter", qos: .userInitiated)
+    private let outputLock: DispatchQueue = .init(
+        label: "com.haishinkit.HaishinKit.TSWriter",
+        qos: .userInitiated
+    )
 
     private var videoData: [Data?] = [nil, nil]
     private var videoDataOffset: Int = 0
@@ -55,23 +58,26 @@ public class TSWriter: Running {
         PAT.programs = [1: TSWriter.defaultPMTPID]
         return PAT
     }()
+
     private(set) var PMT: TSProgramMap = .init()
     private var audioConfig: AudioSpecificConfig? {
         didSet {
             writeProgramIfNeeded()
         }
     }
+
     private var videoConfig: DecoderConfigurationRecord? {
         didSet {
             writeProgramIfNeeded()
         }
     }
+
     private var videoTimestamp: CMTime = .invalid
     private var audioTimestamp: CMTime = .invalid
     private var PCRTimestamp = CMTime.zero
     private var canWriteFor: Bool {
         return (expectedMedias.contains(.audio) == (audioConfig != nil))
-          && (expectedMedias.contains(.video) == (videoConfig != nil))
+            && (expectedMedias.contains(.video) == (videoConfig != nil))
     }
 
     public init(segmentDuration: Double = TSWriter.defaultSegmentDuration) {
@@ -112,15 +118,17 @@ public class TSWriter: Running {
                                    timestamp: CMTime,
                                    config: Any?,
                                    decodeTimeStamp: CMTime,
-                                   randomAccessIndicator: Bool) -> Data? {
+                                   randomAccessIndicator: Bool) -> Data?
+    {
         guard var PES = PacketizedElementaryStream.create(
-                bytes,
-                count: count,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: decodeTimeStamp,
-                timestamp: timestamp,
-                config: config,
-                randomAccessIndicator: randomAccessIndicator) else {
+            bytes,
+            count: count,
+            presentationTimeStamp: presentationTimeStamp,
+            decodeTimeStamp: decodeTimeStamp,
+            timestamp: timestamp,
+            config: config,
+            randomAccessIndicator: randomAccessIndicator
+        ) else {
             logger.info("craete PES")
             return nil
         }
@@ -138,10 +146,10 @@ public class TSWriter: Running {
             switch PID {
             case TSWriter.defaultAudioPID:
                 packet.continuityCounter = audioContinuityCounter
-                audioContinuityCounter = (audioContinuityCounter + 1) & 0x0f
+                audioContinuityCounter = (audioContinuityCounter + 1) & 0x0F
             case TSWriter.defaultVideoPID:
                 packet.continuityCounter = videoContinuityCounter
-                videoContinuityCounter = (videoContinuityCounter + 1) & 0x0f
+                videoContinuityCounter = (videoContinuityCounter + 1) & 0x0F
             default:
                 break
             }
@@ -173,7 +181,7 @@ public class TSWriter: Running {
 
     private func writeBytes(_ data: Data) {
         for packet in data.chunks(payloadSize) {
-            self.writePacket(packet)
+            writePacket(packet)
         }
     }
 
@@ -203,7 +211,7 @@ public class TSWriter: Running {
                     if videoSize > 0 {
                         let endOffset = min(videoDataOffset + videoSize, videoData.count)
                         if videoDataOffset != endOffset {
-                            packet = videoData[videoDataOffset..<endOffset] + packet
+                            packet = videoData[videoDataOffset ..< endOffset] + packet
                             videoDataOffset = endOffset
                         }
                     }
@@ -243,8 +251,12 @@ public class TSWriter: Running {
     private func split(_ PID: UInt16, PES: PacketizedElementaryStream, timestamp: CMTime) -> [TSPacket] {
         var PCR: UInt64?
         let duration: Double = timestamp.seconds - PCRTimestamp.seconds
-        if PCRPID == PID && 0.02 <= duration {
-            PCR = UInt64((timestamp.seconds - (PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp).seconds) * TSTimestamp.resolution)
+        if PCRPID == PID && duration >= 0.02 {
+            PCR =
+                UInt64((timestamp
+                        .seconds - (PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp)
+                        .seconds) *
+                    TSTimestamp.resolution)
             PCRTimestamp = timestamp
         }
         var packets: [TSPacket] = []
@@ -257,11 +269,12 @@ public class TSWriter: Running {
 
 extension TSWriter: AudioCodecDelegate {
     // MARK: AudioCodecDelegate
-    public func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error) {
+
+    public func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
         logger.error("Audio error \(error)")
     }
 
-    public func audioCodec(_ codec: AudioCodec, didOutput outputFormat: AVAudioFormat) {
+    public func audioCodec(_: AudioCodec, didOutput outputFormat: AVAudioFormat) {
         logger.info("Audio setup \(outputFormat) (forcing AAC)")
         var data = ESSpecificData()
         data.streamType = .adtsAac
@@ -271,7 +284,11 @@ extension TSWriter: AudioCodecDelegate {
         audioConfig = AudioSpecificConfig(formatDescription: outputFormat.formatDescription)
     }
 
-    public func audioCodec(_ codec: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
+    public func audioCodec(
+        _ codec: AudioCodec,
+        didOutput audioBuffer: AVAudioBuffer,
+        presentationTimeStamp: CMTime
+    ) {
         guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
             logger.info("Audio output no buffer")
             return
@@ -296,8 +313,8 @@ extension TSWriter: AudioCodecDelegate {
             config: audioConfig,
             decodeTimeStamp: .invalid,
             randomAccessIndicator: true
-           ) {
-            self.writeAudio(data: bytes)
+        ) {
+            writeAudio(data: bytes)
         }
         codec.releaseOutputBuffer(audioBuffer)
     }
@@ -305,7 +322,8 @@ extension TSWriter: AudioCodecDelegate {
 
 extension TSWriter: VideoCodecDelegate {
     // MARK: VideoCodecDelegate
-    public func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
+
+    public func videoCodec(_: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
         guard let formatDescription else {
             return
         }
@@ -323,13 +341,19 @@ extension TSWriter: VideoCodecDelegate {
         }
     }
 
-    public func videoCodec(_ codec: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
+    public func videoCodec(_: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
         guard let dataBuffer = sampleBuffer.dataBuffer else {
             return
         }
         var length = 0
         var buffer: UnsafeMutablePointer<Int8>?
-        guard CMBlockBufferGetDataPointer(dataBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &buffer) == noErr else {
+        guard CMBlockBufferGetDataPointer(
+            dataBuffer,
+            atOffset: 0,
+            lengthAtOffsetOut: nil,
+            totalLengthOut: &length,
+            dataPointerOut: &buffer
+        ) == noErr else {
             return
         }
         guard let buffer else {
@@ -355,16 +379,16 @@ extension TSWriter: VideoCodecDelegate {
             config: videoConfig,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             randomAccessIndicator: !sampleBuffer.isNotSync
-           ) {
-            self.writeVideo(data: bytes)
+        ) {
+            writeVideo(data: bytes)
         }
     }
 
-    public func videoCodec(_ codec: VideoCodec, errorOccurred error: VideoCodec.Error) {
+    public func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
         logger.error("Video error \(error)")
     }
 
-    public func videoCodecWillDropFame(_ codec: VideoCodec) -> Bool {
+    public func videoCodecWillDropFame(_: VideoCodec) -> Bool {
         return false
     }
 }
@@ -392,7 +416,7 @@ class TSFileWriter: TSWriter {
         }
         let startIndex = max(0, files.count - TSFileWriter.defaultSegmentCount)
         m3u8.mediaSequence = sequence - TSFileWriter.defaultSegmentMaxCount
-        m3u8.mediaList = Array(files[startIndex..<files.count])
+        m3u8.mediaList = Array(files[startIndex ..< files.count])
         for mediaItem in m3u8.mediaList where mediaItem.duration > m3u8.targetDuration {
             m3u8.targetDuration = mediaItem.duration + 1
         }
@@ -407,15 +431,20 @@ class TSFileWriter: TSWriter {
         let fileManager = FileManager.default
 
         #if os(OSX)
-        let bundleIdentifier: String? = Bundle.main.bundleIdentifier
-        let temp: String = bundleIdentifier == nil ? NSTemporaryDirectory() : NSTemporaryDirectory() + bundleIdentifier! + "/"
+            let bundleIdentifier: String? = Bundle.main.bundleIdentifier
+            let temp: String = bundleIdentifier == nil ? NSTemporaryDirectory() : NSTemporaryDirectory() +
+                bundleIdentifier! + "/"
         #else
-        let temp: String = NSTemporaryDirectory()
+            let temp: String = NSTemporaryDirectory()
         #endif
 
         if !fileManager.fileExists(atPath: temp) {
             do {
-                try fileManager.createDirectory(atPath: temp, withIntermediateDirectories: false, attributes: nil)
+                try fileManager.createDirectory(
+                    atPath: temp,
+                    withIntermediateDirectories: false,
+                    attributes: nil
+                )
             } catch {
                 logger.warn(error)
             }

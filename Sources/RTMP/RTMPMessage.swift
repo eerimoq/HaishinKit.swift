@@ -64,18 +64,19 @@ class RTMPMessage {
         self.type = type
     }
 
-    func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
-    }
+    func execute(_: RTMPConnection, type _: RTMPChunkType) {}
 }
 
 extension RTMPMessage: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
 
 // MARK: -
+
 /**
  5.4.1. Set Chunk Size (1)
  */
@@ -108,12 +109,13 @@ final class RTMPSetChunkSizeMessage: RTMPMessage {
         self.size = size
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         connection.socket.chunkSizeC = Int(size)
     }
 }
 
 // MARK: -
+
 /**
  5.4.2. Abort Message (2)
  */
@@ -143,6 +145,7 @@ final class RTMPAbortMessge: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  5.4.3. Acknowledgement (3)
  */
@@ -177,6 +180,7 @@ final class RTMPAcknowledgementMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  5.4.4. Window Acknowledgement Size (5)
  */
@@ -209,13 +213,14 @@ final class RTMPWindowAcknowledgementSizeMessage: RTMPMessage {
         }
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         connection.windowSizeC = Int64(size)
         connection.windowSizeS = Int64(size)
     }
 }
 
 // MARK: -
+
 /**
  5.4.5. Set Peer Bandwidth (6)
  */
@@ -249,18 +254,19 @@ final class RTMPSetPeerBandwidthMessage: RTMPMessage {
             if super.payload == newValue {
                 return
             }
-            size = UInt32(data: newValue[0..<4]).bigEndian
+            size = UInt32(data: newValue[0 ..< 4]).bigEndian
             limit = Limit(rawValue: newValue[4]) ?? .unknown
             super.payload = newValue
         }
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         connection.bandWidth = size
     }
 }
 
 // MARK: -
+
 /**
  7.1.1. Command Message (20, 17)
  */
@@ -302,11 +308,11 @@ final class RTMPCommandMessage: RTMPMessage {
                     transactionId = try serializer.deserialize()
                     commandObject = try serializer.deserialize()
                     arguments.removeAll()
-                    if 0 < serializer.bytesAvailable {
-                        arguments.append(try serializer.deserialize())
+                    if serializer.bytesAvailable > 0 {
+                        try arguments.append(serializer.deserialize())
                     }
                 } catch {
-                    logger.error("\(self.serializer)")
+                    logger.error("\(serializer)")
                 }
                 serializer.clear()
             }
@@ -321,7 +327,14 @@ final class RTMPCommandMessage: RTMPMessage {
         super.init(type: objectEncoding.commandType)
     }
 
-    init(streamId: UInt32, transactionId: Int, objectEncoding: RTMPObjectEncoding, commandName: String, commandObject: ASObject?, arguments: [Any?]) {
+    init(
+        streamId: UInt32,
+        transactionId: Int,
+        objectEncoding: RTMPObjectEncoding,
+        commandName: String,
+        commandObject: ASObject?,
+        arguments: [Any?]
+    ) {
         self.transactionId = transactionId
         self.objectEncoding = objectEncoding
         self.commandName = commandName
@@ -331,7 +344,7 @@ final class RTMPCommandMessage: RTMPMessage {
         self.streamId = streamId
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         guard let responder = connection.operations.removeValue(forKey: transactionId) else {
             switch commandName {
             case "close":
@@ -354,6 +367,7 @@ final class RTMPCommandMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  7.1.2. Data Message (18, 15)
  */
@@ -395,11 +409,11 @@ final class RTMPDataMessage: RTMPMessage {
                 }
                 do {
                     handlerName = try serializer.deserialize()
-                    while 0 < serializer.bytesAvailable {
-                        arguments.append(try serializer.deserialize())
+                    while serializer.bytesAvailable > 0 {
+                        try arguments.append(serializer.deserialize())
                     }
                 } catch {
-                    logger.error("\(self.serializer)")
+                    logger.error("\(serializer)")
                 }
                 serializer.clear()
             }
@@ -413,7 +427,13 @@ final class RTMPDataMessage: RTMPMessage {
         super.init(type: objectEncoding.dataType)
     }
 
-    init(streamId: UInt32, objectEncoding: RTMPObjectEncoding, timestamp: UInt32, handlerName: String, arguments: [Any?] = []) {
+    init(
+        streamId: UInt32,
+        objectEncoding: RTMPObjectEncoding,
+        timestamp: UInt32,
+        handlerName: String,
+        arguments: [Any?] = []
+    ) {
         self.objectEncoding = objectEncoding
         self.handlerName = handlerName
         self.arguments = arguments
@@ -422,7 +442,7 @@ final class RTMPDataMessage: RTMPMessage {
         self.streamId = streamId
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         guard let stream = connection.streams.first(where: { $0.id == streamId }) else {
             return
         }
@@ -431,6 +451,7 @@ final class RTMPDataMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  7.1.3. Shared Object Message (19, 16)
  */
@@ -479,13 +500,15 @@ final class RTMPSharedObjectMessage: RTMPMessage {
                     sharedObjectName = try serializer.readUTF8()
                     currentVersion = try serializer.readUInt32()
                     flags = try serializer.readBytes(8)
-                    while 0 < serializer.bytesAvailable {
-                        if let event: RTMPSharedObjectEvent = try RTMPSharedObjectEvent(serializer: &serializer) {
+                    while serializer.bytesAvailable > 0 {
+                        if let event: RTMPSharedObjectEvent =
+                            try RTMPSharedObjectEvent(serializer: &serializer)
+                        {
                             events.append(event)
                         }
                     }
                 } catch {
-                    logger.error("\(self.serializer)")
+                    logger.error("\(serializer)")
                 }
                 serializer.clear()
             }
@@ -501,7 +524,14 @@ final class RTMPSharedObjectMessage: RTMPMessage {
         super.init(type: objectEncoding.sharedObjectType)
     }
 
-    init(timestamp: UInt32, objectEncoding: RTMPObjectEncoding, sharedObjectName: String, currentVersion: UInt32, flags: Data, events: [RTMPSharedObjectEvent]) {
+    init(
+        timestamp: UInt32,
+        objectEncoding: RTMPObjectEncoding,
+        sharedObjectName: String,
+        currentVersion: UInt32,
+        flags: Data,
+        events: [RTMPSharedObjectEvent]
+    ) {
         self.objectEncoding = objectEncoding
         self.sharedObjectName = sharedObjectName
         self.currentVersion = currentVersion
@@ -511,13 +541,18 @@ final class RTMPSharedObjectMessage: RTMPMessage {
         self.timestamp = timestamp
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         let persistence: Bool = (flags[3] & 2) != 0
-        RTMPSharedObject.getRemote(withName: sharedObjectName, remotePath: connection.uri!.absoluteWithoutQueryString, persistence: persistence).on(message: self)
+        RTMPSharedObject.getRemote(
+            withName: sharedObjectName,
+            remotePath: connection.uri!.absoluteWithoutQueryString,
+            persistence: persistence
+        ).on(message: self)
     }
 }
 
 // MARK: -
+
 /**
  7.1.5. Audio Message (9)
  */
@@ -540,9 +575,10 @@ final class RTMPAudioMessage: RTMPMessage {
 
             if length == newValue.count && !newValue.isEmpty {
                 guard let codec = FLVAudioCodec(rawValue: newValue[0] >> 4),
-                      let soundRate = FLVSoundRate(rawValue: (newValue[0] & 0b00001100) >> 2),
-                      let soundSize = FLVSoundSize(rawValue: (newValue[0] & 0b00000010) >> 1),
-                      let soundType = FLVSoundType(rawValue: (newValue[0] & 0b00000001)) else {
+                      let soundRate = FLVSoundRate(rawValue: (newValue[0] & 0b0000_1100) >> 2),
+                      let soundSize = FLVSoundSize(rawValue: (newValue[0] & 0b0000_0010) >> 1),
+                      let soundType = FLVSoundType(rawValue: newValue[0] & 0b0000_0001)
+                else {
                     return
                 }
                 self.codec = codec
@@ -585,7 +621,7 @@ final class RTMPAudioMessage: RTMPMessage {
         }
         switch payload[1] {
         case FLVAACPacketType.seq.rawValue:
-            let config = AudioSpecificConfig(bytes: [UInt8](payload[codec.headerSize..<payload.count]))
+            let config = AudioSpecificConfig(bytes: [UInt8](payload[codec.headerSize ..< payload.count]))
             stream.mixer.audioIO.codec.settings.format = .pcm
             stream.mixer.audioIO.codec.inSourceFormat = config?.audioStreamBasicDescription()
         case FLVAACPacketType.raw.rawValue:
@@ -594,7 +630,13 @@ final class RTMPAudioMessage: RTMPMessage {
                 stream.mixer.audioIO.codec.inSourceFormat = makeAudioStreamBasicDescription()
             }
             if let audioBuffer = makeAudioBuffer(stream) {
-                stream.mixer.audioIO.codec.appendAudioBuffer(audioBuffer, presentationTimeStamp: CMTime(seconds: stream.audioTimestamp / 1000, preferredTimescale: 1000))
+                stream.mixer.audioIO.codec.appendAudioBuffer(
+                    audioBuffer,
+                    presentationTimeStamp: CMTime(
+                        seconds: stream.audioTimestamp / 1000,
+                        preferredTimescale: 1000
+                    )
+                )
             }
         default:
             break
@@ -603,11 +645,17 @@ final class RTMPAudioMessage: RTMPMessage {
 
     private func makeAudioBuffer(_ stream: RTMPStream) -> AVAudioBuffer? {
         return payload.withUnsafeMutableBytes { (buffer: UnsafeMutableRawBufferPointer) -> AVAudioBuffer? in
-            guard let baseAddress = buffer.baseAddress, let buffer = stream.mixer.audioIO.codec.makeInputBuffer() as? AVAudioCompressedBuffer else {
+            guard let baseAddress = buffer.baseAddress,
+                  let buffer = stream.mixer.audioIO.codec.makeInputBuffer() as? AVAudioCompressedBuffer
+            else {
                 return nil
             }
             let byteCount = payload.count - codec.headerSize
-            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
+            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
+                mStartOffset: 0,
+                mVariableFramesInPacket: 0,
+                mDataByteSize: UInt32(byteCount)
+            )
             buffer.packetCount = 1
             buffer.byteLength = UInt32(byteCount)
             buffer.data.copyMemory(from: baseAddress.advanced(by: codec.headerSize), byteCount: byteCount)
@@ -621,6 +669,7 @@ final class RTMPAudioMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  7.1.5. Video Message (9)
  */
@@ -644,8 +693,8 @@ final class RTMPVideoMessage: RTMPMessage {
         guard FLVTagType.video.headerSize <= payload.count else {
             return
         }
-        if (payload[0] & 0b10000000) == 0 {
-            guard payload[0] & 0b01110000 >> 4 == FLVVideoCodec.avc.rawValue else {
+        if (payload[0] & 0b1000_0000) == 0 {
+            guard payload[0] & 0b0111_0000 >> 4 == FLVVideoCodec.avc.rawValue else {
                 return
             }
             switch payload[1] {
@@ -663,7 +712,7 @@ final class RTMPVideoMessage: RTMPMessage {
             guard payload[1] == 0x68 && payload[2] == 0x76 && payload[3] == 0x63 && payload[4] == 0x31 else {
                 return
             }
-            switch payload[0] & 0b00001111 {
+            switch payload[0] & 0b0000_1111 {
             case FLVVideoPacketType.sequenceStart.rawValue:
                 makeFormatDescription(stream, format: .hevc)
             case FLVVideoPacketType.codedFrames.rawValue:
@@ -676,9 +725,11 @@ final class RTMPVideoMessage: RTMPMessage {
         }
     }
 
-    private func makeSampleBuffer(_ stream: RTMPStream, type: RTMPChunkType, offset: Int = 0) -> CMSampleBuffer? {
+    private func makeSampleBuffer(_ stream: RTMPStream, type: RTMPChunkType,
+                                  offset: Int = 0) -> CMSampleBuffer?
+    {
         // compositionTime -> SI24
-        var compositionTime = Int32(data: [0] + payload[2 + offset..<5 + offset]).bigEndian
+        var compositionTime = Int32(data: [0] + payload[2 + offset ..< 5 + offset]).bigEndian
         compositionTime <<= 8
         compositionTime /= 256
 
@@ -696,26 +747,33 @@ final class RTMPVideoMessage: RTMPMessage {
 
         var timing = CMSampleTimingInfo(
             duration: CMTimeMake(value: duration, timescale: 1000),
-            presentationTimeStamp: CMTimeMake(value: Int64(stream.videoTimestamp) + Int64(compositionTime), timescale: 1000),
-            decodeTimeStamp: compositionTime == 0 ? .invalid : CMTimeMake(value: Int64(stream.videoTimestamp), timescale: 1000)
+            presentationTimeStamp: CMTimeMake(
+                value: Int64(stream.videoTimestamp) + Int64(compositionTime),
+                timescale: 1000
+            ),
+            decodeTimeStamp: compositionTime == 0 ? .invalid : CMTimeMake(
+                value: Int64(stream.videoTimestamp),
+                timescale: 1000
+            )
         )
 
         let blockBuffer = payload.makeBlockBuffer(advancedBy: FLVTagType.video.headerSize + offset)
         var sampleBuffer: CMSampleBuffer?
         var sampleSize = blockBuffer?.dataLength ?? 0
         guard CMSampleBufferCreate(
-                allocator: kCFAllocatorDefault,
-                dataBuffer: blockBuffer,
-                dataReady: true,
-                makeDataReadyCallback: nil,
-                refcon: nil,
-                formatDescription: stream.mixer.videoIO.formatDescription,
-                sampleCount: 1,
-                sampleTimingEntryCount: 1,
-                sampleTimingArray: &timing,
-                sampleSizeEntryCount: 1,
-                sampleSizeArray: &sampleSize,
-                sampleBufferOut: &sampleBuffer) == noErr else {
+            allocator: kCFAllocatorDefault,
+            dataBuffer: blockBuffer,
+            dataReady: true,
+            makeDataReadyCallback: nil,
+            refcon: nil,
+            formatDescription: stream.mixer.videoIO.formatDescription,
+            sampleCount: 1,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timing,
+            sampleSizeEntryCount: 1,
+            sampleSizeArray: &sampleSize,
+            sampleBufferOut: &sampleBuffer
+        ) == noErr else {
             return nil
         }
         sampleBuffer?.isNotSync = !(payload[0] >> 4 & 0b0111 == FLVFrameType.key.rawValue)
@@ -727,11 +785,11 @@ final class RTMPVideoMessage: RTMPMessage {
         switch format {
         case .h264:
             var config = AVCDecoderConfigurationRecord()
-            config.data = payload.subdata(in: FLVTagType.video.headerSize..<payload.count)
+            config.data = payload.subdata(in: FLVTagType.video.headerSize ..< payload.count)
             status = config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
         case .hevc:
             var config = HEVCDecoderConfigurationRecord()
-            config.data = payload.subdata(in: FLVTagType.video.headerSize..<payload.count)
+            config.data = payload.subdata(in: FLVTagType.video.headerSize ..< payload.count)
             status = config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
         }
         if status == noErr {
@@ -742,6 +800,7 @@ final class RTMPVideoMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  7.1.6. Aggregate Message (22)
  */
@@ -752,6 +811,7 @@ final class RTMPAggregateMessage: RTMPMessage {
 }
 
 // MARK: -
+
 /**
  7.1.7. User Control Message Events
  */
@@ -794,7 +854,7 @@ final class RTMPUserControlMessage: RTMPMessage {
                 if let event = Event(rawValue: newValue[1]) {
                     self.event = event
                 }
-                value = Int32(data: newValue[2..<newValue.count]).bigEndian
+                value = Int32(data: newValue[2 ..< newValue.count]).bigEndian
             }
             super.payload = newValue
         }
@@ -810,7 +870,7 @@ final class RTMPUserControlMessage: RTMPMessage {
         self.value = value
     }
 
-    override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
         switch event {
         case .ping:
             connection.socket.doOutput(chunk: RTMPChunk(
@@ -819,9 +879,17 @@ final class RTMPUserControlMessage: RTMPMessage {
                 message: RTMPUserControlMessage(event: .pong, value: value)
             ))
         case .bufferEmpty:
-            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferEmpty.data(""))
+            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(
+                .rtmpStatus,
+                bubbles: false,
+                data: RTMPStream.Code.bufferEmpty.data("")
+            )
         case .bufferFull:
-            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferFull.data(""))
+            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(
+                .rtmpStatus,
+                bubbles: false,
+                data: RTMPStream.Code.bufferFull.data("")
+            )
         default:
             break
         }

@@ -32,28 +32,40 @@ open class HTTPStream: NetStream {
     }
 
     #if os(iOS) || os(macOS)
-    override open func attachCamera(_ device: AVCaptureDevice?, onError: ((Error) -> Void)? = nil, onSuccess: (() -> Void)? = nil) {
-        if device == nil {
-            tsWriter.expectedMedias.remove(.video)
-        } else {
-            tsWriter.expectedMedias.insert(.video)
+        override open func attachCamera(
+            _ device: AVCaptureDevice?,
+            onError: ((Error) -> Void)? = nil,
+            onSuccess: (() -> Void)? = nil
+        ) {
+            if device == nil {
+                tsWriter.expectedMedias.remove(.video)
+            } else {
+                tsWriter.expectedMedias.insert(.video)
+            }
+            super.attachCamera(device, onError: onError, onSuccess: onSuccess)
         }
-        super.attachCamera(device, onError: onError, onSuccess: onSuccess)
-    }
 
-    override open func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = true, onError: ((Error) -> Void)? = nil) {
-        if device == nil {
-            tsWriter.expectedMedias.remove(.audio)
-        } else {
-            tsWriter.expectedMedias.insert(.audio)
+        override open func attachAudio(
+            _ device: AVCaptureDevice?,
+            automaticallyConfiguresApplicationAudioSession: Bool = true,
+            onError: ((Error) -> Void)? = nil
+        ) {
+            if device == nil {
+                tsWriter.expectedMedias.remove(.audio)
+            } else {
+                tsWriter.expectedMedias.insert(.audio)
+            }
+            super.attachAudio(
+                device,
+                automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession,
+                onError: onError
+            )
         }
-        super.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession, onError: onError)
-    }
     #endif
 
     func getResource(_ resourceName: String) -> (MIME, String)? {
         let url = URL(fileURLWithPath: resourceName)
-        guard let name: String = name, 2 <= url.pathComponents.count && url.pathComponents[1] == name else {
+        guard let name: String = name, url.pathComponents.count >= 2 && url.pathComponents[1] == name else {
             return nil
         }
         let fileName: String = url.pathComponents.last!

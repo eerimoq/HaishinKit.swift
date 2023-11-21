@@ -4,7 +4,11 @@ import Foundation
 /// The interface a capture session uses to inform its delegate.
 public protocol IOScreenCaptureUnitDelegate: AnyObject {
     /// Tells the receiver to output a pixel buffer.
-    func session(_ session: any IOScreenCaptureUnit, didOutput pixelBuffer: CVPixelBuffer, presentationTime: CMTime)
+    func session(
+        _ session: any IOScreenCaptureUnit,
+        didOutput pixelBuffer: CVPixelBuffer,
+        presentationTime: CMTime
+    )
 }
 
 /// The interface that provides methods to screen capture.

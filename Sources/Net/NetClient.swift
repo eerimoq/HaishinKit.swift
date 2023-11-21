@@ -12,6 +12,7 @@ protocol NetClientDelegate: AnyObject {
 }
 
 // MARK: -
+
 /// The NetClient class creates a two-way connection  between a NetService.
 public final class NetClient: NetSocket {
     weak var delegate: (any NetClientDelegate)?

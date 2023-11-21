@@ -1,5 +1,6 @@
 /*
- It's convenient during framework development, but there might be inconveniences when releasing it as an external library,
+ It's convenient during framework development, but there might be inconveniences when
+ releasing it as an external library,
  so I've temporarily commented it out.
 
  //

@@ -30,7 +30,7 @@ enum RTMPChunkType: UInt8 {
         if streamId <= 319 {
             return Data([rawValue << 6 | 0b0000000, UInt8(streamId - 64)])
         }
-        return Data([rawValue << 6 | 0b00000001] + (streamId - 64).bigEndian.data)
+        return Data([rawValue << 6 | 0b0000_0001] + (streamId - 64).bigEndian.data)
     }
 }
 
@@ -47,7 +47,7 @@ final class RTMPChunk {
     static let maxTimestamp: UInt32 = 0xFFFFFF
 
     static func getStreamIdSize(_ byte: UInt8) -> Int {
-        switch byte & 0b00111111 {
+        switch byte & 0b0011_1111 {
         case 0:
             return 2
         case 1:
@@ -106,9 +106,9 @@ final class RTMPChunk {
             if RTMPChunk.maxTimestamp < message.timestamp {
                 _data.append(contentsOf: [0xFF, 0xFF, 0xFF])
             } else {
-                _data.append(contentsOf: message.timestamp.bigEndian.data[1...3])
+                _data.append(contentsOf: message.timestamp.bigEndian.data[1 ... 3])
             }
-            _data.append(contentsOf: UInt32(message.payload.count).bigEndian.data[1...3])
+            _data.append(contentsOf: UInt32(message.payload.count).bigEndian.data[1 ... 3])
             _data.append(message.type.rawValue)
 
             if type == .zero {
@@ -131,19 +131,19 @@ final class RTMPChunk {
             }
 
             var pos: Int = 0
-            switch newValue[0] & 0b00111111 {
+            switch newValue[0] & 0b0011_1111 {
             case 0:
                 pos = 2
                 streamId = UInt16(newValue[1]) + 64
             case 1:
                 pos = 3
-                streamId = UInt16(data: newValue[1...2]) + 64
+                streamId = UInt16(data: newValue[1 ... 2]) + 64
             default:
                 pos = 1
-                streamId = UInt16(newValue[0] & 0b00111111)
+                streamId = UInt16(newValue[0] & 0b0011_1111)
             }
 
-            _data.append(newValue[0..<headerSize])
+            _data.append(newValue[0 ..< headerSize])
 
             if type == .two || type == .three {
                 return
@@ -156,25 +156,25 @@ final class RTMPChunk {
 
             switch type {
             case .zero:
-                message.timestamp = UInt32(data: newValue[pos..<pos + 3]).bigEndian
-                message.length = Int(Int32(data: newValue[pos + 3..<pos + 6]).bigEndian)
-                message.streamId = UInt32(data: newValue[pos + 7..<pos + 11])
+                message.timestamp = UInt32(data: newValue[pos ..< pos + 3]).bigEndian
+                message.length = Int(Int32(data: newValue[pos + 3 ..< pos + 6]).bigEndian)
+                message.streamId = UInt32(data: newValue[pos + 7 ..< pos + 11])
             case .one:
-                message.timestamp = UInt32(data: newValue[pos..<pos + 3]).bigEndian
-                message.length = Int(Int32(data: newValue[pos + 3..<pos + 6]).bigEndian)
+                message.timestamp = UInt32(data: newValue[pos ..< pos + 3]).bigEndian
+                message.length = Int(Int32(data: newValue[pos + 3 ..< pos + 6]).bigEndian)
             default:
                 break
             }
 
             var start: Int = headerSize
             if message.timestamp == RTMPChunk.maxTimestamp {
-                message.timestamp = UInt32(data: newValue[start..<start + 4]).bigEndian
+                message.timestamp = UInt32(data: newValue[start ..< start + 4]).bigEndian
                 start += 4
             }
 
             let end: Int = min(message.length + start, newValue.count)
             fragmented = size + start <= end
-            message.payload = newValue.subdata(in: start..<min(size + start, end))
+            message.payload = newValue.subdata(in: start ..< min(size + start, end))
 
             self.message = message
         }
@@ -198,7 +198,7 @@ final class RTMPChunk {
         if data.isEmpty {
             return nil
         }
-        guard let type = RTMPChunkType(rawValue: (data[0] & 0b11000000) >> 6), type.ready(data) else {
+        guard let type = RTMPChunkType(rawValue: (data[0] & 0b1100_0000) >> 6), type.ready(data) else {
             return nil
         }
         self.size = size
@@ -224,8 +224,8 @@ final class RTMPChunk {
             length = chunkSize
         }
 
-        if 0 < length {
-            message.payload.append(data[0..<length])
+        if length > 0 {
+            message.payload.append(data[0 ..< length])
         }
 
         fragmented = message.payload.count % size == 0
@@ -244,9 +244,9 @@ final class RTMPChunk {
         do {
             self.message = message.type.makeMessage()
             self.message?.streamId = message.streamId
-            self.message?.timestamp = self.type == .two ? try buffer.readUInt24() : message.timestamp
+            self.message?.timestamp = type == .two ? try buffer.readUInt24() : message.timestamp
             self.message?.length = message.length
-            self.message?.payload = Data(try buffer.readBytes(message.length))
+            self.message?.payload = try Data(buffer.readBytes(message.length))
         } catch {
             logger.warn("\(buffer)")
         }
@@ -262,10 +262,13 @@ final class RTMPChunk {
         }
         let startIndex: Int = size + headerSize
         let header: Data = RTMPChunkType.three.toBasicHeader(streamId)
-        var chunks: [Data] = [data.subdata(in: 0..<startIndex)]
+        var chunks: [Data] = [data.subdata(in: 0 ..< startIndex)]
         for index in stride(from: startIndex, to: data.count, by: size) {
             var chunk: Data = header
-            chunk.append(data.subdata(in: index..<index.advanced(by: index + size < data.count ? size : data.count - index)))
+            chunk
+                .append(data
+                    .subdata(in: index ..< index
+                        .advanced(by: index + size < data.count ? size : data.count - index)))
             chunks.append(chunk)
         }
         return chunks
@@ -274,6 +277,7 @@ final class RTMPChunk {
 
 extension RTMPChunk: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }

@@ -15,6 +15,7 @@ public class SRTConnection: NSObject {
             socket?.delegate = self
         }
     }
+
     private var stream: SRTStream?
     var clients: [SRTSocket] = []
 
@@ -40,7 +41,9 @@ public class SRTConnection: NSObject {
 
     /// Open a two-way connection to an application on SRT Server.
     public func open(_ uri: URL?, mode: SRTMode = .caller) throws {
-        guard let uri = uri, let scheme = uri.scheme, let host = uri.host, let port = uri.port, scheme == "srt" else {
+        guard let uri = uri, let scheme = uri.scheme, let host = uri.host, let port = uri.port,
+              scheme == "srt"
+        else {
             return
         }
         self.uri = uri
@@ -76,7 +79,7 @@ public class SRTConnection: NSObject {
             logger.info("No socket")
         }
     }
-    
+
     func removeStream() {
         stream?.close()
         stream = nil
@@ -96,22 +99,24 @@ public class SRTConnection: NSObject {
         guard let hostent = gethostbyname(host), hostent.pointee.h_addrtype == AF_INET else {
             return addr
         }
-        addr.sin_addr = UnsafeRawPointer(hostent.pointee.h_addr_list[0]!).assumingMemoryBound(to: in_addr.self).pointee
+        addr.sin_addr = UnsafeRawPointer(hostent.pointee.h_addr_list[0]!)
+            .assumingMemoryBound(to: in_addr.self).pointee
         return addr
     }
 }
 
 extension SRTConnection: SRTSocketDelegate {
     // MARK: SRTSocketDelegate
-    func socket(_ socket: SRTSocket, status: SRT_SOCKSTATUS) {
+
+    func socket(_ socket: SRTSocket, status _: SRT_SOCKSTATUS) {
         connected = socket.status == SRTS_CONNECTED
     }
 
-    func socket(_ socket: SRTSocket, incomingDataAvailable data: Data, bytes: Int32) {
-        stream?.doInput(data.subdata(in: 0..<Data.Index(bytes)))
+    func socket(_: SRTSocket, incomingDataAvailable data: Data, bytes: Int32) {
+        stream?.doInput(data.subdata(in: 0 ..< Data.Index(bytes)))
     }
 
-    func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket) {
+    func socket(_: SRTSocket, didAcceptSocket client: SRTSocket) {
         clients.append(client)
     }
 }

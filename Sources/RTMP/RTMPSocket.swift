@@ -1,15 +1,18 @@
 import Foundation
 
 // MARK: -
+
 final class RTMPSocket: NetSocket, RTMPSocketCompatible {
     var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
             delegate?.socket(self, readyState: readyState)
         }
     }
+
     var timestamp: TimeInterval {
         handshake.timestamp
     }
+
     var chunkSizeC: Int = RTMPChunk.defaultSize
     var chunkSizeS: Int = RTMPChunk.defaultSize
     weak var delegate: (any RTMPSocketDelegate)?
@@ -35,12 +38,13 @@ final class RTMPSocket: NetSocket, RTMPSocketCompatible {
             events.removeAll()
         }
     }
+
     private var events: [Event] = []
 
     @discardableResult
     func doOutput(chunk: RTMPChunk) -> Int {
         let chunks: [Data] = chunk.split(chunkSizeS)
-        for i in 0..<chunks.count - 1 {
+        for i in 0 ..< chunks.count - 1 {
             doOutput(data: chunks[i])
         }
         doOutput(data: chunks.last!)
@@ -57,7 +61,7 @@ final class RTMPSocket: NetSocket, RTMPSocketCompatible {
                 break
             }
             doOutput(data: handshake.c2packet(inputBuffer))
-            inputBuffer.removeSubrange(0...RTMPHandshake.sigSize)
+            inputBuffer.removeSubrange(0 ... RTMPHandshake.sigSize)
             readyState = .ackSent
             if RTMPHandshake.sigSize <= inputBuffer.count {
                 listen()

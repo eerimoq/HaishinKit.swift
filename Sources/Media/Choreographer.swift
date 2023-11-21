@@ -2,84 +2,85 @@ import Foundation
 
 #if os(macOS)
 
-import CoreVideo
-import Foundation
+    import CoreVideo
+    import Foundation
 
-// swiftlint:disable attributes
+    // swiftlint:disable attributes
 
-final class DisplayLink: NSObject {
-    var isPaused = false {
-        didSet {
-            guard let displayLink = displayLink, oldValue != isPaused else {
+    final class DisplayLink: NSObject {
+        var isPaused = false {
+            didSet {
+                guard let displayLink = displayLink, oldValue != isPaused else {
+                    return
+                }
+                if isPaused {
+                    status = CVDisplayLinkStop(displayLink)
+                } else {
+                    status = CVDisplayLinkStart(displayLink)
+                }
+            }
+        }
+
+        var frameInterval = 0
+        var preferredFramesPerSecond = 1
+        private(set) var duration = 0.0
+        private(set) var timestamp: CFTimeInterval = 0
+        private var status: CVReturn = 0
+        private var displayLink: CVDisplayLink?
+        private var selector: Selector?
+        private weak var delegate: NSObject?
+
+        deinit {
+            selector = nil
+        }
+
+        init(target: NSObject, selector sel: Selector) {
+            super.init()
+            status = CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
+            guard let displayLink = displayLink else {
                 return
             }
-            if isPaused {
-                status = CVDisplayLinkStop(displayLink)
-            } else {
-                status = CVDisplayLinkStart(displayLink)
+            delegate = target
+            selector = sel
+            CVDisplayLinkSetOutputHandler(displayLink) { [unowned self] _, inNow, _, _, _ -> CVReturn in
+                self.timestamp = inNow.pointee.timestamp
+                self.duration = inNow.pointee.duration
+                _ = self.delegate?.perform(self.selector, with: self)
+                return kCVReturnSuccess
             }
         }
-    }
-    var frameInterval = 0
-    var preferredFramesPerSecond = 1
-    private(set) var duration = 0.0
-    private(set) var timestamp: CFTimeInterval = 0
-    private var status: CVReturn = 0
-    private var displayLink: CVDisplayLink?
-    private var selector: Selector?
-    private weak var delegate: NSObject?
 
-    deinit {
-        selector = nil
-    }
-
-    init(target: NSObject, selector sel: Selector) {
-        super.init()
-        status = CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
-        guard let displayLink = displayLink else {
-            return
+        func add(to _: RunLoop, forMode _: RunLoop.Mode) {
+            guard let displayLink = displayLink, !isPaused else {
+                return
+            }
+            status = CVDisplayLinkStart(displayLink)
         }
-        self.delegate = target
-        self.selector = sel
-        CVDisplayLinkSetOutputHandler(displayLink) { [unowned self] _, inNow, _, _, _ -> CVReturn in
-            self.timestamp = inNow.pointee.timestamp
-            self.duration = inNow.pointee.duration
-            _ = self.delegate?.perform(self.selector, with: self)
-            return kCVReturnSuccess
+
+        func invalidate() {
+            guard let displayLink = displayLink, isPaused else {
+                return
+            }
+            status = CVDisplayLinkStop(displayLink)
         }
     }
 
-    func add(to runloop: RunLoop, forMode mode: RunLoop.Mode) {
-        guard let displayLink = displayLink, !isPaused else {
-            return
+    extension CVTimeStamp {
+        @inlinable @inline(__always)
+        var timestamp: Double {
+            Double(videoTime) / Double(videoTimeScale)
         }
-        status = CVDisplayLinkStart(displayLink)
-    }
 
-    func invalidate() {
-        guard let displayLink = displayLink, isPaused else {
-            return
+        @inlinable @inline(__always) var duration: Double {
+            Double(videoRefreshPeriod) / Double(videoTimeScale)
         }
-        status = CVDisplayLinkStop(displayLink)
-    }
-}
-
-extension CVTimeStamp {
-    @inlinable @inline(__always)
-    var timestamp: Double {
-        Double(self.videoTime) / Double(self.videoTimeScale)
     }
 
-    @inlinable @inline(__always) var duration: Double {
-        Double(self.videoRefreshPeriod) / Double(self.videoTimeScale)
-    }
-}
-
-// swiftlint:enable attributes
+    // swiftlint:enable attributes
 
 #else
-import QuartzCore
-typealias DisplayLink = CADisplayLink
+    import QuartzCore
+    typealias DisplayLink = CADisplayLink
 #endif
 
 protocol ChoreographerDelegate: AnyObject {
@@ -105,6 +106,7 @@ final class DisplayLinkChoreographer: NSObject, Choreographer {
             displayLink?.isPaused = newValue
         }
     }
+
     weak var delegate: (any ChoreographerDelegate)?
     var isRunning: Atomic<Bool> = .init(false)
     private var duration: Double = DisplayLinkChoreographer.duration
@@ -133,7 +135,7 @@ final class DisplayLinkChoreographer: NSObject, Choreographer {
 
 extension DisplayLinkChoreographer: Running {
     func startRunning() {
-        displayLink = DisplayLink(target: self, selector: #selector(self.update(displayLink:)))
+        displayLink = DisplayLink(target: self, selector: #selector(update(displayLink:)))
         isRunning.mutate { $0 = true }
     }
 

@@ -52,12 +52,15 @@ final class SRTSocket {
             delegate?.socket(self, status: status)
         }
     }
+
     private var windowSizeC: Int32 = 1024 * 4
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
-    private let incomingQueue: DispatchQueue = .init(label: "com.haishinkit.SRTHaishinKit.SRTSocket.incoming", qos: .userInitiated)
+    private let incomingQueue: DispatchQueue = .init(
+        label: "com.haishinkit.SRTHaishinKit.SRTSocket.incoming",
+        qos: .userInitiated
+    )
 
-    init() {
-    }
+    init() {}
 
     init(socket: SRTSOCKET) throws {
         self.socket = socket
@@ -70,7 +73,11 @@ final class SRTSocket {
         startRunning()
     }
 
-    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: String] = SRTSocket.defaultOptions) throws {
+    func open(
+        _ addr: sockaddr_in,
+        mode: SRTMode,
+        options: [SRTSocketOption: String] = SRTSocket.defaultOptions
+    ) throws {
         guard socket == SRT_INVALID_SOCK else {
             return
         }
@@ -113,14 +120,14 @@ final class SRTSocket {
     }
 
     func doOutput(data: Data) {
-        _ = self.sendmsg2(data)
+        _ = sendmsg2(data)
     }
 
     func doInput() {
         incomingQueue.async {
             repeat {
                 let result = self.recvmsg()
-                if 0 < result {
+                if result > 0 {
                     self.delegate?.socket(self, incomingDataAvailable: self.incomingBuffer, bytes: result)
                 }
             } while self.isRunning.value
@@ -134,7 +141,7 @@ final class SRTSocket {
         srt_close(socket)
         socket = SRT_INVALID_SOCK
     }
-    
+
     func configure(_ binding: SRTSocketOption.Binding) -> Bool {
         let failures = SRTSocketOption.configure(socket, binding: binding, options: options)
         guard failures.isEmpty else {
@@ -154,7 +161,7 @@ final class SRTSocket {
     private func accept() {
         let socket = srt_accept(socket, nil, nil)
         do {
-            delegate?.socket(self, didAcceptSocket: try SRTSocket(socket: socket))
+            try delegate?.socket(self, didAcceptSocket: SRTSocket(socket: socket))
         } catch {
             logger.error(error)
         }
@@ -190,6 +197,7 @@ final class SRTSocket {
 
 extension SRTSocket: Running {
     // MARK: Running
+
     func startRunning() {
         guard !isRunning.value else {
             return

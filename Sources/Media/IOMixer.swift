@@ -1,6 +1,6 @@
 import AVFoundation
 #if canImport(SwiftPMSupport)
-import SwiftPMSupport
+    import SwiftPMSupport
 #endif
 
 import UIKit
@@ -9,7 +9,11 @@ extension AVCaptureSession.Preset {
 }
 
 protocol IOMixerDelegate: AnyObject {
-    func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
+    func mixer(
+        _ mixer: IOMixer,
+        sessionWasInterrupted session: AVCaptureSession,
+        reason: AVCaptureSession.InterruptionReason?
+    )
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
     func mixer(_ mixer: IOMixer, audioLevel: Float)
 }
@@ -20,7 +24,7 @@ public class IOMixer {
     public static let defaultFrameRate: Float64 = 30
     /// The AVAudioEngine shared instance holder.
     public static let audioEngineHolder: InstanceHolder<AVAudioEngine> = .init {
-        return AVAudioEngine()
+        AVAudioEngine()
     }
 
     enum MediaSync {
@@ -59,7 +63,11 @@ public class IOMixer {
             }
             nstry({
                 if let audioFormat = self.audioFormat {
-                    audioEngine.connect(self.mediaLink.playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
+                    audioEngine.connect(
+                        self.mediaLink.playerNode,
+                        to: audioEngine.mainMixerNode,
+                        format: audioFormat
+                    )
                 } else {
                     audioEngine.disconnectNodeInput(self.mediaLink.playerNode)
                 }
@@ -70,9 +78,7 @@ public class IOMixer {
     }
 
     private var readyState: ReadyState = .standby
-    private(set) lazy var audioEngine: AVAudioEngine? = {
-        return IOMixer.audioEngineHolder.retain()
-    }()
+    private(set) lazy var audioEngine: AVAudioEngine? = IOMixer.audioEngineHolder.retain()
 
     var isMultitaskingCameraAccessEnabled = true
 
@@ -182,7 +188,8 @@ public class IOMixer {
         switch mediaSync {
         case .video:
             if mediaType == .audio {
-                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= sampleBuffer.presentationTimeStamp.seconds
+                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= sampleBuffer
+                    .presentationTimeStamp.seconds
             }
             if videoTimeStamp == CMTime.zero {
                 videoTimeStamp = sampleBuffer.presentationTimeStamp
@@ -269,17 +276,19 @@ extension IOMixer: IOUnitDecoding {
 
 extension IOMixer: MediaLinkDelegate {
     // MARK: MediaLinkDelegate
-    func mediaLink(_ mediaLink: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
+
+    func mediaLink(_: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
         drawable?.enqueue(sampleBuffer)
     }
 
-    func mediaLink(_ mediaLink: MediaLink, didBufferingChanged: Bool) {
+    func mediaLink(_: MediaLink, didBufferingChanged: Bool) {
         logger.info(didBufferingChanged)
     }
 }
 
 extension IOMixer: Running {
     // MARK: Running
+
     public func startRunning() {
         guard !isRunning.value else {
             return
@@ -307,15 +316,38 @@ extension IOMixer: Running {
     }
 
     private func addSessionObservers(_ session: AVCaptureSession) {
-        NotificationCenter.default.addObserver(self, selector: #selector(sessionRuntimeError(_:)), name: .AVCaptureSessionRuntimeError, object: session)
-        NotificationCenter.default.addObserver(self, selector: #selector(sessionInterruptionEnded(_:)), name: .AVCaptureSessionInterruptionEnded, object: session)
-        NotificationCenter.default.addObserver(self, selector: #selector(sessionWasInterrupted(_:)), name: .AVCaptureSessionWasInterrupted, object: session)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(sessionRuntimeError(_:)),
+            name: .AVCaptureSessionRuntimeError,
+            object: session
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(sessionInterruptionEnded(_:)),
+            name: .AVCaptureSessionInterruptionEnded,
+            object: session
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(sessionWasInterrupted(_:)),
+            name: .AVCaptureSessionWasInterrupted,
+            object: session
+        )
     }
 
     private func removeSessionObservers(_ session: AVCaptureSession) {
         #if os(iOS)
-        NotificationCenter.default.removeObserver(self, name: .AVCaptureSessionWasInterrupted, object: session)
-        NotificationCenter.default.removeObserver(self, name: .AVCaptureSessionInterruptionEnded, object: session)
+            NotificationCenter.default.removeObserver(
+                self,
+                name: .AVCaptureSessionWasInterrupted,
+                object: session
+            )
+            NotificationCenter.default.removeObserver(
+                self,
+                name: .AVCaptureSessionInterruptionEnded,
+                object: session
+            )
         #endif
         NotificationCenter.default.removeObserver(self, name: .AVCaptureSessionRuntimeError, object: session)
     }
@@ -323,21 +355,22 @@ extension IOMixer: Running {
     @objc
     private func sessionRuntimeError(_ notification: NSNotification) {
         guard
-            let errorValue = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError else {
+            let errorValue = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
+        else {
             return
         }
         let error = AVError(_nsError: errorValue)
         switch error.code {
         case .unsupportedDeviceActiveFormat:
             #if os(iOS)
-            let isMultiCamSupported: Bool
-            if #available(iOS 13.0, *) {
-                isMultiCamSupported = session is AVCaptureMultiCamSession
-            } else {
-                isMultiCamSupported = false
-            }
+                let isMultiCamSupported: Bool
+                if #available(iOS 13.0, *) {
+                    isMultiCamSupported = session is AVCaptureMultiCamSession
+                } else {
+                    isMultiCamSupported = false
+                }
             #else
-            let isMultiCamSupported = true
+                let isMultiCamSupported = true
             #endif
             guard let device = error.device, let format = device.videoFormat(
                 width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
@@ -351,8 +384,14 @@ extension IOMixer: Running {
                 try device.lockForConfiguration()
                 device.activeFormat = format
                 if format.isFrameRateSupported(videoIO.frameRate) {
-                    device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
-                    device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
+                    device.activeVideoMinFrameDuration = CMTime(
+                        value: 100,
+                        timescale: CMTimeScale(100 * videoIO.frameRate)
+                    )
+                    device.activeVideoMaxFrameDuration = CMTime(
+                        value: 100,
+                        timescale: CMTimeScale(100 * videoIO.frameRate)
+                    )
                 }
                 device.unlockForConfiguration()
                 session.startRunning()
@@ -360,8 +399,8 @@ extension IOMixer: Running {
                 logger.warn(error)
             }
         #if os(iOS)
-        case .mediaServicesWereReset:
-            startCaptureSessionIfNeeded()
+            case .mediaServicesWereReset:
+                startCaptureSessionIfNeeded()
         #endif
         default:
             break
@@ -375,7 +414,8 @@ extension IOMixer: Running {
         }
         guard let userInfoValue = notification.userInfo?[AVCaptureSessionInterruptionReasonKey] as AnyObject?,
               let reasonIntegerValue = userInfoValue.integerValue,
-              let reason = AVCaptureSession.InterruptionReason(rawValue: reasonIntegerValue) else {
+              let reason = AVCaptureSession.InterruptionReason(rawValue: reasonIntegerValue)
+        else {
             delegate?.mixer(self, sessionWasInterrupted: session, reason: nil)
             return
         }
@@ -383,7 +423,7 @@ extension IOMixer: Running {
     }
 
     @objc
-    private func sessionInterruptionEnded(_ notification: Notification) {
+    private func sessionInterruptionEnded(_: Notification) {
         delegate?.mixer(self, sessionInterruptionEnded: session)
     }
 }

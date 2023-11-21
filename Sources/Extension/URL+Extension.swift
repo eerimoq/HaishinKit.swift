@@ -11,8 +11,8 @@ extension URL {
     }
 
     var absoluteWithoutQueryString: String {
-        guard let query: String = self.query else {
-            return self.absoluteString
+        guard let query: String = query else {
+            return absoluteString
         }
         return absoluteString.replacingOccurrences(of: "?" + query, with: "")
     }

@@ -8,7 +8,7 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     static let defaultAttributes: [NSString: NSObject] = [
         kCVPixelBufferPixelFormatTypeKey: NSNumber(value: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
-        kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue
+        kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
     ]
 
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
@@ -105,7 +105,7 @@ final class IOVideoUnit: NSObject, IOUnit {
     private var multiCamSampleBuffer: CMSampleBuffer?
 
     func attachCamera(_ device: AVCaptureDevice?) throws {
-        guard let mixer, self.capture.device != device else {
+        guard let mixer, capture.device != device else {
             return
         }
         guard let device else {
@@ -262,9 +262,14 @@ extension IOVideoUnit: IOUnitDecoding {
 }
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ captureOutput: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    func captureOutput(
+        _ captureOutput: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from _: AVCaptureConnection
+    ) {
         if capture.output == captureOutput {
-            guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true else {
+            guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
+            else {
                 return
             }
             appendSampleBuffer(sampleBuffer)
@@ -276,18 +281,18 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
 
 extension IOVideoUnit: VideoCodecDelegate {
     // MARK: VideoCodecDelegate
-    func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
-    }
 
-    func videoCodec(_ codec: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
+    func videoCodec(_: VideoCodec, didOutput _: CMFormatDescription?) {}
+
+    func videoCodec(_: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
         mixer?.mediaLink.enqueueVideo(sampleBuffer)
     }
 
-    func videoCodec(_ codec: VideoCodec, errorOccurred error: VideoCodec.Error) {
+    func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
         logger.trace(error)
     }
 
-    func videoCodecWillDropFame(_ codec: VideoCodec) -> Bool {
+    func videoCodecWillDropFame(_: VideoCodec) -> Bool {
         return false
     }
 }

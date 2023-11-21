@@ -6,19 +6,23 @@ final class DataBuffer {
             bytes.baseAddress?.assumingMemoryBound(to: UInt8.self).advanced(by: head)
         }
     }
+
     var maxLength: Int {
         min(count, capacity - head)
     }
+
     private var count: Int {
         let value = tail - head
         return value < 0 ? value + capacity : value
     }
+
     private var data: Data
     private(set) var capacity: Int = 0 {
         didSet {
             logger.info("extends a buffer size from ", oldValue, " to ", capacity)
         }
     }
+
     private var head: Int = 0
     private var tail: Int = 0
     private let baseCapacity: Int
@@ -72,10 +76,10 @@ final class DataBuffer {
     }
 
     private func resize(_ data: Data) -> Bool {
-        if 0 < head {
-            let subdata = self.data.subdata(in: 0..<tail)
-            self.data.replaceSubrange(0..<capacity - head, with: self.data.advanced(by: head))
-            self.data.replaceSubrange(capacity - head..<capacity - head + subdata.count, with: subdata)
+        if head > 0 {
+            let subdata = self.data.subdata(in: 0 ..< tail)
+            self.data.replaceSubrange(0 ..< capacity - head, with: self.data.advanced(by: head))
+            self.data.replaceSubrange(capacity - head ..< capacity - head + subdata.count, with: subdata)
             tail = capacity - head + subdata.count
         }
         self.data.append(.init(count: baseCapacity))

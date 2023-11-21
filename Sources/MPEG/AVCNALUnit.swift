@@ -18,6 +18,7 @@ enum AVCNALUnitType: UInt8, Equatable {
 }
 
 // MARK: -
+
 struct AVCNALUnit: Equatable {
     let refIdc: UInt8
     let type: AVCNALUnitType
@@ -28,14 +29,14 @@ struct AVCNALUnit: Equatable {
     }
 
     init(_ data: Data, length: Int) {
-        self.refIdc = data[0] >> 5
-        self.type = AVCNALUnitType(rawValue: data[0] & 0x1f) ?? .unspec
-        self.payload = data.subdata(in: 1..<length)
+        refIdc = data[0] >> 5
+        type = AVCNALUnitType(rawValue: data[0] & 0x1F) ?? .unspec
+        payload = data.subdata(in: 1 ..< length)
     }
 
     var data: Data {
         var result = Data()
-        result.append(refIdc << 5 | self.type.rawValue)
+        result.append(refIdc << 5 | type.rawValue)
         result.append(payload)
         return result
     }
@@ -50,12 +51,12 @@ class AVCNALUnitReader {
     func read(_ data: Data) -> [AVCNALUnit] {
         var units: [AVCNALUnit] = []
         var lastIndexOf = data.count - 1
-        for i in (2..<data.count).reversed() {
-            guard data[i] == 1 && data[i - 1] == 0 && data[i - 2] == 0 else {
+        for i in (2 ..< data.count).reversed() {
+            guard data[i] == 1, data[i - 1] == 0, data[i - 2] == 0 else {
                 continue
             }
-            let startCodeLength = 0 <= i - 3 && data[i - 3] == 0 ? 4 : 3
-            units.append(.init(data.subdata(in: (i + 1)..<lastIndexOf + 1)))
+            let startCodeLength = i - 3 >= 0 && data[i - 3] == 0 ? 4 : 3
+            units.append(.init(data.subdata(in: (i + 1) ..< lastIndexOf + 1)))
             lastIndexOf = i - startCodeLength
         }
         return units
@@ -65,7 +66,8 @@ class AVCNALUnitReader {
         let units = read(data).filter { $0.type == .pps || $0.type == .sps }
         guard
             let pps = units.first(where: { $0.type == .pps }),
-            let sps = units.first(where: { $0.type == .sps }) else {
+            let sps = units.first(where: { $0.type == .sps })
+        else {
             return nil
         }
         var formatDescription: CMFormatDescription?
@@ -79,7 +81,7 @@ class AVCNALUnitReader {
                 }
                 let pointers: [UnsafePointer<UInt8>] = [
                     spsBaseAddress.assumingMemoryBound(to: UInt8.self),
-                    ppsBaseAddress.assumingMemoryBound(to: UInt8.self)
+                    ppsBaseAddress.assumingMemoryBound(to: UInt8.self),
                 ]
                 let sizes: [Int] = [spsBuffer.count, ppsBuffer.count]
                 return CMVideoFormatDescriptionCreateFromH264ParameterSets(

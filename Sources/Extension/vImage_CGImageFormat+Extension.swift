@@ -7,7 +7,8 @@ extension vImage_CGImageFormat {
     @available(macOS, obsoleted: 10.15)
     init?(cgImage: CGImage) {
         guard
-            let colorSpace = cgImage.colorSpace else {
+            let colorSpace = cgImage.colorSpace
+        else {
             return nil
         }
         self = vImage_CGImageFormat(
@@ -17,6 +18,7 @@ extension vImage_CGImageFormat {
             bitmapInfo: cgImage.bitmapInfo,
             version: 0,
             decode: nil,
-            renderingIntent: cgImage.renderingIntent)
+            renderingIntent: cgImage.renderingIntent
+        )
     }
 }

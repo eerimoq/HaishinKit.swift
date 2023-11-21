@@ -75,7 +75,9 @@ enum FLVAudioCodec: UInt8 {
         }
     }
 
-    func audioStreamBasicDescription(_ rate: FLVSoundRate, size: FLVSoundSize, type: FLVSoundType) -> AudioStreamBasicDescription? {
+    func audioStreamBasicDescription(_ rate: FLVSoundRate, size _: FLVSoundSize,
+                                     type: FLVSoundType) -> AudioStreamBasicDescription?
+    {
         guard isSupported else {
             return nil
         }

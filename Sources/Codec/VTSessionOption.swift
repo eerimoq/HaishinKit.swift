@@ -13,6 +13,7 @@ public struct VTSessionOption {
 
 extension VTSessionOption: Hashable {
     // MARK: Hashable
+
     public static func == (lhs: VTSessionOption, rhs: VTSessionOption) -> Bool {
         return lhs.key.CFString == rhs.key.CFString
     }

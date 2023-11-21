@@ -15,12 +15,13 @@ struct M3U {
 
 extension M3U: CustomStringConvertible {
     // MARK: CustomStringConvertible
+
     var description: String {
         var lines: [String] = [
             "#EXTM3U",
             "#EXT-X-VERSION:\(version)",
             "#EXT-X-MEDIA-SEQUENCE:\(mediaSequence)",
-            "#EXT-X-TARGETDURATION:\(Int(targetDuration))"
+            "#EXT-X-TARGETDURATION:\(Int(targetDuration))",
         ]
         for info in mediaList {
             lines.append("#EXTINF:\(info.duration),")
@@ -31,6 +32,7 @@ extension M3U: CustomStringConvertible {
 }
 
 // MARK: -
+
 struct M3UMediaInfo {
     let url: URL
     let duration: Double

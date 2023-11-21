@@ -7,11 +7,12 @@ extension vImage_Buffer {
     init?(height: vImagePixelCount, width: vImagePixelCount, pixelBits: UInt32, flags: vImage_Flags) {
         self.init()
         guard vImageBuffer_Init(
-                &self,
-                height,
-                width,
-                pixelBits,
-                flags) == kvImageNoError else {
+            &self,
+            height,
+            width,
+            pixelBits,
+            flags
+        ) == kvImageNoError else {
             return nil
         }
     }
@@ -31,25 +32,28 @@ extension vImage_Buffer {
             cvPixelBuffer,
             cvImageFormat,
             nil,
-            vImage_Flags(kvImageNoFlags))
+            vImage_Flags(kvImageNoFlags)
+        )
     }
 
     @discardableResult
     mutating func scale(_ factor: Float) -> Self {
         var imageBuffer = vImage_Buffer()
         guard vImageBuffer_Init(
-                &imageBuffer,
-                vImagePixelCount(Float(height) * factor),
-                vImagePixelCount(Float(width) * factor),
-                32,
-                vImage_Flags(kvImageNoFlags)) == kvImageNoError else {
+            &imageBuffer,
+            vImagePixelCount(Float(height) * factor),
+            vImagePixelCount(Float(width) * factor),
+            32,
+            vImage_Flags(kvImageNoFlags)
+        ) == kvImageNoError else {
             return self
         }
         guard vImageScale_ARGB8888(
-                &self,
-                &imageBuffer,
-                nil,
-                vImage_Flags(kvImageNoFlags)) == kvImageNoError else {
+            &self,
+            &imageBuffer,
+            nil,
+            vImage_Flags(kvImageNoFlags)
+        ) == kvImageNoError else {
             return self
         }
         return imageBuffer
@@ -78,7 +82,10 @@ extension vImage_Buffer {
     @discardableResult
     mutating func split(_ buffer: inout vImage_Buffer, direction: ImageTransform) -> Self {
         buffer.transform(direction.opposite)
-        var shape = ShapeFactory.shared.split(CGSize(width: CGFloat(width), height: CGFloat(height)), direction: direction.opposite)
+        var shape = ShapeFactory.shared.split(
+            CGSize(width: CGFloat(width), height: CGFloat(height)),
+            direction: direction.opposite
+        )
         vImageSelectChannels_ARGB8888(&shape, &buffer, &buffer, 0x8, vImage_Flags(kvImageNoFlags))
         transform(direction)
         guard vImageAlphaBlend_ARGB8888(

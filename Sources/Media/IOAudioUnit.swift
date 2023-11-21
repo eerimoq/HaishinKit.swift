@@ -1,7 +1,7 @@
 import AVFoundation
 
 #if canImport(SwiftPMSupport)
-import SwiftPMSupport
+    import SwiftPMSupport
 #endif
 
 public enum GeneratorMode {
@@ -17,18 +17,20 @@ final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
     private var generatorCount: UInt64 = 0
-    
+
     lazy var codec: AudioCodec = {
         var codec = AudioCodec()
         codec.lockQueue = lockQueue
         return codec
     }()
+
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var soundTransform: SoundTransform = .init() {
         didSet {
             soundTransform.apply(mixer?.mediaLink.playerNode)
         }
     }
+
     var muted = false
     weak var mixer: IOMixer?
     private(set) var capture: IOAudioCaptureUnit = .init()
@@ -41,9 +43,12 @@ final class IOAudioUnit: NSObject, IOUnit {
             codec.inSourceFormat = inSourceFormat
         }
     }
+
     private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
-    func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool) throws {
+    func attachAudio(_ device: AVCaptureDevice?,
+                     automaticallyConfiguresApplicationAudioSession: Bool) throws
+    {
         guard let mixer else {
             return
         }
@@ -56,7 +61,8 @@ final class IOAudioUnit: NSObject, IOUnit {
             return
         }
         try capture.attachDevice(device, audioUnit: self)
-        mixer.session.automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
+        mixer.session
+            .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
@@ -70,8 +76,13 @@ final class IOAudioUnit: NSObject, IOUnit {
         if Self.sampleBuffersThreshold <= numSampleBuffers {
             var gapPresentationTimeStamp = presentationTimeStamp
             for i in 0 ... numSampleBuffers {
-                let numSamples = numSampleBuffers == i ? numGapSamples % sampleBuffer.numSamples : sampleBuffer.numSamples
-                guard let gapSampleBuffer = CMAudioSampleBufferFactory.makeSampleBuffer(sampleBuffer, numSamples: numSamples, presentationTimeStamp: gapPresentationTimeStamp) else {
+                let numSamples = numSampleBuffers == i ? numGapSamples % sampleBuffer
+                    .numSamples : sampleBuffer.numSamples
+                guard let gapSampleBuffer = CMAudioSampleBufferFactory.makeSampleBuffer(
+                    sampleBuffer,
+                    numSamples: numSamples,
+                    presentationTimeStamp: gapPresentationTimeStamp
+                ) else {
                     continue
                 }
                 codec.appendSampleBuffer(gapSampleBuffer)
@@ -101,16 +112,22 @@ final class IOAudioUnit: NSObject, IOUnit {
     }
 
     private func numGapSamples(_ sampleBuffer: CMSampleBuffer) -> Int {
-        guard let mSampleRate = inSourceFormat?.mSampleRate, presentationTimeStamp != Self.defaultPresentationTimeStamp else {
+        guard let mSampleRate = inSourceFormat?.mSampleRate,
+              presentationTimeStamp != Self.defaultPresentationTimeStamp
+        else {
             return 0
         }
         let sampleRate = Int32(mSampleRate)
         // Device audioMic or ReplayKit audioMic.
         if presentationTimeStamp.timescale == sampleRate {
-            return Int(sampleBuffer.presentationTimeStamp.value - presentationTimeStamp.value) - sampleBuffer.numSamples
+            return Int(sampleBuffer.presentationTimeStamp.value - presentationTimeStamp.value) - sampleBuffer
+                .numSamples
         }
         // ReplayKit audioApp. PTS = {69426976806125/1000000000 = 69426.977}
-        let diff = CMTime(seconds: sampleBuffer.presentationTimeStamp.seconds, preferredTimescale: sampleRate) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
+        let diff = CMTime(
+            seconds: sampleBuffer.presentationTimeStamp.seconds,
+            preferredTimescale: sampleRate
+        ) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
     }
 
@@ -166,7 +183,11 @@ extension IOAudioUnit: IOUnitDecoding {
 }
 
 extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    func captureOutput(
+        _: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
         }
@@ -196,11 +217,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
 }
 
 extension IOAudioUnit: AudioCodecDelegate {
-    func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error) {
+    func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
         logger.info("Failed to convert audio with error: \(error)")
     }
 
-    func audioCodec(_ codec: AudioCodec, didOutput audioFormat: AVAudioFormat) {
+    func audioCodec(_: AudioCodec, didOutput audioFormat: AVAudioFormat) {
         do {
             mixer?.audioFormat = audioFormat
             if let audioEngine = mixer?.audioEngine, audioEngine.isRunning == false {
@@ -211,7 +232,7 @@ extension IOAudioUnit: AudioCodecDelegate {
         }
     }
 
-    func audioCodec(_ codec: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
+    func audioCodec(_: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp _: CMTime) {
         guard let audioBuffer = audioBuffer as? AVAudioPCMBuffer else {
             return
         }

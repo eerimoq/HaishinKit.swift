@@ -19,25 +19,27 @@ extension Data {
                 return nil
             }
             guard CMBlockBufferCreateWithMemoryBlock(
-                    allocator: kCFAllocatorDefault,
-                    memoryBlock: nil,
-                    blockLength: length,
-                    blockAllocator: nil,
-                    customBlockSource: nil,
-                    offsetToData: 0,
-                    dataLength: length,
-                    flags: 0,
-                    blockBufferOut: &blockBuffer) == noErr else {
+                allocator: kCFAllocatorDefault,
+                memoryBlock: nil,
+                blockLength: length,
+                blockAllocator: nil,
+                customBlockSource: nil,
+                offsetToData: 0,
+                dataLength: length,
+                flags: 0,
+                blockBufferOut: &blockBuffer
+            ) == noErr else {
                 return nil
             }
             guard let blockBuffer else {
                 return nil
             }
             guard CMBlockBufferReplaceDataBytes(
-                    with: baseAddress.advanced(by: advancedBy),
-                    blockBuffer: blockBuffer,
-                    offsetIntoDestination: 0,
-                    dataLength: length) == noErr else {
+                with: baseAddress.advanced(by: advancedBy),
+                blockBuffer: blockBuffer,
+                offsetIntoDestination: 0,
+                dataLength: length
+            ) == noErr else {
                 return nil
             }
             return blockBuffer
@@ -50,10 +52,11 @@ extension Data {
                 return
             }
             guard CMBlockBufferReplaceDataBytes(
-                    with: baseAddress,
-                    blockBuffer: blockBuffer,
-                    offsetIntoDestination: 0,
-                    dataLength: count) == noErr else {
+                with: baseAddress,
+                blockBuffer: blockBuffer,
+                offsetIntoDestination: 0,
+                dataLength: count
+            ) == noErr else {
                 return
             }
         }
@@ -82,7 +85,7 @@ extension Data {
         var offset = 0
         repeat {
             let thisChunkSize = ((length - offset) > size) ? size : (length - offset)
-            chunks.append(subdata(in: offset..<offset + thisChunkSize))
+            chunks.append(subdata(in: offset ..< offset + thisChunkSize))
             offset += thisChunkSize
         } while offset < length
         return chunks

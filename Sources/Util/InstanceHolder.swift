@@ -26,7 +26,7 @@ public class InstanceHolder<T: Equatable> {
     /// Releases an instance object if needed.
     public func release(_ instance: T?) {
         queue.sync {
-            guard 0 < self.retainCount, self.instance == instance else {
+            guard self.retainCount > 0, self.instance == instance else {
                 return
             }
             self.retainCount -= 1

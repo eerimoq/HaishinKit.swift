@@ -26,6 +26,7 @@ public class TSReader {
             }
         }
     }
+
     private var pmt: [UInt16: TSProgramMap] = [:] {
         didSet {
             for (_, pmt) in pmt {
@@ -38,6 +39,7 @@ public class TSReader {
             }
         }
     }
+
     private var nalUnitReader = AVCNALUnitReader()
     private var programs: [UInt16: UInt16] = [:]
     private var esSpecData: [UInt16: ESSpecificData] = [:]
@@ -46,14 +48,15 @@ public class TSReader {
     private var previousPresentationTimeStamps: [UInt16: CMTime] = [:]
 
     /// Create a  new TSReader instance.
-    public init() {
-    }
+    public init() {}
 
     /// Reads transport-stream data.
     public func read(_ data: Data) -> Int {
         let count = data.count / TSPacket.size
-        for i in 0..<count {
-            guard let packet = TSPacket(data: data.subdata(in: i * TSPacket.size..<(i + 1) * TSPacket.size)) else {
+        for i in 0 ..< count {
+            guard let packet = TSPacket(data: data
+                .subdata(in: i * TSPacket.size ..< (i + 1) * TSPacket.size))
+            else {
                 continue
             }
             if packet.pid == 0x0000 {
@@ -97,7 +100,8 @@ public class TSReader {
     private func makeSampleBuffer(_ id: UInt16, forUpdate: Bool = false) -> CMSampleBuffer? {
         guard
             let data = esSpecData[id],
-            var pes = packetizedElementaryStreams[id], pes.isEntired || forUpdate else {
+            var pes = packetizedElementaryStreams[id], pes.isEntired || forUpdate
+        else {
             return nil
         }
         defer {
@@ -134,7 +138,9 @@ public class TSReader {
         return sampleBuffer
     }
 
-    private func makeFormatDescription(_ data: ESSpecificData, pes: PacketizedElementaryStream) -> CMFormatDescription? {
+    private func makeFormatDescription(_ data: ESSpecificData,
+                                       pes: PacketizedElementaryStream) -> CMFormatDescription?
+    {
         switch data.streamType {
         case .adtsAac:
             return ADTSHeader(data: pes.data).makeFormatDescription()

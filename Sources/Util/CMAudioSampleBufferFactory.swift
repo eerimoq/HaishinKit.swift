@@ -2,8 +2,12 @@ import CoreMedia
 import Foundation
 
 enum CMAudioSampleBufferFactory {
-    static func makeSampleBuffer(_ buffer: CMSampleBuffer, numSamples: Int, presentationTimeStamp: CMTime) -> CMSampleBuffer? {
-        guard 0 < numSamples, let formatDescription = buffer.formatDescription, let streamBasicDescription = formatDescription.streamBasicDescription else {
+    static func makeSampleBuffer(_ buffer: CMSampleBuffer, numSamples: Int,
+                                 presentationTimeStamp: CMTime) -> CMSampleBuffer?
+    {
+        guard numSamples > 0, let formatDescription = buffer.formatDescription,
+              let streamBasicDescription = formatDescription.streamBasicDescription
+        else {
             return nil
         }
         var status: OSStatus = noErr

@@ -34,8 +34,7 @@ struct ESSpecificData {
     var esInfoLength: UInt16 = 0
     var esDescriptors = Data()
 
-    init() {
-    }
+    init() {}
 
     init?(_ data: Data) {
         self.data = data
@@ -44,21 +43,22 @@ struct ESSpecificData {
 
 extension ESSpecificData: DataConvertible {
     // MARK: DataConvertible
+
     var data: Data {
         get {
             ByteArray()
                 .writeUInt8(streamType.rawValue)
-                .writeUInt16(elementaryPID | 0xe000)
-                .writeUInt16(esInfoLength | 0xf000)
+                .writeUInt16(elementaryPID | 0xE000)
+                .writeUInt16(esInfoLength | 0xF000)
                 .writeBytes(esDescriptors)
                 .data
         }
         set {
             let buffer = ByteArray(data: newValue)
             do {
-                streamType = ESStreamType(rawValue: try buffer.readUInt8()) ?? .unspecific
-                elementaryPID = try buffer.readUInt16() & 0x0fff
-                esInfoLength = try buffer.readUInt16() & 0x01ff
+                streamType = try ESStreamType(rawValue: buffer.readUInt8()) ?? .unspecific
+                elementaryPID = try buffer.readUInt16() & 0x0FFF
+                esInfoLength = try buffer.readUInt16() & 0x01FF
                 esDescriptors = try buffer.readBytes(Int(esInfoLength))
             } catch {
                 logger.error("\(buffer)")
@@ -69,6 +69,7 @@ extension ESSpecificData: DataConvertible {
 
 extension ESSpecificData: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }

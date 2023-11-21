@@ -23,6 +23,7 @@ enum AMFSerializerError: Error {
 }
 
 // MARK: -
+
 protocol AMFSerializer: ByteArrayConvertible {
     var reference: AMFReference { get set }
 
@@ -78,17 +79,18 @@ enum AMF0Type: UInt8 {
     case reference = 0x07
     case ecmaArray = 0x08
     case objectEnd = 0x09
-    case strictArray = 0x0a
-    case date = 0x0b
-    case longString = 0x0c
-    case unsupported = 0x0d
+    case strictArray = 0x0A
+    case date = 0x0B
+    case longString = 0x0C
+    case unsupported = 0x0D
     // case RecordSet   = 0x0e
-    case xmlDocument = 0x0f
+    case xmlDocument = 0x0F
     case typedObject = 0x10
     case avmplush = 0x11
 }
 
 // MARK: -
+
 /**
  AMF0Serializer
 
@@ -100,6 +102,7 @@ final class AMF0Serializer: ByteArray {
 
 extension AMF0Serializer: AMFSerializer {
     // MARK: AMFSerializer
+
     @discardableResult
     func serialize(_ value: Any?) -> Self {
         if value == nil {
@@ -142,7 +145,7 @@ extension AMF0Serializer: AMFSerializer {
     }
 
     func deserialize() throws -> Any? {
-        guard let type = AMF0Type(rawValue: try readUInt8()) else {
+        guard let type = try AMF0Type(rawValue: readUInt8()) else {
             return nil
         }
         position -= 1
@@ -207,7 +210,7 @@ extension AMF0Serializer: AMFSerializer {
     }
 
     func deserialize() throws -> Int {
-        Int(try deserialize() as Double)
+        try Int(deserialize() as Double)
     }
 
     /**
@@ -284,7 +287,7 @@ extension AMF0Serializer: AMFSerializer {
     /**
      * - seealso: 2.10 ECMA Array Type
      */
-    func serialize(_ value: ASArray) -> Self {
+    func serialize(_: ASArray) -> Self {
         self
     }
 
@@ -298,7 +301,7 @@ extension AMF0Serializer: AMFSerializer {
             throw AMFSerializerError.deserialize
         }
 
-        var result = ASArray(count: Int(try readUInt32()))
+        var result = try ASArray(count: Int(readUInt32()))
         while true {
             let key: String = try deserializeUTF8(false)
             guard !key.isEmpty else {
@@ -332,9 +335,9 @@ extension AMF0Serializer: AMFSerializer {
             throw AMFSerializerError.deserialize
         }
         var result: [Any?] = []
-        let count = Int(try readUInt32())
-        for _ in 0..<count {
-            result.append(try deserialize())
+        let count = try Int(readUInt32())
+        for _ in 0 ..< count {
+            try result.append(deserialize())
         }
         return result
     }
@@ -343,14 +346,17 @@ extension AMF0Serializer: AMFSerializer {
      * - seealso: 2.13 Date Type
      */
     func serialize(_ value: Date) -> Self {
-        writeUInt8(AMF0Type.date.rawValue).writeDouble(value.timeIntervalSince1970 * 1000).writeBytes(Data([0x00, 0x00]))
+        writeUInt8(AMF0Type.date.rawValue).writeDouble(value.timeIntervalSince1970 * 1000).writeBytes(Data([
+            0x00,
+            0x00,
+        ]))
     }
 
     func deserialize() throws -> Date {
         guard try readUInt8() == AMF0Type.date.rawValue else {
             throw AMFSerializerError.deserialize
         }
-        let date = Date(timeIntervalSince1970: try readDouble() / 1000)
+        let date = try Date(timeIntervalSince1970: readDouble() / 1000)
         position += 2 // timezone offset
         return date
     }
@@ -366,7 +372,7 @@ extension AMF0Serializer: AMFSerializer {
         guard try readUInt8() == AMF0Type.xmlDocument.rawValue else {
             throw AMFSerializerError.deserialize
         }
-        return ASXMLDocument(data: try deserializeUTF8(true))
+        return try ASXMLDocument(data: deserializeUTF8(true))
     }
 
     func deserialize() throws -> Any {
@@ -400,7 +406,7 @@ extension AMF0Serializer: AMFSerializer {
     }
 
     private func deserializeUTF8(_ isLong: Bool) throws -> String {
-        let length: Int = isLong ? Int(try readUInt32()) : Int(try readUInt16())
+        let length: Int = try isLong ? Int(readUInt32()) : Int(readUInt16())
         return try readUTF8Bytes(length)
     }
 }

@@ -7,24 +7,27 @@ enum HTTPVersion: String {
 
 extension HTTPVersion: CustomStringConvertible {
     // MARK: CustomStringConvertible
+
     var description: String {
         rawValue
     }
 }
 
 // MARK: -
+
 enum HTTPMethod: String {
-    case get     = "GET"
-    case post    = "POST"
-    case put     = "PUT"
-    case delete  = "DELETE"
-    case head    = "HEAD"
+    case get = "GET"
+    case post = "POST"
+    case put = "PUT"
+    case delete = "DELETE"
+    case head = "HEAD"
     case options = "OPTIONS"
-    case trace   = "TRACE"
+    case trace = "TRACE"
     case connect = "CONNECT"
 }
 
 // MARK: -
+
 enum HTTPStatusCode: Int {
     case `continue` = 100
     case switchingProtocols = 101
@@ -155,12 +158,14 @@ enum HTTPStatusCode: Int {
 
 extension HTTPStatusCode: CustomStringConvertible {
     // MARK: CustomStringConvertible
+
     var description: String {
         "\(rawValue) \(message)"
     }
 }
 
 // MARK: -
+
 /// The HTTPService class provide a lightweight HTTPServer.
 open class HTTPService: NetService {
     /// The type of the published service.
@@ -176,15 +181,15 @@ open class HTTPService: NetService {
     /// The root document of HTML.
     open class var defaultDocument: String {
         """
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>HaishinKit</title>
-</head>
-<body></body>
-</html>
-"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>HaishinKit</title>
+        </head>
+        <body></body>
+        </html>
+        """
     }
 
     var document: String {
@@ -262,7 +267,7 @@ open class HTTPService: NetService {
         }
     }
 
-    func notFound(_ request: HTTPRequest, client: NetClient) {
+    func notFound(_: HTTPRequest, client: NetClient) {
         var response = HTTPResponse()
         response.statusCode = HTTPStatusCode.notFound.description
         client.doOutput(data: response.data)

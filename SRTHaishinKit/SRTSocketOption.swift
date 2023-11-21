@@ -3,7 +3,7 @@ import libsrt
 
 private let enummapTranstype: [String: Any] = [
     "live": SRTT_LIVE,
-    "file": SRTT_FILE
+    "file": SRTT_FILE,
 ]
 
 public enum SRTSocketOption: String {
@@ -423,7 +423,9 @@ public enum SRTSocketOption: String {
         }
     }
 
-    static func configure(_ socket: SRTSOCKET, binding: Binding, options: [SRTSocketOption: String]) -> [String] {
+    static func configure(_ socket: SRTSOCKET, binding: Binding,
+                          options: [SRTSocketOption: String]) -> [String]
+    {
         var failures: [String] = []
         for (key, value) in options where key.binding == binding {
             if !key.setOption(socket, value: value) { failures.append(key.rawValue) }

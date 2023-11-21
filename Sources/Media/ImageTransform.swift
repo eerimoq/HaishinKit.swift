@@ -55,9 +55,15 @@ public enum ImageTransform: String, Codable {
         case .north:
             return .init(origin: .init(x: 0, y: 0), size: .init(width: rect.width, height: rect.height / 2))
         case .south:
-            return .init(origin: .init(x: 0, y: rect.height / 2), size: .init(width: rect.width, height: rect.height / 2))
+            return .init(
+                origin: .init(x: 0, y: rect.height / 2),
+                size: .init(width: rect.width, height: rect.height / 2)
+            )
         case .east:
-            return .init(origin: .init(x: rect.width / 2, y: 0), size: .init(width: rect.width / 2, height: rect.height))
+            return .init(
+                origin: .init(x: rect.width / 2, y: 0),
+                size: .init(width: rect.width / 2, height: rect.height)
+            )
         case .west:
             return .init(origin: .init(x: 0, y: 0), size: .init(width: rect.width / 2, height: rect.height))
         }

@@ -28,8 +28,7 @@ struct TSPacket {
         return TSPacket.size - TSPacket.headerSize - adaptationFieldSize - payload.count
     }
 
-    init() {
-    }
+    init() {}
 
     init?(data: Data) {
         guard TSPacket.size == data.count else {
@@ -43,12 +42,12 @@ struct TSPacket {
 
     mutating func fill(_ data: Data?, useAdaptationField: Bool) -> Int {
         guard let data: Data = data else {
-            payload.append(Data(repeating: 0xff, count: remain))
+            payload.append(Data(repeating: 0xFF, count: remain))
             return 0
         }
         payloadFlag = true
         let length: Int = min(data.count, remain, 182)
-        payload.append(data[0..<length])
+        payload.append(data[0 ..< length])
         if remain == 0 {
             return length
         }
@@ -61,13 +60,14 @@ struct TSPacket {
             adaptationField?.compute()
             return length
         }
-        payload.append(Data(repeating: 0xff, count: remain))
+        payload.append(Data(repeating: 0xFF, count: remain))
         return length
     }
 }
 
 extension TSPacket: DataConvertible {
     // MARK: DataConvertible
+
     var data: Data {
         get {
             var bytes = Data([syncByte, 0x00, 0x00, 0x00])
@@ -94,15 +94,15 @@ extension TSPacket: DataConvertible {
                 transportErrorIndicator = (data[1] & 0x80) == 0x80
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
                 transportPriority = (data[1] & 0x20) == 0x20
-                pid = UInt16(data[1] & 0x1f) << 8 | UInt16(data[2])
-                scramblingControl = UInt8(data[3] & 0xc0)
+                pid = UInt16(data[1] & 0x1F) << 8 | UInt16(data[2])
+                scramblingControl = UInt8(data[3] & 0xC0)
                 adaptationFieldFlag = (data[3] & 0x20) == 0x20
                 payloadFlag = (data[3] & 0x10) == 0x10
-                continuityCounter = UInt8(data[3] & 0xf)
+                continuityCounter = UInt8(data[3] & 0xF)
                 if adaptationFieldFlag {
-                    let length = Int(try buffer.readUInt8())
+                    let length = try Int(buffer.readUInt8())
                     buffer.position -= 1
-                    adaptationField = TSAdaptationField(data: try buffer.readBytes(length + 1))
+                    adaptationField = try TSAdaptationField(data: buffer.readBytes(length + 1))
                 }
                 if payloadFlag {
                     payload = try buffer.readBytes(buffer.bytesAvailable)
@@ -116,12 +116,14 @@ extension TSPacket: DataConvertible {
 
 extension TSPacket: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
 
 // MARK: -
+
 enum TSTimestamp {
     static let resolution: Double = 90 * 1000 // 90kHz
     static let dataSize: Int = 5
@@ -130,9 +132,9 @@ enum TSTimestamp {
 
     static func decode(_ data: Data, offset: Int = 0) -> Int64 {
         var result: Int64 = 0
-        result |= Int64(data[offset + 0] & 0x0e) << 29
-        result |= Int64(data[offset + 1]) << 22 | Int64(data[offset + 2] & 0xfe) << 14
-        result |= Int64(data[offset + 3]) << 7 | Int64(data[offset + 3] & 0xfe) << 1
+        result |= Int64(data[offset + 0] & 0x0E) << 29
+        result |= Int64(data[offset + 1]) << 22 | Int64(data[offset + 2] & 0xFE) << 14
+        result |= Int64(data[offset + 3]) << 7 | Int64(data[offset + 3] & 0xFE) << 1
         return result
     }
 
@@ -148,6 +150,7 @@ enum TSTimestamp {
 }
 
 // MARK: -
+
 enum TSProgramClockReference {
     static let resolutionForBase: Int32 = 90 * 1000 // 90kHz
     static let resolutionForExtension: Int32 = 27 * 1000 * 1000 // 27MHz
@@ -171,16 +174,16 @@ enum TSProgramClockReference {
         data[1] = UInt8(truncatingIfNeeded: b >> 17)
         data[2] = UInt8(truncatingIfNeeded: b >> 9)
         data[3] = UInt8(truncatingIfNeeded: b >> 1)
-        data[4] = 0xff
+        data[4] = 0xFF
         if (b & 1) == 1 {
             data[4] |= 0x80
         } else {
-            data[4] &= 0x7f
+            data[4] &= 0x7F
         }
         if UInt16(data[4] & 0x01) >> 8 == 1 {
             data[4] |= 1
         } else {
-            data[4] &= 0xfe
+            data[4] &= 0xFE
         }
         data[5] = UInt8(truncatingIfNeeded: e)
         return data

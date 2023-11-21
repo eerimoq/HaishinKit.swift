@@ -21,8 +21,7 @@ class TSAdaptationField {
     var adaptationExtension: TSAdaptationExtensionField?
     var stuffingBytes = Data()
 
-    init() {
-    }
+    init() {}
 
     init(data: Data) {
         self.data = data
@@ -41,13 +40,14 @@ class TSAdaptationField {
     }
 
     func stuffing(_ size: Int) {
-        stuffingBytes = Data(repeating: 0xff, count: size)
+        stuffingBytes = Data(repeating: 0xFF, count: size)
         length += UInt8(size)
     }
 }
 
 extension TSAdaptationField: DataConvertible {
     // MARK: DataConvertible
+
     var data: Data {
         get {
             var byte: UInt8 = 0
@@ -106,9 +106,9 @@ extension TSAdaptationField: DataConvertible {
                     transportPrivateData = try buffer.readBytes(Int(transportPrivateDataLength))
                 }
                 if adaptationFieldExtensionFlag {
-                    let length = Int(try buffer.readUInt8())
+                    let length = try Int(buffer.readUInt8())
                     buffer.position -= 1
-                    adaptationExtension = TSAdaptationExtensionField(data: try buffer.readBytes(length + 1))
+                    adaptationExtension = try TSAdaptationExtensionField(data: buffer.readBytes(length + 1))
                 }
                 stuffingBytes = try buffer.readBytes(buffer.bytesAvailable)
             } catch {
@@ -120,6 +120,7 @@ extension TSAdaptationField: DataConvertible {
 
 extension TSAdaptationField: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
@@ -142,6 +143,7 @@ struct TSAdaptationExtensionField {
 
 extension TSAdaptationExtensionField: DataConvertible {
     // MARK: DataConvertible
+
     var data: Data {
         get {
             let buffer = ByteArray()
@@ -149,7 +151,7 @@ extension TSAdaptationExtensionField: DataConvertible {
                 .writeUInt8(
                     (legalTimeWindowFlag ? 0x80 : 0) |
                         (piecewiseRateFlag ? 0x40 : 0) |
-                        (seamlessSpiceFlag ? 0x1f : 0)
+                        (seamlessSpiceFlag ? 0x1F : 0)
                 )
             if legalTimeWindowFlag {
                 buffer.writeUInt16((legalTimeWindowFlag ? 0x8000 : 0) | legalTimeWindowOffset)
@@ -161,7 +163,7 @@ extension TSAdaptationExtensionField: DataConvertible {
                 buffer
                     .writeUInt8(spliceType)
                     .writeUInt8(spliceType << 4 | DTSNextAccessUnit[0])
-                    .writeBytes(DTSNextAccessUnit.subdata(in: 1..<DTSNextAccessUnit.count))
+                    .writeBytes(DTSNextAccessUnit.subdata(in: 1 ..< DTSNextAccessUnit.count))
             }
             return buffer.data
         }
@@ -173,7 +175,7 @@ extension TSAdaptationExtensionField: DataConvertible {
                 byte = try buffer.readUInt8()
                 legalTimeWindowFlag = (byte & 0x80) == 0x80
                 piecewiseRateFlag = (byte & 0x40) == 0x40
-                seamlessSpiceFlag = (byte & 0x1f) == 0x1f
+                seamlessSpiceFlag = (byte & 0x1F) == 0x1F
                 if legalTimeWindowFlag {
                     legalTimeWindowOffset = try buffer.readUInt16()
                     legalTimeWindowFlag = (legalTimeWindowOffset & 0x8000) == 0x8000
@@ -183,8 +185,8 @@ extension TSAdaptationExtensionField: DataConvertible {
                 }
                 if seamlessSpiceFlag {
                     DTSNextAccessUnit = try buffer.readBytes(DTSNextAccessUnit.count)
-                    spliceType = DTSNextAccessUnit[0] & 0xf0 >> 4
-                    DTSNextAccessUnit[0] = DTSNextAccessUnit[0] & 0x0f
+                    spliceType = DTSNextAccessUnit[0] & 0xF0 >> 4
+                    DTSNextAccessUnit[0] = DTSNextAccessUnit[0] & 0x0F
                 }
             } catch {
                 logger.error("\(buffer)")
@@ -195,6 +197,7 @@ extension TSAdaptationExtensionField: DataConvertible {
 
 extension TSAdaptationExtensionField: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }

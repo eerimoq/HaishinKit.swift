@@ -1,7 +1,8 @@
 import Foundation
 import libsrt
 
-/// The SRTPerformanceData represents the SRT's performance statistics. This struct is wrapper for an CBytePerfMon.
+/// The SRTPerformanceData represents the SRT's performance statistics. This struct is wrapper for an
+/// CBytePerfMon.
 /// - seealso: https://github.com/Haivision/srt/blob/master/srtcore/srt.h
 public struct SRTPerformanceData {
     static let zero: SRTPerformanceData = .init(
@@ -231,83 +232,158 @@ public struct SRTPerformanceData {
     public let pktReorderTolerance: Int32
 
     init(mon: CBytePerfMon) {
-        self.msTimeStamp = mon.msTimeStamp
-        self.pktSentTotal = mon.pktSentTotal
-        self.pktRecvTotal = mon.pktRecvTotal
-        self.pktSndLossTotal = mon.pktSndLossTotal
-        self.pktRcvLossTotal = mon.pktRcvLossTotal
-        self.pktRetransTotal = mon.pktRetransTotal
-        self.pktSentACKTotal = mon.pktSentACKTotal
-        self.pktRecvACKTotal = mon.pktRecvACKTotal
-        self.pktSentNAKTotal = mon.pktSentNAKTotal
-        self.pktRecvNAKTotal = mon.pktRecvNAKTotal
-        self.usSndDurationTotal = mon.usSndDurationTotal
-        self.pktSndDropTotal = mon.pktSndDropTotal
-        self.pktRcvDropTotal = mon.pktRcvDropTotal
-        self.pktRcvUndecryptTotal = mon.pktRcvUndecryptTotal
-        self.byteSentTotal = mon.byteSentTotal
-        self.byteRecvTotal = mon.byteRecvTotal
-        self.byteRcvLossTotal = mon.byteRcvLossTotal
-        self.byteRetransTotal = mon.byteRetransTotal
-        self.byteSndDropTotal = mon.byteSndDropTotal
-        self.byteRcvDropTotal = mon.byteRcvDropTotal
-        self.byteRcvUndecryptTotal = mon.byteRcvUndecryptTotal
-        self.pktSent = mon.pktSent
-        self.pktRecv = mon.pktRecv
-        self.pktSndLoss = mon.pktSndLoss
-        self.pktRcvLoss = mon.pktRcvLoss
-        self.pktRetrans = mon.pktRetrans
-        self.pktRcvRetrans = mon.pktRcvRetrans
-        self.pktSentACK = mon.pktSentACK
-        self.pktRecvACK = mon.pktRecvACK
-        self.pktSentNAK = mon.pktSentNAK
-        self.pktRecvNAK = mon.pktRecvNAK
-        self.mbpsSendRate = mon.mbpsSendRate
-        self.mbpsRecvRate = mon.mbpsRecvRate
-        self.usSndDuration = mon.usSndDuration
-        self.pktReorderDistance = mon.pktReorderDistance
-        self.pktRcvAvgBelatedTime = mon.pktRcvAvgBelatedTime
-        self.pktRcvBelated = mon.pktRcvBelated
-        self.pktSndDrop = mon.pktSndDrop
-        self.pktRcvDrop = mon.pktRcvDrop
-        self.pktRcvUndecrypt = mon.pktRcvUndecrypt
-        self.byteSent = mon.byteSent
-        self.byteRecv = mon.byteRecv
-        self.byteRcvLoss = mon.byteRcvLoss
-        self.byteRetrans = mon.byteRetrans
-        self.byteSndDrop = mon.byteSndDrop
-        self.byteRcvDrop = mon.byteRcvDrop
-        self.byteRcvUndecrypt = mon.byteRcvUndecrypt
-        self.usPktSndPeriod = mon.usPktSndPeriod
-        self.pktFlowWindow = mon.pktFlowWindow
-        self.pktCongestionWindow = mon.pktCongestionWindow
-        self.pktFlightSize = mon.pktFlightSize
-        self.msRTT = mon.msRTT
-        self.mbpsBandwidth = mon.mbpsBandwidth
-        self.byteAvailSndBuf = mon.byteAvailSndBuf
-        self.byteAvailRcvBuf = mon.byteAvailRcvBuf
-        self.mbpsMaxBW = mon.mbpsMaxBW
-        self.byteMSS = mon.byteMSS
-        self.pktSndBuf = mon.pktSndBuf
-        self.byteSndBuf = mon.byteSndBuf
-        self.msSndBuf = mon.msSndBuf
-        self.msSndTsbPdDelay = mon.msSndTsbPdDelay
-        self.pktRcvBuf = mon.pktRcvBuf
-        self.byteRcvBuf = mon.byteRcvBuf
-        self.msRcvBuf = mon.msRcvBuf
-        self.msRcvTsbPdDelay = mon.msRcvTsbPdDelay
-        self.pktSndFilterExtraTotal = mon.pktSndFilterExtraTotal
-        self.pktRcvFilterExtraTotal = mon.pktRcvFilterExtraTotal
-        self.pktRcvFilterSupplyTotal = mon.pktRcvFilterSupplyTotal
-        self.pktRcvFilterLossTotal = mon.pktRcvFilterLossTotal
-        self.pktSndFilterExtra = mon.pktSndFilterExtra
-        self.pktRcvFilterExtra = mon.pktRcvFilterExtra
-        self.pktRcvFilterSupply = mon.pktRcvFilterSupply
-        self.pktRcvFilterLoss = mon.pktRcvFilterLoss
-        self.pktReorderTolerance = mon.pktReorderTolerance
+        msTimeStamp = mon.msTimeStamp
+        pktSentTotal = mon.pktSentTotal
+        pktRecvTotal = mon.pktRecvTotal
+        pktSndLossTotal = mon.pktSndLossTotal
+        pktRcvLossTotal = mon.pktRcvLossTotal
+        pktRetransTotal = mon.pktRetransTotal
+        pktSentACKTotal = mon.pktSentACKTotal
+        pktRecvACKTotal = mon.pktRecvACKTotal
+        pktSentNAKTotal = mon.pktSentNAKTotal
+        pktRecvNAKTotal = mon.pktRecvNAKTotal
+        usSndDurationTotal = mon.usSndDurationTotal
+        pktSndDropTotal = mon.pktSndDropTotal
+        pktRcvDropTotal = mon.pktRcvDropTotal
+        pktRcvUndecryptTotal = mon.pktRcvUndecryptTotal
+        byteSentTotal = mon.byteSentTotal
+        byteRecvTotal = mon.byteRecvTotal
+        byteRcvLossTotal = mon.byteRcvLossTotal
+        byteRetransTotal = mon.byteRetransTotal
+        byteSndDropTotal = mon.byteSndDropTotal
+        byteRcvDropTotal = mon.byteRcvDropTotal
+        byteRcvUndecryptTotal = mon.byteRcvUndecryptTotal
+        pktSent = mon.pktSent
+        pktRecv = mon.pktRecv
+        pktSndLoss = mon.pktSndLoss
+        pktRcvLoss = mon.pktRcvLoss
+        pktRetrans = mon.pktRetrans
+        pktRcvRetrans = mon.pktRcvRetrans
+        pktSentACK = mon.pktSentACK
+        pktRecvACK = mon.pktRecvACK
+        pktSentNAK = mon.pktSentNAK
+        pktRecvNAK = mon.pktRecvNAK
+        mbpsSendRate = mon.mbpsSendRate
+        mbpsRecvRate = mon.mbpsRecvRate
+        usSndDuration = mon.usSndDuration
+        pktReorderDistance = mon.pktReorderDistance
+        pktRcvAvgBelatedTime = mon.pktRcvAvgBelatedTime
+        pktRcvBelated = mon.pktRcvBelated
+        pktSndDrop = mon.pktSndDrop
+        pktRcvDrop = mon.pktRcvDrop
+        pktRcvUndecrypt = mon.pktRcvUndecrypt
+        byteSent = mon.byteSent
+        byteRecv = mon.byteRecv
+        byteRcvLoss = mon.byteRcvLoss
+        byteRetrans = mon.byteRetrans
+        byteSndDrop = mon.byteSndDrop
+        byteRcvDrop = mon.byteRcvDrop
+        byteRcvUndecrypt = mon.byteRcvUndecrypt
+        usPktSndPeriod = mon.usPktSndPeriod
+        pktFlowWindow = mon.pktFlowWindow
+        pktCongestionWindow = mon.pktCongestionWindow
+        pktFlightSize = mon.pktFlightSize
+        msRTT = mon.msRTT
+        mbpsBandwidth = mon.mbpsBandwidth
+        byteAvailSndBuf = mon.byteAvailSndBuf
+        byteAvailRcvBuf = mon.byteAvailRcvBuf
+        mbpsMaxBW = mon.mbpsMaxBW
+        byteMSS = mon.byteMSS
+        pktSndBuf = mon.pktSndBuf
+        byteSndBuf = mon.byteSndBuf
+        msSndBuf = mon.msSndBuf
+        msSndTsbPdDelay = mon.msSndTsbPdDelay
+        pktRcvBuf = mon.pktRcvBuf
+        byteRcvBuf = mon.byteRcvBuf
+        msRcvBuf = mon.msRcvBuf
+        msRcvTsbPdDelay = mon.msRcvTsbPdDelay
+        pktSndFilterExtraTotal = mon.pktSndFilterExtraTotal
+        pktRcvFilterExtraTotal = mon.pktRcvFilterExtraTotal
+        pktRcvFilterSupplyTotal = mon.pktRcvFilterSupplyTotal
+        pktRcvFilterLossTotal = mon.pktRcvFilterLossTotal
+        pktSndFilterExtra = mon.pktSndFilterExtra
+        pktRcvFilterExtra = mon.pktRcvFilterExtra
+        pktRcvFilterSupply = mon.pktRcvFilterSupply
+        pktRcvFilterLoss = mon.pktRcvFilterLoss
+        pktReorderTolerance = mon.pktReorderTolerance
     }
 
-    init(msTimeStamp: Int64, pktSentTotal: Int64, pktRecvTotal: Int64, pktSndLossTotal: Int32, pktRcvLossTotal: Int32, pktRetransTotal: Int32, pktSentACKTotal: Int32, pktRecvACKTotal: Int32, pktSentNAKTotal: Int32, pktRecvNAKTotal: Int32, usSndDurationTotal: Int64, pktSndDropTotal: Int32, pktRcvDropTotal: Int32, pktRcvUndecryptTotal: Int32, byteSentTotal: UInt64, byteRecvTotal: UInt64, byteRcvLossTotal: UInt64, byteRetransTotal: UInt64, byteSndDropTotal: UInt64, byteRcvDropTotal: UInt64, byteRcvUndecryptTotal: UInt64, pktSent: Int64, pktRecv: Int64, pktSndLoss: Int32, pktRcvLoss: Int32, pktRetrans: Int32, pktRcvRetrans: Int32, pktSentACK: Int32, pktRecvACK: Int32, pktSentNAK: Int32, pktRecvNAK: Int32, mbpsSendRate: Double, mbpsRecvRate: Double, usSndDuration: Int64, pktReorderDistance: Int32, pktRcvAvgBelatedTime: Double, pktRcvBelated: Int64, pktSndDrop: Int32, pktRcvDrop: Int32, pktRcvUndecrypt: Int32, byteSent: UInt64, byteRecv: UInt64, byteRcvLoss: UInt64, byteRetrans: UInt64, byteSndDrop: UInt64, byteRcvDrop: UInt64, byteRcvUndecrypt: UInt64, usPktSndPeriod: Double, pktFlowWindow: Int32, pktCongestionWindow: Int32, pktFlightSize: Int32, msRTT: Double, mbpsBandwidth: Double, byteAvailSndBuf: Int32, byteAvailRcvBuf: Int32, mbpsMaxBW: Double, byteMSS: Int32, pktSndBuf: Int32, byteSndBuf: Int32, msSndBuf: Int32, msSndTsbPdDelay: Int32, pktRcvBuf: Int32, byteRcvBuf: Int32, msRcvBuf: Int32, msRcvTsbPdDelay: Int32, pktSndFilterExtraTotal: Int32, pktRcvFilterExtraTotal: Int32, pktRcvFilterSupplyTotal: Int32, pktRcvFilterLossTotal: Int32, pktSndFilterExtra: Int32, pktRcvFilterExtra: Int32, pktRcvFilterSupply: Int32, pktRcvFilterLoss: Int32, pktReorderTolerance: Int32) {
+    init(
+        msTimeStamp: Int64,
+        pktSentTotal: Int64,
+        pktRecvTotal: Int64,
+        pktSndLossTotal: Int32,
+        pktRcvLossTotal: Int32,
+        pktRetransTotal: Int32,
+        pktSentACKTotal: Int32,
+        pktRecvACKTotal: Int32,
+        pktSentNAKTotal: Int32,
+        pktRecvNAKTotal: Int32,
+        usSndDurationTotal: Int64,
+        pktSndDropTotal: Int32,
+        pktRcvDropTotal: Int32,
+        pktRcvUndecryptTotal: Int32,
+        byteSentTotal: UInt64,
+        byteRecvTotal: UInt64,
+        byteRcvLossTotal: UInt64,
+        byteRetransTotal: UInt64,
+        byteSndDropTotal: UInt64,
+        byteRcvDropTotal: UInt64,
+        byteRcvUndecryptTotal: UInt64,
+        pktSent: Int64,
+        pktRecv: Int64,
+        pktSndLoss: Int32,
+        pktRcvLoss: Int32,
+        pktRetrans: Int32,
+        pktRcvRetrans: Int32,
+        pktSentACK: Int32,
+        pktRecvACK: Int32,
+        pktSentNAK: Int32,
+        pktRecvNAK: Int32,
+        mbpsSendRate: Double,
+        mbpsRecvRate: Double,
+        usSndDuration: Int64,
+        pktReorderDistance: Int32,
+        pktRcvAvgBelatedTime: Double,
+        pktRcvBelated: Int64,
+        pktSndDrop: Int32,
+        pktRcvDrop: Int32,
+        pktRcvUndecrypt: Int32,
+        byteSent: UInt64,
+        byteRecv: UInt64,
+        byteRcvLoss: UInt64,
+        byteRetrans: UInt64,
+        byteSndDrop: UInt64,
+        byteRcvDrop: UInt64,
+        byteRcvUndecrypt: UInt64,
+        usPktSndPeriod: Double,
+        pktFlowWindow: Int32,
+        pktCongestionWindow: Int32,
+        pktFlightSize: Int32,
+        msRTT: Double,
+        mbpsBandwidth: Double,
+        byteAvailSndBuf: Int32,
+        byteAvailRcvBuf: Int32,
+        mbpsMaxBW: Double,
+        byteMSS: Int32,
+        pktSndBuf: Int32,
+        byteSndBuf: Int32,
+        msSndBuf: Int32,
+        msSndTsbPdDelay: Int32,
+        pktRcvBuf: Int32,
+        byteRcvBuf: Int32,
+        msRcvBuf: Int32,
+        msRcvTsbPdDelay: Int32,
+        pktSndFilterExtraTotal: Int32,
+        pktRcvFilterExtraTotal: Int32,
+        pktRcvFilterSupplyTotal: Int32,
+        pktRcvFilterLossTotal: Int32,
+        pktSndFilterExtra: Int32,
+        pktRcvFilterExtra: Int32,
+        pktRcvFilterSupply: Int32,
+        pktRcvFilterLoss: Int32,
+        pktReorderTolerance: Int32
+    ) {
         self.msTimeStamp = msTimeStamp
         self.pktSentTotal = pktSentTotal
         self.pktRecvTotal = pktRecvTotal

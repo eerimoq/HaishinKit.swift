@@ -6,6 +6,7 @@ protocol DecoderConfigurationRecord {
 }
 
 // MARK: -
+
 /*
  - seealso: ISO/IEC 14496-15 2010
  */
@@ -14,7 +15,10 @@ struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         guard let formatDescription else {
             return nil
         }
-        if let atoms = CMFormatDescriptionGetExtension(formatDescription, extensionKey: "SampleDescriptionExtensionAtoms" as CFString) as? NSDictionary {
+        if let atoms = CMFormatDescriptionGetExtension(
+            formatDescription,
+            extensionKey: "SampleDescriptionExtensionAtoms" as CFString
+        ) as? NSDictionary {
             return atoms["avcC"] as? Data
         }
         return nil
@@ -44,43 +48,46 @@ struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         Int32((lengthSizeMinusOneWithReserved >> 6) + 1)
     }
 
-    init() {
-    }
+    init() {}
 
     init(data: Data) {
         self.data = data
     }
 
-    func makeFormatDescription(_ formatDescriptionOut: UnsafeMutablePointer<CMFormatDescription?>) -> OSStatus {
+    func makeFormatDescription(_ formatDescriptionOut: UnsafeMutablePointer<CMFormatDescription?>)
+        -> OSStatus
+    {
         return pictureParameterSets[0].withUnsafeBytes { (ppsBuffer: UnsafeRawBufferPointer) -> OSStatus in
             guard let ppsBaseAddress = ppsBuffer.baseAddress else {
                 return kCMFormatDescriptionBridgeError_InvalidParameter
             }
-            return sequenceParameterSets[0].withUnsafeBytes { (spsBuffer: UnsafeRawBufferPointer) -> OSStatus in
-                guard let spsBaseAddress = spsBuffer.baseAddress else {
-                    return kCMFormatDescriptionBridgeError_InvalidParameter
+            return sequenceParameterSets[0]
+                .withUnsafeBytes { (spsBuffer: UnsafeRawBufferPointer) -> OSStatus in
+                    guard let spsBaseAddress = spsBuffer.baseAddress else {
+                        return kCMFormatDescriptionBridgeError_InvalidParameter
+                    }
+                    let pointers: [UnsafePointer<UInt8>] = [
+                        spsBaseAddress.assumingMemoryBound(to: UInt8.self),
+                        ppsBaseAddress.assumingMemoryBound(to: UInt8.self),
+                    ]
+                    let sizes: [Int] = [spsBuffer.count, ppsBuffer.count]
+                    let nalUnitHeaderLength: Int32 = 4
+                    return CMVideoFormatDescriptionCreateFromH264ParameterSets(
+                        allocator: kCFAllocatorDefault,
+                        parameterSetCount: pointers.count,
+                        parameterSetPointers: pointers,
+                        parameterSetSizes: sizes,
+                        nalUnitHeaderLength: nalUnitHeaderLength,
+                        formatDescriptionOut: formatDescriptionOut
+                    )
                 }
-                let pointers: [UnsafePointer<UInt8>] = [
-                    spsBaseAddress.assumingMemoryBound(to: UInt8.self),
-                    ppsBaseAddress.assumingMemoryBound(to: UInt8.self)
-                ]
-                let sizes: [Int] = [spsBuffer.count, ppsBuffer.count]
-                let nalUnitHeaderLength: Int32 = 4
-                return CMVideoFormatDescriptionCreateFromH264ParameterSets(
-                    allocator: kCFAllocatorDefault,
-                    parameterSetCount: pointers.count,
-                    parameterSetPointers: pointers,
-                    parameterSetSizes: sizes,
-                    nalUnitHeaderLength: nalUnitHeaderLength,
-                    formatDescriptionOut: formatDescriptionOut
-                )
-            }
         }
     }
 }
 
 extension AVCDecoderConfigurationRecord: DataConvertible {
     // MARK: DataConvertible
+
     var data: Data {
         get {
             let buffer = ByteArray()
@@ -90,13 +97,13 @@ extension AVCDecoderConfigurationRecord: DataConvertible {
                 .writeUInt8(avcLevelIndication)
                 .writeUInt8(lengthSizeMinusOneWithReserved)
                 .writeUInt8(numOfSequenceParameterSetsWithReserved)
-            for i in 0..<sequenceParameterSets.count {
+            for i in 0 ..< sequenceParameterSets.count {
                 buffer
                     .writeUInt16(UInt16(sequenceParameterSets[i].count))
                     .writeBytes(Data(sequenceParameterSets[i]))
             }
             buffer.writeUInt8(UInt8(pictureParameterSets.count))
-            for i in 0..<pictureParameterSets.count {
+            for i in 0 ..< pictureParameterSets.count {
                 buffer
                     .writeUInt16(UInt16(pictureParameterSets[i].count))
                     .writeBytes(Data(pictureParameterSets[i]))
@@ -112,15 +119,16 @@ extension AVCDecoderConfigurationRecord: DataConvertible {
                 avcLevelIndication = try buffer.readUInt8()
                 lengthSizeMinusOneWithReserved = try buffer.readUInt8()
                 numOfSequenceParameterSetsWithReserved = try buffer.readUInt8()
-                let numOfSequenceParameterSets: UInt8 = numOfSequenceParameterSetsWithReserved & ~AVCDecoderConfigurationRecord.reserveNumOfSequenceParameterSets
-                for _ in 0..<numOfSequenceParameterSets {
-                    let length = Int(try buffer.readUInt16())
-                    sequenceParameterSets.append(try buffer.readBytes(length).bytes)
+                let numOfSequenceParameterSets: UInt8 = numOfSequenceParameterSetsWithReserved &
+                    ~AVCDecoderConfigurationRecord.reserveNumOfSequenceParameterSets
+                for _ in 0 ..< numOfSequenceParameterSets {
+                    let length = try Int(buffer.readUInt16())
+                    try sequenceParameterSets.append(buffer.readBytes(length).bytes)
                 }
                 let numPictureParameterSets: UInt8 = try buffer.readUInt8()
-                for _ in 0..<numPictureParameterSets {
-                    let length = Int(try buffer.readUInt16())
-                    pictureParameterSets.append(try buffer.readBytes(length).bytes)
+                for _ in 0 ..< numPictureParameterSets {
+                    let length = try Int(buffer.readUInt16())
+                    try pictureParameterSets.append(buffer.readBytes(length).bytes)
                 }
             } catch {
                 logger.error("\(buffer)")
@@ -131,6 +139,7 @@ extension AVCDecoderConfigurationRecord: DataConvertible {
 
 extension AVCDecoderConfigurationRecord: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
+
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }

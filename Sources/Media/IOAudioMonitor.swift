@@ -15,6 +15,7 @@ final class IOAudioMonitor {
             }
         }
     }
+
     private(set) var isRunning: Atomic<Bool> = .init(false)
     private var audioUnit: AudioUnit? {
         didSet {
@@ -28,9 +29,17 @@ final class IOAudioMonitor {
             }
         }
     }
+
     private var ringBuffer: IOAudioMonitorRingBuffer?
 
-    private let callback: AURenderCallback = { (inRefCon: UnsafeMutableRawPointer, _: UnsafeMutablePointer<AudioUnitRenderActionFlags>, _: UnsafePointer<AudioTimeStamp>, _: UInt32, inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>?) in
+    private let callback: AURenderCallback = { (
+        inRefCon: UnsafeMutableRawPointer,
+        _: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+        _: UnsafePointer<AudioTimeStamp>,
+        _: UInt32,
+        inNumberFrames: UInt32,
+        ioData: UnsafeMutablePointer<AudioBufferList>?
+    ) in
         let monitor = Unmanaged<IOAudioMonitor>.fromOpaque(inRefCon).takeUnretainedValue()
         return monitor.render(inNumberFrames, ioData: ioData)
     }
@@ -39,14 +48,16 @@ final class IOAudioMonitor {
         stopRunning()
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, offset: Int = 0) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, offset _: Int = 0) {
         guard isRunning.value else {
             return
         }
         ringBuffer?.appendSampleBuffer(sampleBuffer)
     }
 
-    private func render(_ inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>?) -> OSStatus {
+    private func render(_ inNumberFrames: UInt32,
+                        ioData: UnsafeMutablePointer<AudioBufferList>?) -> OSStatus
+    {
         return ringBuffer?.render(inNumberFrames, ioData: ioData) ?? noErr
     }
 
@@ -56,16 +67,17 @@ final class IOAudioMonitor {
         }
         var audioUnit: AudioUnit?
         #if os(macOS)
-        let subType = kAudioUnitSubType_DefaultOutput
+            let subType = kAudioUnitSubType_DefaultOutput
         #else
-        let subType = kAudioUnitSubType_RemoteIO
+            let subType = kAudioUnitSubType_RemoteIO
         #endif
         var audioComponentDescription = AudioComponentDescription(
             componentType: kAudioUnitType_Output,
             componentSubType: subType,
             componentManufacturer: kAudioUnitManufacturer_Apple,
             componentFlags: 0,
-            componentFlagsMask: 0)
+            componentFlagsMask: 0
+        )
         let audioComponent = AudioComponentFindNext(nil, &audioComponentDescription)
         if let audioComponent {
             AudioComponentInstanceNew(audioComponent, &audioUnit)
@@ -74,8 +86,22 @@ final class IOAudioMonitor {
             AudioUnitInitialize(audioUnit)
             let ref = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
             var callbackstruct = AURenderCallbackStruct(inputProc: callback, inputProcRefCon: ref)
-            AudioUnitSetProperty(audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &callbackstruct, UInt32(MemoryLayout.size(ofValue: callbackstruct)))
-            AudioUnitSetProperty(audioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &inSourceFormat, UInt32(MemoryLayout.size(ofValue: inSourceFormat)))
+            AudioUnitSetProperty(
+                audioUnit,
+                kAudioUnitProperty_SetRenderCallback,
+                kAudioUnitScope_Input,
+                0,
+                &callbackstruct,
+                UInt32(MemoryLayout.size(ofValue: callbackstruct))
+            )
+            AudioUnitSetProperty(
+                audioUnit,
+                kAudioUnitProperty_StreamFormat,
+                kAudioUnitScope_Input,
+                0,
+                &inSourceFormat,
+                UInt32(MemoryLayout.size(ofValue: inSourceFormat))
+            )
         }
         return audioUnit
     }
@@ -83,6 +109,7 @@ final class IOAudioMonitor {
 
 extension IOAudioMonitor: Running {
     // MARK: Running
+
     func startRunning() {
         guard !isRunning.value else {
             return

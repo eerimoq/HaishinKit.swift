@@ -6,8 +6,14 @@ protocol VTSessionConvertible {
     func setOption(_ option: VTSessionOption) -> OSStatus
     func setOptions(_ options: Set<VTSessionOption>) -> OSStatus
     func copySupportedPropertyDictionary() -> [AnyHashable: Any]
-    func encodeFrame(_ imageBuffer: CVImageBuffer, presentationTimeStamp: CMTime, duration: CMTime, outputHandler: @escaping VTCompressionOutputHandler) -> OSStatus
-    func decodeFrame(_ sampleBuffer: CMSampleBuffer, outputHandler: @escaping VTDecompressionOutputHandler) -> OSStatus
+    func encodeFrame(
+        _ imageBuffer: CVImageBuffer,
+        presentationTimeStamp: CMTime,
+        duration: CMTime,
+        outputHandler: @escaping VTCompressionOutputHandler
+    ) -> OSStatus
+    func decodeFrame(_ sampleBuffer: CMSampleBuffer, outputHandler: @escaping VTDecompressionOutputHandler)
+        -> OSStatus
     func invalidate()
 }
 
@@ -26,7 +32,9 @@ extension VTSessionConvertible where Self: VTSession {
 
     func copySupportedPropertyDictionary() -> [AnyHashable: Any] {
         var support: CFDictionary?
-        guard VTSessionCopySupportedPropertyDictionary(self, supportedPropertyDictionaryOut: &support) == noErr else {
+        guard VTSessionCopySupportedPropertyDictionary(self, supportedPropertyDictionaryOut: &support) ==
+            noErr
+        else {
             return [:]
         }
         guard let result = support as? [AnyHashable: Any] else {

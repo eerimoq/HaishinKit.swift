@@ -13,7 +13,7 @@ public struct Atomic<A> {
 
     /// Creates an instance of value.
     public init(_ value: A) {
-        self._value = value
+        _value = value
     }
 
     /// Setter for the value.

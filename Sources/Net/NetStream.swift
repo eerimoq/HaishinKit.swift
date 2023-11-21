@@ -2,14 +2,18 @@ import AVFoundation
 import CoreImage
 import CoreMedia
 #if canImport(ScreenCaptureKit)
-import ScreenCaptureKit
+    import ScreenCaptureKit
 #endif
 import UIKit
 
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
     /// Tells the receiver to session was interrupted.
-    func stream(_ stream: NetStream, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
+    func stream(
+        _ stream: NetStream,
+        sessionWasInterrupted session: AVCaptureSession,
+        reason: AVCaptureSession.InterruptionReason?
+    )
     /// Tells the receiver to session interrupted ended.
     func stream(_ stream: NetStream, sessionInterruptionEnded session: AVCaptureSession)
     /// Tells the receiver to video codec error occured.
@@ -41,6 +45,7 @@ open class NetStream: NSObject {
         mixer.delegate = self
         return mixer
     }()
+
     /// Specifies the delegate of the NetStream.
     public weak var delegate: (any NetStreamDelegate)?
     /// Specifies the context object.
@@ -168,7 +173,11 @@ open class NetStream: NSObject {
 
     /// Attaches the primary camera object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil, onSuccess: (() -> Void)? = nil) {
+    open func attachCamera(
+        _ device: AVCaptureDevice?,
+        onError: ((_ error: Error) -> Void)? = nil,
+        onSuccess: (() -> Void)? = nil
+    ) {
         logger.info("attacCamera")
         lockQueue.async {
             logger.info("attacCamera locked")
@@ -199,11 +208,18 @@ open class NetStream: NSObject {
 
     /// Attaches the audio capture object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = false, onError: ((_ error: Error) -> Void)? = nil) {
+    open func attachAudio(
+        _ device: AVCaptureDevice?,
+        automaticallyConfiguresApplicationAudioSession: Bool = false,
+        onError: ((_ error: Error) -> Void)? = nil
+    ) {
         lockQueue.sync {
             logger.info("Audio sync")
             do {
-                try self.mixer.audioIO.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession)
+                try self.mixer.audioIO.attachAudio(
+                    device,
+                    automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession
+                )
             } catch {
                 onError?(error)
             }
@@ -213,14 +229,14 @@ open class NetStream: NSObject {
     /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
-            return self.mixer.videoIO.capture
+            self.mixer.videoIO.capture
         }
     }
 
     /// Returns the IOVideoCaptureUnit by index.
     public func multiVideoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
-            return self.mixer.videoIO.multiCamCapture
+            self.mixer.videoIO.multiCamCapture
         }
     }
 
@@ -254,15 +270,19 @@ open class NetStream: NSObject {
 }
 
 extension NetStream: IOMixerDelegate {
-    func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?) {
+    func mixer(
+        _: IOMixer,
+        sessionWasInterrupted session: AVCaptureSession,
+        reason: AVCaptureSession.InterruptionReason?
+    ) {
         delegate?.stream(self, sessionWasInterrupted: session, reason: reason)
     }
 
-    func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession) {
+    func mixer(_: IOMixer, sessionInterruptionEnded session: AVCaptureSession) {
         delegate?.stream(self, sessionInterruptionEnded: session)
     }
 
-    func mixer(_ mixer: IOMixer, audioLevel: Float) {
+    func mixer(_: IOMixer, audioLevel: Float) {
         delegate?.stream(self, audioLevel: audioLevel)
     }
 }

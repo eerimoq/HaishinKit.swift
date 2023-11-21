@@ -27,19 +27,19 @@ final class AMFReference {
         return nil
     }
 
-    func indexOf(_ value: [Int32]) -> Int? {
+    func indexOf(_: [Int32]) -> Int? {
         nil
     }
 
-    func indexOf(_ value: [UInt32]) -> Int? {
+    func indexOf(_: [UInt32]) -> Int? {
         nil
     }
 
-    func indexOf(_ value: [Double]) -> Int? {
+    func indexOf(_: [Double]) -> Int? {
         nil
     }
 
-    func indexOf(_ value: [Any?]) -> Int? {
+    func indexOf(_: [Any?]) -> Int? {
         nil
     }
 
@@ -79,6 +79,7 @@ enum AMF3Type: UInt8 {
 }
 
 // MARK: -
+
 /**
  AMF3 Serializer
 
@@ -90,6 +91,7 @@ final class AMF3Serializer: ByteArray {
 
 extension AMF3Serializer: AMFSerializer {
     // MARK: AMFSerializer
+
     @discardableResult
     func serialize(_ value: Any?) -> Self {
         if value == nil {
@@ -132,7 +134,7 @@ extension AMF3Serializer: AMFSerializer {
     }
 
     func deserialize() throws -> Any? {
-        guard let type = AMF3Type(rawValue: try readUInt8()) else {
+        guard let type = try AMF3Type(rawValue: readUInt8()) else {
             throw AMFSerializerError.deserialize
         }
         position -= 1
@@ -269,7 +271,7 @@ extension AMF3Serializer: AMFSerializer {
             }
             return document
         }
-        let document = ASXMLDocument(data: try readUTF8Bytes(refs >> 1))
+        let document = try ASXMLDocument(data: readUTF8Bytes(refs >> 1))
         reference.objects.append(document)
         return document
     }
@@ -298,7 +300,7 @@ extension AMF3Serializer: AMFSerializer {
             }
             return date
         }
-        let date = Date(timeIntervalSince1970: try readDouble() / 1000)
+        let date = try Date(timeIntervalSince1970: readDouble() / 1000)
         reference.objects.append(date)
         return date
     }
@@ -380,7 +382,7 @@ extension AMF3Serializer: AMFSerializer {
             }
             return xml
         }
-        let xml = ASXML(data: try readUTF8Bytes(refs >> 1))
+        let xml = try ASXML(data: readUTF8Bytes(refs >> 1))
         reference.objects.append(xml)
         return xml
     }
@@ -390,7 +392,7 @@ extension AMF3Serializer: AMFSerializer {
      - note: flash.utils.ByteArray = lf.ByteArray
      */
     @discardableResult
-    func serialize(_ value: ByteArray) -> Self {
+    func serialize(_: ByteArray) -> Self {
         self
     }
 
@@ -504,12 +506,12 @@ extension AMF3Serializer: AMFSerializer {
         }
         let value = UInt32(value)
         switch UInt32(0) {
-        case value & 0xFFFFFF80:
-            return writeUInt8(UInt8(value & 0x7f))
-        case value & 0xFFFFC000:
+        case value & 0xFFFF_FF80:
+            return writeUInt8(UInt8(value & 0x7F))
+        case value & 0xFFFF_C000:
             return writeUInt8(UInt8(value >> 7 | 0x80))
                 .writeUInt8(UInt8(value & 0x7F))
-        case value & 0xFFE00000:
+        case value & 0xFFE0_0000:
             return writeUInt8(UInt8(value >> 14 | 0x80))
                 .writeUInt8(UInt8(value >> 7 | 0x80))
                 .writeUInt8(UInt8(value & 0x7F))

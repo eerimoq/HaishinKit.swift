@@ -24,7 +24,9 @@ class ShapeFactory {
         guard
             let image = roundedSquareShape.makeCGImage(),
             var format = vImage_CGImageFormat(cgImage: image),
-            vImageBuffer_InitWithCGImage(&imageBuffer, &format, nil, image, vImage_Flags(kvImageNoFlags)) == kvImageNoError else {
+            vImageBuffer_InitWithCGImage(&imageBuffer, &format, nil, image, vImage_Flags(kvImageNoFlags)) ==
+            kvImageNoError
+        else {
             return imageBuffer
         }
         imageBuffers[key] = imageBuffer
@@ -42,7 +44,9 @@ class ShapeFactory {
         guard
             let image = halfRectShape.makeCGImage(),
             var format = vImage_CGImageFormat(cgImage: image),
-            vImageBuffer_InitWithCGImage(&imageBuffer, &format, nil, image, vImage_Flags(kvImageNoFlags)) == kvImageNoError else {
+            vImageBuffer_InitWithCGImage(&imageBuffer, &format, nil, image, vImage_Flags(kvImageNoFlags)) ==
+            kvImageNoError
+        else {
             return imageBuffer
         }
         imageBuffers[key] = imageBuffer

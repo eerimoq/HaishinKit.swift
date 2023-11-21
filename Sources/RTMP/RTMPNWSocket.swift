@@ -1,6 +1,6 @@
 import Foundation
 #if canImport(Network)
-import Network
+    import Network
 #endif
 
 @available(iOS 12.0, macOS 10.14, tvOS 12.0, *)
@@ -17,6 +17,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             delegate?.socket(self, readyState: readyState)
         }
     }
+
     var outputBufferSize: Int = RTMPNWSocket.defaultWindowSizeC
     var securityLevel: StreamSocketSecurityLevel = .none {
         didSet {
@@ -28,6 +29,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             }
         }
     }
+
     var qualityOfService: DispatchQoS = .userInitiated
     var inputBuffer = Data()
     weak var delegate: (any RTMPSocketDelegate)?
@@ -49,6 +51,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             events.removeAll()
         }
     }
+
     private var events: [Event] = []
     private var handshake = RTMPHandshake()
     private var connection: NWConnection? {
@@ -61,8 +64,12 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             }
         }
     }
+
     private var parameters: NWParameters = .tcp
-    private lazy var networkQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.RTMPNWSocket.network", qos: qualityOfService)
+    private lazy var networkQueue = DispatchQueue(
+        label: "com.haishinkit.HaishinKit.RTMPNWSocket.network",
+        qos: qualityOfService
+    )
     private var timeoutHandler: DispatchWorkItem?
 
     func connect(withName: String, port: Int) {
@@ -74,14 +81,19 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         totalBytesOut.mutate { $0 = 0 }
         queueBytesOut.mutate { $0 = 0 }
         inputBuffer.removeAll(keepingCapacity: false)
-        connection = NWConnection(to: NWEndpoint.hostPort(host: .init(withName), port: .init(integerLiteral: NWEndpoint.Port.IntegerLiteralType(port))), using: parameters)
+        connection = NWConnection(
+            to: NWEndpoint
+                .hostPort(host: .init(withName),
+                          port: .init(integerLiteral: NWEndpoint.Port.IntegerLiteralType(port))),
+            using: parameters
+        )
         connection?.viabilityUpdateHandler = viabilityDidChange(to:)
         connection?.stateUpdateHandler = stateDidChange(to:)
         connection?.start(queue: networkQueue)
         if let connection = connection {
             receive(on: connection)
         }
-        if 0 < timeout {
+        if timeout > 0 {
             let newTimeoutHandler = DispatchWorkItem { [weak self] in
                 guard let self = self, self.timeoutHandler?.isCancelled == false else {
                     return
@@ -89,7 +101,10 @@ final class RTMPNWSocket: RTMPSocketCompatible {
                 self.didTimeout()
             }
             timeoutHandler = newTimeoutHandler
-            DispatchQueue.global(qos: .userInteractive).asyncAfter(deadline: .now() + .seconds(timeout), execute: newTimeoutHandler)
+            DispatchQueue.global(qos: .userInteractive).asyncAfter(
+                deadline: .now() + .seconds(timeout),
+                execute: newTimeoutHandler
+            )
         }
     }
 
@@ -104,9 +119,14 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         }
         readyState = .closing
         if !isDisconnected && connection.state == .ready {
-            connection.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed { _ in
-                self.connection = nil
-            })
+            connection.send(
+                content: nil,
+                contentContext: .finalMessage,
+                isComplete: true,
+                completion: .contentProcessed { _ in
+                    self.connection = nil
+                }
+            )
         } else {
             self.connection = nil
         }
@@ -116,7 +136,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     @discardableResult
     func doOutput(chunk: RTMPChunk) -> Int {
         let chunks: [Data] = chunk.split(chunkSizeS)
-        for i in 0..<chunks.count - 1 {
+        for i in 0 ..< chunks.count - 1 {
             doOutput(data: chunks[i])
         }
         doOutput(data: chunks.last!)
@@ -168,14 +188,14 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             logger.info("Connection is ready.")
             timeoutHandler?.cancel()
             connected = true
-        case .waiting(let error):
+        case let .waiting(error):
             logger.warn("Connection waiting:", error)
             close(isDisconnected: true)
         case .setup:
             logger.debug("Connection is setting up.")
         case .preparing:
             logger.debug("Connection is preparing.")
-        case .failed(let error):
+        case let .failed(error):
             logger.warn("Connection failed:", error)
             close(isDisconnected: true)
         case .cancelled:
@@ -187,15 +207,16 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     }
 
     private func receive(on connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 0, maximumLength: windowSizeC) { [weak self] data, _, _, _ in
-            guard let self = self, let data = data, self.connected else {
-                return
+        connection
+            .receive(minimumIncompleteLength: 0, maximumLength: windowSizeC) { [weak self] data, _, _, _ in
+                guard let self = self, let data = data, self.connected else {
+                    return
+                }
+                self.inputBuffer.append(data)
+                self.totalBytesIn.mutate { $0 += Int64(data.count) }
+                self.listen()
+                self.receive(on: connection)
             }
-            self.inputBuffer.append(data)
-            self.totalBytesIn.mutate { $0 += Int64(data.count) }
-            self.listen()
-            self.receive(on: connection)
-        }
     }
 
     private func listen() {
@@ -205,7 +226,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
                 break
             }
             doOutput(data: handshake.c2packet(inputBuffer))
-            inputBuffer.removeSubrange(0...RTMPHandshake.sigSize)
+            inputBuffer.removeSubrange(0 ... RTMPHandshake.sigSize)
             readyState = .ackSent
             if RTMPHandshake.sigSize <= inputBuffer.count {
                 listen()

@@ -34,8 +34,7 @@ protocol RTMPSocketCompatible: AnyObject {
 }
 
 extension RTMPSocketCompatible {
-    func setProperty(_ value: Any?, forKey: String) {
-    }
+    func setProperty(_: Any?, forKey _: String) {}
 
     func didTimeout() {
         close(isDisconnected: false)
@@ -45,6 +44,7 @@ extension RTMPSocketCompatible {
 }
 
 // MARK: -
+
 // swiftlint:disable:next class_delegate_protocol
 protocol RTMPSocketDelegate: EventDispatcherConvertible {
     func socket(_ socket: any RTMPSocketCompatible, data: Data)

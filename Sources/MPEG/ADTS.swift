@@ -21,8 +21,7 @@ struct ADTSHeader: Equatable {
     var bufferFullness: UInt16 = 0
     var aacFrames: UInt8 = 0
 
-    init() {
-    }
+    init() {}
 
     init(data: Data) {
         self.data = data
@@ -32,7 +31,8 @@ struct ADTSHeader: Equatable {
         guard
             let type = AudioSpecificConfig.AudioObjectType(rawValue: profile + 1),
             let frequency = AudioSpecificConfig.SamplingFrequency(rawValue: sampleFrequencyIndex),
-            let channel = AudioSpecificConfig.ChannelConfiguration(rawValue: channelConfiguration) else {
+            let channel = AudioSpecificConfig.ChannelConfiguration(rawValue: channelConfiguration)
+        else {
             return nil
         }
         var formatDescription: CMAudioFormatDescription?
@@ -73,19 +73,20 @@ extension ADTSHeader: DataConvertible {
                 return
             }
             sync = newValue[0]
-            id = (newValue[1] & 0b00001111) >> 3
-            layer = (newValue[1] >> 2) & 0b00000011
-            protectionAbsent = (newValue[1] & 0b00000001) == 1
+            id = (newValue[1] & 0b0000_1111) >> 3
+            layer = (newValue[1] >> 2) & 0b0000_0011
+            protectionAbsent = (newValue[1] & 0b0000_0001) == 1
             profile = newValue[2] >> 6 & 0b11
-            sampleFrequencyIndex = (newValue[2] >> 2) & 0b00001111
+            sampleFrequencyIndex = (newValue[2] >> 2) & 0b0000_1111
             channelConfiguration = ((newValue[2] & 0b1) << 2) | newValue[3] >> 6
-            originalOrCopy = (newValue[3] & 0b00100000) == 0b00100000
-            home = (newValue[3] & 0b00010000) == 0b00010000
-            copyrightIdBit = (newValue[3] & 0b00001000) == 0b00001000
-            copyrightIdStart = (newValue[3] & 0b00000100) == 0b00000100
-            aacFrameLength = UInt16(newValue[3] & 0b00000011) << 11 | UInt16(newValue[4]) << 3 | UInt16(newValue[5] >> 5)
+            originalOrCopy = (newValue[3] & 0b0010_0000) == 0b0010_0000
+            home = (newValue[3] & 0b0001_0000) == 0b0001_0000
+            copyrightIdBit = (newValue[3] & 0b0000_1000) == 0b0000_1000
+            copyrightIdStart = (newValue[3] & 0b0000_0100) == 0b0000_0100
+            aacFrameLength = UInt16(newValue[3] & 0b0000_0011) << 11 | UInt16(newValue[4]) << 3 |
+                UInt16(newValue[5] >> 5)
             bufferFullness = UInt16(newValue[5]) >> 2 | UInt16(newValue[6] >> 2)
-            aacFrames = newValue[6] & 0b00000011
+            aacFrames = newValue[6] & 0b0000_0011
         }
     }
 }
