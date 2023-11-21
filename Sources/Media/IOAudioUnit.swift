@@ -56,10 +56,6 @@ final class IOAudioUnit: NSObject, IOUnit {
         defer {
             mixer.session.commitConfiguration()
         }
-        guard let device else {
-            try capture.attachDevice(nil, audioUnit: self)
-            return
-        }
         try capture.attachDevice(device, audioUnit: self)
         mixer.session
             .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
