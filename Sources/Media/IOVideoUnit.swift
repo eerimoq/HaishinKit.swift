@@ -132,7 +132,6 @@ final class IOVideoUnit: NSObject, IOUnit {
         try capture.attachDevice(device, videoUnit: self)
     }
 
-    @available(iOS 13.0, *)
     func attachMultiCamera(_ device: AVCaptureDevice?) throws {
         logger.info("attach multi camera")
         guard AVCaptureMultiCamSession.isMultiCamSupported else {

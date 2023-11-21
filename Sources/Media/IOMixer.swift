@@ -202,25 +202,20 @@ public class IOMixer {
 
     private func makeSession() -> AVCaptureSession {
         let session: AVCaptureSession
-        if #available(iOS 13.0, *) {
-            if isMultiCamSessionEnabled {
-                logger.info("Multi camera session")
-                session = AVCaptureMultiCamSession()
-            } else {
-                logger.info("Single camera session")
-                session = AVCaptureSession()
-            }
-            if session.canSetSessionPreset(sessionPreset) {
-                session.sessionPreset = sessionPreset
-            } else {
-                logger.info("Cannot set preset \(sessionPreset)")
-            }
-            if isMultitaskingCameraAccessEnabled && session.isMultitaskingCameraAccessSupported {
-                session.isMultitaskingCameraAccessEnabled = true
-            }
+        if isMultiCamSessionEnabled {
+            logger.info("Multi camera session")
+            session = AVCaptureMultiCamSession()
         } else {
-            logger.error("Should never be executed.")
+            logger.info("Single camera session")
             session = AVCaptureSession()
+        }
+        if session.canSetSessionPreset(sessionPreset) {
+            session.sessionPreset = sessionPreset
+        } else {
+            logger.info("Cannot set preset \(sessionPreset)")
+        }
+        if isMultitaskingCameraAccessEnabled && session.isMultitaskingCameraAccessSupported {
+            session.isMultitaskingCameraAccessEnabled = true
         }
         return session
     }
@@ -362,16 +357,7 @@ extension IOMixer: Running {
         let error = AVError(_nsError: errorValue)
         switch error.code {
         case .unsupportedDeviceActiveFormat:
-            #if os(iOS)
-                let isMultiCamSupported: Bool
-                if #available(iOS 13.0, *) {
-                    isMultiCamSupported = session is AVCaptureMultiCamSession
-                } else {
-                    isMultiCamSupported = false
-                }
-            #else
-                let isMultiCamSupported = true
-            #endif
+            let isMultiCamSupported = session is AVCaptureMultiCamSession
             guard let device = error.device, let format = device.videoFormat(
                 width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
                 height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,

@@ -130,12 +130,11 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureVideoDataOutput()
-        if let output, #available(iOS 13, *),
-           let port = input?.ports
-           .first(where: {
-               $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
-                   .sourceDevicePosition == device.position
-           })
+        if let output, let port = input?.ports
+            .first(where: {
+                $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
+                    .sourceDevicePosition == device.position
+            })
         {
             connection = AVCaptureConnection(inputPorts: [port], output: output)
         } else {

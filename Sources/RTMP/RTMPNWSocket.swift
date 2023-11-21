@@ -3,7 +3,6 @@ import Foundation
     import Network
 #endif
 
-@available(iOS 12.0, macOS 10.14, tvOS 12.0, *)
 final class RTMPNWSocket: RTMPSocketCompatible {
     static let defaultWindowSizeC = Int(UInt8.max)
 

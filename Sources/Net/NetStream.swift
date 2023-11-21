@@ -192,7 +192,6 @@ open class NetStream: NSObject {
 
     /// Attaches the 2ndary camera  object for picture in picture.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    @available(iOS 13.0, *)
     open func attachMultiCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil) {
         logger.info("attachMultiCamera")
         lockQueue.async {
