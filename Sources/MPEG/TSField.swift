@@ -61,9 +61,3 @@ extension TSAdaptationField: DataConvertible {
         }
     }
 }
-
-extension TSAdaptationField: CustomDebugStringConvertible {
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
