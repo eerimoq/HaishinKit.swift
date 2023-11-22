@@ -317,7 +317,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
         ) {
             var packet = TSPacket()
             packet.pid = PID
-            packet.payloadFlag = true
             packet.payload = payload.subdata(in: index ..< index.advanced(by: 184))
             packets.append(packet)
         }

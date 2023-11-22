@@ -12,9 +12,7 @@ struct TSPacket {
     var payloadUnitStartIndicator = false
     var transportPriority = false
     var pid: UInt16 = 0
-    var scramblingControl: UInt8 = 0
     var adaptationFieldFlag = false
-    var payloadFlag = false
     var continuityCounter: UInt8 = 0
     var adaptationField: TSAdaptationField?
     var payload = Data()
@@ -40,12 +38,7 @@ struct TSPacket {
         }
     }
 
-    mutating func fill(_ data: Data?, useAdaptationField: Bool) -> Int {
-        guard let data: Data = data else {
-            payload.append(Data(repeating: 0xFF, count: remain))
-            return 0
-        }
-        payloadFlag = true
+    mutating func fill(_ data: Data, useAdaptationField: Bool) -> Int {
         let length: Int = min(data.count, remain, 182)
         payload.append(data[0 ..< length])
         if remain == 0 {
@@ -76,9 +69,8 @@ extension TSPacket: DataConvertible {
             bytes[1] |= transportPriority ? 0x20 : 0
             bytes[1] |= UInt8(pid >> 8)
             bytes[2] |= UInt8(pid & 0x00FF)
-            bytes[3] |= scramblingControl << 6
             bytes[3] |= adaptationFieldFlag ? 0x20 : 0
-            bytes[3] |= payloadFlag ? 0x10 : 0
+            bytes[3] |= 0x10
             bytes[3] |= continuityCounter
             return ByteArray()
                 .writeBytes(bytes)
@@ -95,18 +87,14 @@ extension TSPacket: DataConvertible {
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
                 transportPriority = (data[1] & 0x20) == 0x20
                 pid = UInt16(data[1] & 0x1F) << 8 | UInt16(data[2])
-                scramblingControl = UInt8(data[3] & 0xC0)
                 adaptationFieldFlag = (data[3] & 0x20) == 0x20
-                payloadFlag = (data[3] & 0x10) == 0x10
                 continuityCounter = UInt8(data[3] & 0xF)
                 if adaptationFieldFlag {
                     let length = try Int(buffer.readUInt8())
                     buffer.position -= 1
                     adaptationField = try TSAdaptationField(data: buffer.readBytes(length + 1))
                 }
-                if payloadFlag {
-                    payload = try buffer.readBytes(buffer.bytesAvailable)
-                }
+                payload = try buffer.readBytes(buffer.bytesAvailable)
             } catch {
                 logger.error("\(buffer)")
             }
