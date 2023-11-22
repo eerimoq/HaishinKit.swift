@@ -111,28 +111,11 @@ public class TSWriter: Running {
 
     // swiftlint:disable:next function_parameter_count
     private func writeSampleBuffer(_ PID: UInt16,
-                                   streamID: UInt8,
-                                   bytes: UnsafePointer<UInt8>,
-                                   count: UInt32,
                                    presentationTimeStamp: CMTime,
-                                   timestamp: CMTime,
-                                   config: Any?,
                                    decodeTimeStamp: CMTime,
-                                   randomAccessIndicator: Bool) -> Data?
+                                   randomAccessIndicator: Bool,
+                                   PES: PacketizedElementaryStream) -> Data?
     {
-        guard var PES = PacketizedElementaryStream.create(
-            bytes,
-            count: count,
-            presentationTimeStamp: presentationTimeStamp,
-            decodeTimeStamp: decodeTimeStamp,
-            timestamp: timestamp,
-            config: config,
-            randomAccessIndicator: randomAccessIndicator,
-            streamID: streamID
-        ) else {
-            return nil
-        }
-
         let timestamp = decodeTimeStamp == .invalid ? presentationTimeStamp : decodeTimeStamp
         let packets: [TSPacket] = split(PID, PES: PES, timestamp: timestamp)
         packets[0].adaptationField?.randomAccessIndicator = randomAccessIndicator
@@ -294,16 +277,26 @@ extension TSWriter: AudioCodecDelegate {
                 PCRTimestamp = audioTimestamp
             }
         }
-        if let bytes = writeSampleBuffer(
-            TSWriter.defaultAudioPID,
-            streamID: TSWriter.audioStreamId,
-            bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
+
+        guard var PES = PacketizedElementaryStream.create(
+            audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,
+            decodeTimeStamp: .invalid,
             timestamp: audioTimestamp,
             config: audioConfig,
+            randomAccessIndicator: true,
+            streamID: TSWriter.audioStreamId
+        ) else {
+            return
+        }
+
+        if let bytes = writeSampleBuffer(
+            TSWriter.defaultAudioPID,
+            presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid,
-            randomAccessIndicator: true
+            randomAccessIndicator: true,
+            PES: PES
         ) {
             writeAudio(data: bytes)
         }
@@ -358,16 +351,26 @@ extension TSWriter: VideoCodecDelegate {
                 PCRTimestamp = videoTimestamp
             }
         }
-        if let bytes = writeSampleBuffer(
-            TSWriter.defaultVideoPID,
-            streamID: TSWriter.videoStreamId,
-            bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
+
+        guard var PES = PacketizedElementaryStream.create(
+            UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
+            decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             timestamp: videoTimestamp,
             config: videoConfig,
+            randomAccessIndicator: !sampleBuffer.isNotSync,
+            streamID: TSWriter.videoStreamId
+        ) else {
+            return
+        }
+
+        if let bytes = writeSampleBuffer(
+            TSWriter.defaultVideoPID,
+            presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-            randomAccessIndicator: !sampleBuffer.isNotSync
+            randomAccessIndicator: !sampleBuffer.isNotSync,
+            PES: PES
         ) {
             writeVideo(data: bytes)
         }
