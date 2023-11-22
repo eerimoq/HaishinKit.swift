@@ -5,9 +5,7 @@ import AVFoundation
 struct TSPacket {
     static let size: Int = 188
     static let headerSize: Int = 4
-    static let defaultSyncByte: UInt8 = 0x47
 
-    var syncByte: UInt8 = TSPacket.defaultSyncByte
     var payloadUnitStartIndicator = false
     var pid: UInt16 = 0
     var continuityCounter: UInt8 = 0
@@ -30,9 +28,6 @@ struct TSPacket {
             return nil
         }
         self.data = data
-        if syncByte != TSPacket.defaultSyncByte {
-            return nil
-        }
     }
 
     mutating func fill(_ data: Data, useAdaptationField: Bool) -> Int {
@@ -57,7 +52,7 @@ struct TSPacket {
 extension TSPacket: DataConvertible {
     var data: Data {
         get {
-            var bytes = Data([syncByte, 0x00, 0x00, 0x00])
+            var bytes = Data([0x47, 0x00, 0x00, 0x00])
             bytes[1] |= payloadUnitStartIndicator ? 0x40 : 0
             bytes[1] |= UInt8(pid >> 8)
             bytes[2] |= UInt8(pid & 0x00FF)
@@ -74,7 +69,6 @@ extension TSPacket: DataConvertible {
             let buffer = ByteArray(data: newValue)
             do {
                 let data: Data = try buffer.readBytes(4)
-                syncByte = data[0]
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
                 pid = UInt16(data[1] & 0x1F) << 8 | UInt16(data[2])
                 let adaptationFieldFlag = (data[3] & 0x20) == 0x20
