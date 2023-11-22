@@ -10,14 +10,13 @@ struct TSPacket {
     var syncByte: UInt8 = TSPacket.defaultSyncByte
     var payloadUnitStartIndicator = false
     var pid: UInt16 = 0
-    var adaptationFieldFlag = false
     var continuityCounter: UInt8 = 0
     var adaptationField: TSAdaptationField?
     var payload = Data()
 
     private var remain: Int {
         var adaptationFieldSize = 0
-        if let adaptationField: TSAdaptationField = adaptationField, adaptationFieldFlag {
+        if let adaptationField {
             adaptationField.compute()
             adaptationFieldSize = Int(adaptationField.length) + 1
         }
@@ -43,7 +42,6 @@ struct TSPacket {
             return length
         }
         if useAdaptationField {
-            adaptationFieldFlag = true
             if adaptationField == nil {
                 adaptationField = TSAdaptationField()
             }
@@ -63,12 +61,12 @@ extension TSPacket: DataConvertible {
             bytes[1] |= payloadUnitStartIndicator ? 0x40 : 0
             bytes[1] |= UInt8(pid >> 8)
             bytes[2] |= UInt8(pid & 0x00FF)
-            bytes[3] |= adaptationFieldFlag ? 0x20 : 0
+            bytes[3] |= adaptationField != nil ? 0x20 : 0
             bytes[3] |= 0x10
             bytes[3] |= continuityCounter
             return ByteArray()
                 .writeBytes(bytes)
-                .writeBytes(adaptationFieldFlag ? adaptationField!.data : Data())
+                .writeBytes(adaptationField?.data ?? Data())
                 .writeBytes(payload)
                 .data
         }
@@ -79,7 +77,7 @@ extension TSPacket: DataConvertible {
                 syncByte = data[0]
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
                 pid = UInt16(data[1] & 0x1F) << 8 | UInt16(data[2])
-                adaptationFieldFlag = (data[3] & 0x20) == 0x20
+                let adaptationFieldFlag = (data[3] & 0x20) == 0x20
                 continuityCounter = UInt8(data[3] & 0xF)
                 if adaptationFieldFlag {
                     let length = try Int(buffer.readUInt8())

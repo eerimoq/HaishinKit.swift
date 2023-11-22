@@ -298,7 +298,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
         var packet = TSPacket()
         packet.pid = PID
         if let PCR {
-            packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
             packet.adaptationField!.pcrFlag = true
             packet.adaptationField!.pcr = TSProgramClockReference.encode(PCR, 0)
@@ -328,14 +327,12 @@ struct PacketizedElementaryStream: PESPacketHeader {
             let remain: Data = payload.subdata(in: payload.endIndex - r ..< payload.endIndex - 1)
             var packet = TSPacket()
             packet.pid = PID
-            packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
             packet.adaptationField!.compute()
             _ = packet.fill(remain, useAdaptationField: true)
             packets.append(packet)
             packet = TSPacket()
             packet.pid = PID
-            packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
             packet.adaptationField!.compute()
             _ = packet.fill(Data([payload[payload.count - 1]]), useAdaptationField: true)
@@ -344,7 +341,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
             let remain: Data = payload.subdata(in: payload.count - r ..< payload.count)
             var packet = TSPacket()
             packet.pid = PID
-            packet.adaptationFieldFlag = true
             packet.adaptationField = TSAdaptationField()
             packet.adaptationField!.compute()
             _ = packet.fill(remain, useAdaptationField: true)
