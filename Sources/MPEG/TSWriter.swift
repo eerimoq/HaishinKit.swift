@@ -112,7 +112,7 @@ public class TSWriter: Running {
     // swiftlint:disable:next function_parameter_count
     private func writeSampleBuffer(_ PID: UInt16,
                                    streamID: UInt8,
-                                   bytes: UnsafePointer<UInt8>?,
+                                   bytes: UnsafePointer<UInt8>,
                                    count: UInt32,
                                    presentationTimeStamp: CMTime,
                                    timestamp: CMTime,
@@ -127,19 +127,16 @@ public class TSWriter: Running {
             decodeTimeStamp: decodeTimeStamp,
             timestamp: timestamp,
             config: config,
-            randomAccessIndicator: randomAccessIndicator
+            randomAccessIndicator: randomAccessIndicator,
+            streamID: streamID
         ) else {
-            logger.info("craete PES")
             return nil
         }
 
-        PES.streamID = streamID
-
         let timestamp = decodeTimeStamp == .invalid ? presentationTimeStamp : decodeTimeStamp
         let packets: [TSPacket] = split(PID, PES: PES, timestamp: timestamp)
-        rotateFileHandle(timestamp)
-
         packets[0].adaptationField?.randomAccessIndicator = randomAccessIndicator
+        rotateFileHandle(timestamp)
 
         var bytes = Data()
         for var packet in packets {
@@ -259,17 +256,11 @@ public class TSWriter: Running {
                     TSTimestamp.resolution)
             PCRTimestamp = timestamp
         }
-        var packets: [TSPacket] = []
-        for packet in PES.arrayOfPackets(PID, PCR: PCR) {
-            packets.append(packet)
-        }
-        return packets
+        return PES.arrayOfPackets(PID, PCR: PCR)
     }
 }
 
 extension TSWriter: AudioCodecDelegate {
-    // MARK: AudioCodecDelegate
-
     public func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
         logger.error("Audio error \(error)")
     }
@@ -321,8 +312,6 @@ extension TSWriter: AudioCodecDelegate {
 }
 
 extension TSWriter: VideoCodecDelegate {
-    // MARK: VideoCodecDelegate
-
     public func videoCodec(_: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
         guard let formatDescription else {
             return

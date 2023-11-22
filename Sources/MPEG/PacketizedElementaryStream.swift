@@ -12,16 +12,12 @@ protocol PESPacketHeader {
     var data: Data { get set }
 }
 
-// MARK: -
-
 enum PESPTSDTSIndicator: UInt8 {
     case none = 0
     case forbidden = 1
     case onlyPTS = 2
     case bothPresent = 3
 }
-
-// MARK: -
 
 struct PESOptionalHeader {
     static let fixedSectionSize: Int = 3
@@ -89,8 +85,6 @@ struct PESOptionalHeader {
 }
 
 extension PESOptionalHeader: DataConvertible {
-    // MARK: DataConvertible
-
     var data: Data {
         get {
             var bytes = Data([0x00, 0x00])
@@ -141,14 +135,10 @@ extension PESOptionalHeader: DataConvertible {
 }
 
 extension PESOptionalHeader: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
-
-// MARK: -
 
 struct PacketizedElementaryStream: PESPacketHeader {
     static let untilPacketLengthSize: Int = 6
@@ -156,13 +146,14 @@ struct PacketizedElementaryStream: PESPacketHeader {
 
     // swiftlint:disable:next function_parameter_count
     static func create(
-        _ bytes: UnsafePointer<UInt8>?,
+        _ bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
         config: Any?,
-        randomAccessIndicator: Bool
+        randomAccessIndicator: Bool,
+        streamID: UInt8
     ) -> PacketizedElementaryStream? {
         if let config: AudioSpecificConfig = config as? AudioSpecificConfig {
             return PacketizedElementaryStream(
@@ -171,7 +162,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
                 presentationTimeStamp: presentationTimeStamp,
                 decodeTimeStamp: decodeTimeStamp,
                 timestamp: timestamp,
-                config: config
+                config: config,
+                streamID: streamID
             )
         }
         if let config: AVCDecoderConfigurationRecord = config as? AVCDecoderConfigurationRecord {
@@ -181,7 +173,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
                 presentationTimeStamp: presentationTimeStamp,
                 decodeTimeStamp: decodeTimeStamp,
                 timestamp: timestamp,
-                config: randomAccessIndicator ? config : nil
+                config: randomAccessIndicator ? config : nil,
+                streamID: streamID
             )
         }
         if let config: HEVCDecoderConfigurationRecord = config as? HEVCDecoderConfigurationRecord {
@@ -191,7 +184,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
                 presentationTimeStamp: presentationTimeStamp,
                 decodeTimeStamp: decodeTimeStamp,
                 timestamp: timestamp,
-                config: randomAccessIndicator ? config : nil
+                config: randomAccessIndicator ? config : nil,
+                streamID: streamID
             )
         }
         return nil
@@ -248,16 +242,14 @@ struct PacketizedElementaryStream: PESPacketHeader {
     }
 
     init?(
-        bytes: UnsafePointer<UInt8>?,
+        bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
         decodeTimeStamp _: CMTime,
         timestamp: CMTime,
-        config: AudioSpecificConfig?
+        config: AudioSpecificConfig,
+        streamID: UInt8
     ) {
-        guard let bytes = bytes, let config = config else {
-            return nil
-        }
         data.append(contentsOf: config.makeHeader(Int(count)))
         data.append(bytes, count: Int(count))
         optionalPESHeader = PESOptionalHeader()
@@ -273,19 +265,18 @@ struct PacketizedElementaryStream: PESPacketHeader {
         } else {
             return nil
         }
+        self.streamID = streamID
     }
 
     init?(
-        bytes: UnsafePointer<UInt8>?,
+        bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
-        config: AVCDecoderConfigurationRecord?
+        config: AVCDecoderConfigurationRecord?,
+        streamID: UInt8
     ) {
-        guard let bytes = bytes else {
-            return nil
-        }
         if let config {
             // 3 NAL units. SEI(9), SPS(7) and PPS(8)
             data.append(contentsOf: [0x00, 0x00, 0x00, 0x01, 0x09, 0x10])
@@ -310,19 +301,18 @@ struct PacketizedElementaryStream: PESPacketHeader {
         if length < Int(UInt16.max) {
             packetLength = UInt16(length)
         }
+        self.streamID = streamID
     }
 
     init?(
-        bytes: UnsafePointer<UInt8>?,
+        bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
-        config: HEVCDecoderConfigurationRecord?
+        config: HEVCDecoderConfigurationRecord?,
+        streamID: UInt8
     ) {
-        guard let bytes = bytes else {
-            return nil
-        }
         if let config {
             if let nal = config.array[.vps] {
                 data.append(contentsOf: [0x00, 0x00, 0x00, 0x01])
@@ -351,6 +341,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
         if length < Int(UInt16.max) {
             packetLength = UInt16(length)
         }
+        self.streamID = streamID
     }
 
     func arrayOfPackets(_ PID: UInt16, PCR: UInt64?) -> [TSPacket] {
@@ -469,8 +460,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
 }
 
 extension PacketizedElementaryStream: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
