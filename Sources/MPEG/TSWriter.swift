@@ -363,7 +363,7 @@ extension TSWriter: VideoCodecDelegate {
         let PES: PacketizedElementaryStream
         let bytes = UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length)
 
-        if let config: AVCDecoderConfigurationRecord = config as? AVCDecoderConfigurationRecord {
+        if let config = config as? AVCDecoderConfigurationRecord {
             PES = PacketizedElementaryStream(
                 bytes: bytes,
                 count: UInt32(length),
@@ -373,7 +373,7 @@ extension TSWriter: VideoCodecDelegate {
                 config: randomAccessIndicator ? config : nil,
                 streamID: TSWriter.videoStreamId
             )
-        } else if let config: HEVCDecoderConfigurationRecord = config as? HEVCDecoderConfigurationRecord {
+        } else if let config = config as? HEVCDecoderConfigurationRecord {
             PES = PacketizedElementaryStream(
                 bytes: bytes,
                 count: UInt32(length),
