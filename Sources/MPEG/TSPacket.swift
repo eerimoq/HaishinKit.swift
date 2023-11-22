@@ -54,13 +54,12 @@ struct TSPacket {
 extension TSPacket: DataConvertible {
     var data: Data {
         get {
-            var bytes = Data([0x47, 0x00, 0x00, 0x00])
-            bytes[1] |= payloadUnitStartIndicator ? 0x40 : 0
-            bytes[1] |= UInt8(pid >> 8)
-            bytes[2] |= UInt8(pid & 0x00FF)
-            bytes[3] |= adaptationField != nil ? 0x20 : 0
-            bytes[3] |= 0x10
-            bytes[3] |= continuityCounter
+            var bytes = Data([
+                0x47,
+                (payloadUnitStartIndicator ? 0x40 : 0) | UInt8(pid >> 8),
+                UInt8(pid & 0x00FF),
+                (adaptationField != nil ? 0x20 : 0) | 0x10 | continuityCounter,
+            ])
             return ByteArray()
                 .writeBytes(bytes)
                 .writeBytes(adaptationField?.data ?? Data())

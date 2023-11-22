@@ -115,7 +115,7 @@ public class TSWriter: Running {
                                    presentationTimeStamp: CMTime,
                                    decodeTimeStamp: CMTime,
                                    randomAccessIndicator: Bool,
-                                   PES: PacketizedElementaryStream) -> Data?
+                                   PES: PacketizedElementaryStream) -> Data
     {
         let timestamp = decodeTimeStamp == .invalid ? presentationTimeStamp : decodeTimeStamp
         let packets: [TSPacket] = split(PID, PES: PES, timestamp: timestamp)
@@ -313,15 +313,14 @@ extension TSWriter: AudioCodecDelegate {
             return
         }
 
-        if let bytes = writeSampleBuffer(
+        writeAudio(data: writeSampleBuffer(
             TSWriter.defaultAudioPID,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid,
             randomAccessIndicator: true,
             PES: PES
-        ) {
-            writeAudio(data: bytes)
-        }
+        ))
+
         codec.releaseOutputBuffer(audioBuffer)
     }
 }
@@ -406,15 +405,13 @@ extension TSWriter: VideoCodecDelegate {
             return
         }
 
-        if let bytes = writeSampleBuffer(
+        writeVideo(data: writeSampleBuffer(
             TSWriter.defaultVideoPID,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             randomAccessIndicator: randomAccessIndicator,
             PES: PES
-        ) {
-            writeVideo(data: bytes)
-        }
+        ))
     }
 
     public func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
