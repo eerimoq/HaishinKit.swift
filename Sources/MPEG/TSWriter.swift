@@ -165,15 +165,18 @@ public class TSWriter: Running {
     }
 
     private func writeBytes(_ data: Data) {
-        var offset = 0
         data.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) in
-            for offset in stride(from: 0, to: data.count, by: payloadSize) {
-                var count = min(payloadSize, data.count - offset)
-                writePacketPointer(
-                    pointer: UnsafeRawBufferPointer(rebasing: pointer[offset ..< offset + count]),
-                    count: count
-                )
-            }
+            writeBytesPointer(pointer: pointer, count: data.count)
+        }
+    }
+
+    private func writeBytesPointer(pointer: UnsafeRawBufferPointer, count: Int) {
+        for offset in stride(from: 0, to: count, by: payloadSize) {
+            var length = min(payloadSize, count - offset)
+            writePacketPointer(
+                pointer: UnsafeRawBufferPointer(rebasing: pointer[offset ..< offset + length]),
+                count: length
+            )
         }
     }
 
@@ -186,10 +189,14 @@ public class TSWriter: Running {
     private func writeVideo(data: Data) {
         outputLock.sync {
             if var videoData = videoData[0] {
-                if videoDataOffset != 0 {
-                    videoData = Data(videoData[videoDataOffset...])
+                videoData.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) in
+                    writeBytesPointer(
+                        pointer: UnsafeRawBufferPointer(
+                            rebasing: pointer[videoDataOffset ..< videoData.count]
+                        ),
+                        count: videoData.count - videoDataOffset
+                    )
                 }
-                self.writeBytes(videoData)
             }
             self.appendVideoData(data: data)
         }
