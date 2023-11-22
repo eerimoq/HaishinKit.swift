@@ -257,7 +257,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
         self.streamID = streamID
     }
 
-    init?(
+    init(
         bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
@@ -293,7 +293,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
         self.streamID = streamID
     }
 
-    init?(
+    init(
         bytes: UnsafePointer<UInt8>,
         count: UInt32,
         presentationTimeStamp: CMTime,
