@@ -249,7 +249,7 @@ public class TSWriter: Running {
 
     private func split(_ PID: UInt16, PES: PacketizedElementaryStream, timestamp: CMTime) -> [TSPacket] {
         var PCR: UInt64?
-        let duration: Double = timestamp.seconds - PCRTimestamp.seconds
+        let duration = timestamp.seconds - PCRTimestamp.seconds
         if PCRPID == PID && duration >= 0.02 {
             PCR =
                 UInt64((timestamp
