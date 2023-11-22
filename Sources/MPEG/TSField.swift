@@ -6,7 +6,6 @@ class TSAdaptationField {
     var length: UInt8 = 0
     var randomAccessIndicator = false
     var pcr: Data?
-    var spliceCountdown: UInt8 = 0
     var stuffingBytes: Data?
 
     init() {}
