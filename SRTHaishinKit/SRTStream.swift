@@ -206,6 +206,14 @@ extension SRTStream: TSWriterDelegate {
         }
         connection?.socket?.doOutput(data: data)
     }
+
+    public func writer(_: TSWriter, doOutputPointer pointer: UnsafeRawBufferPointer, count: Int) {
+        guard readyState == .publishing else {
+            logger.info("not publishing")
+            return
+        }
+        connection?.socket?.doOutputPointer(pointer: pointer, count: count)
+    }
 }
 
 extension SRTStream: TSReaderDelegate {

@@ -12,6 +12,7 @@ public var payloadSize: Int = 1316
 public protocol TSWriterDelegate: AnyObject {
     func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime)
     func writer(_ writer: TSWriter, doOutput data: Data)
+    func writer(_ writer: TSWriter, doOutputPointer pointer: UnsafeRawBufferPointer, count: Int)
 }
 
 public extension TSWriterDelegate {
@@ -159,9 +160,20 @@ public class TSWriter: Running {
         delegate?.writer(self, doOutput: data)
     }
 
+    private func writePacketPointer(pointer: UnsafeRawBufferPointer, count: Int) {
+        delegate?.writer(self, doOutputPointer: pointer, count: count)
+    }
+
     private func writeBytes(_ data: Data) {
-        for packet in data.chunks(payloadSize) {
-            writePacket(packet)
+        var offset = 0
+        data.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) in
+            for offset in stride(from: 0, to: data.count, by: payloadSize) {
+                var count = min(payloadSize, data.count - offset)
+                writePacketPointer(
+                    pointer: UnsafeRawBufferPointer(rebasing: pointer[offset ..< offset + count]),
+                    count: count
+                )
+            }
         }
     }
 

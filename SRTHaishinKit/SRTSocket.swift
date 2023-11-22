@@ -123,6 +123,10 @@ final class SRTSocket {
         _ = sendmsg2(data)
     }
 
+    func doOutputPointer(pointer: UnsafeRawBufferPointer, count: Int) {
+        _ = sendmsg2pointer(pointer, count)
+    }
+
     func doInput() {
         incomingQueue.async {
             repeat {
@@ -182,6 +186,14 @@ final class SRTSocket {
             }
             return srt_sendmsg2(socket, buffer, Int32(data.count), nil)
         }
+    }
+
+    @inline(__always)
+    private func sendmsg2pointer(_ pointer: UnsafeRawBufferPointer, _ count: Int) -> Int32 {
+        guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
+            return SRT_ERROR
+        }
+        return srt_sendmsg2(socket, buffer, Int32(count), nil)
     }
 
     @inline(__always)
