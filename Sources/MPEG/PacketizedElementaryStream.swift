@@ -303,7 +303,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
             packet.adaptationField!.compute()
         }
         packet.payloadUnitStartIndicator = true
-        let position: Int = packet.fill(payload, useAdaptationField: true)
+        let position = packet.fill(payload, useAdaptationField: true)
         packets.append(packet)
 
         // middle

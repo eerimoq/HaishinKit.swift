@@ -1,7 +1,7 @@
 import Foundation
 
 class TSAdaptationField {
-    static let fixedSectionSize: Int = 2
+    static let fixedSectionSize: UInt8 = 2
 
     var length: UInt8 = 0
     var randomAccessIndicator = false
@@ -15,7 +15,7 @@ class TSAdaptationField {
     }
 
     func compute() {
-        length = UInt8(truncatingIfNeeded: TSAdaptationField.fixedSectionSize)
+        length = TSAdaptationField.fixedSectionSize
         if let pcr {
             length += UInt8(truncatingIfNeeded: pcr.count)
         }

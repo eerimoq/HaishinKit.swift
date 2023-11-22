@@ -3,8 +3,8 @@ import AVFoundation
  - seealso: https://en.wikipedia.org/wiki/MPEG_transport_stream#Packet
  */
 struct TSPacket {
-    static let size: Int = 188
-    static let headerSize: Int = 4
+    static let size = 188
+    static let headerSize = 4
 
     var payloadUnitStartIndicator = false
     var pid: UInt16 = 0
@@ -31,7 +31,7 @@ struct TSPacket {
     }
 
     mutating func fill(_ data: Data, useAdaptationField: Bool) -> Int {
-        let length: Int = min(data.count, remain, 182)
+        let length = min(data.count, remain, 182)
         payload.append(data[0 ..< length])
         if remain == 0 {
             return length
