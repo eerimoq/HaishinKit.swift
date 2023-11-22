@@ -359,14 +359,15 @@ extension TSWriter: VideoCodecDelegate {
             return
         }
 
+        let randomAccessIndicator = !sampleBuffer.isNotSync
+
         guard var PES = PacketizedElementaryStream.create(
-            UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
+            bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             timestamp: videoTimestamp,
-            config: config,
-            randomAccessIndicator: !sampleBuffer.isNotSync,
+            config: randomAccessIndicator ? config : nil,
             streamID: TSWriter.videoStreamId
         ) else {
             return
@@ -376,7 +377,7 @@ extension TSWriter: VideoCodecDelegate {
             TSWriter.defaultVideoPID,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-            randomAccessIndicator: !sampleBuffer.isNotSync,
+            randomAccessIndicator: randomAccessIndicator,
             PES: PES
         ) {
             writeVideo(data: bytes)
