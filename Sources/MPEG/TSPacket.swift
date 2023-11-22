@@ -8,9 +8,7 @@ struct TSPacket {
     static let defaultSyncByte: UInt8 = 0x47
 
     var syncByte: UInt8 = TSPacket.defaultSyncByte
-    var transportErrorIndicator = false
     var payloadUnitStartIndicator = false
-    var transportPriority = false
     var pid: UInt16 = 0
     var adaptationFieldFlag = false
     var continuityCounter: UInt8 = 0
@@ -59,14 +57,10 @@ struct TSPacket {
 }
 
 extension TSPacket: DataConvertible {
-    // MARK: DataConvertible
-
     var data: Data {
         get {
             var bytes = Data([syncByte, 0x00, 0x00, 0x00])
-            bytes[1] |= transportErrorIndicator ? 0x80 : 0
             bytes[1] |= payloadUnitStartIndicator ? 0x40 : 0
-            bytes[1] |= transportPriority ? 0x20 : 0
             bytes[1] |= UInt8(pid >> 8)
             bytes[2] |= UInt8(pid & 0x00FF)
             bytes[3] |= adaptationFieldFlag ? 0x20 : 0
@@ -83,9 +77,7 @@ extension TSPacket: DataConvertible {
             do {
                 let data: Data = try buffer.readBytes(4)
                 syncByte = data[0]
-                transportErrorIndicator = (data[1] & 0x80) == 0x80
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
-                transportPriority = (data[1] & 0x20) == 0x20
                 pid = UInt16(data[1] & 0x1F) << 8 | UInt16(data[2])
                 adaptationFieldFlag = (data[3] & 0x20) == 0x20
                 continuityCounter = UInt8(data[3] & 0xF)
@@ -103,14 +95,10 @@ extension TSPacket: DataConvertible {
 }
 
 extension TSPacket: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
-
-// MARK: -
 
 enum TSTimestamp {
     static let resolution: Double = 90 * 1000 // 90kHz
@@ -136,8 +124,6 @@ enum TSTimestamp {
         return data
     }
 }
-
-// MARK: -
 
 enum TSProgramClockReference {
     static let resolutionForBase: Int32 = 90 * 1000 // 90kHz
