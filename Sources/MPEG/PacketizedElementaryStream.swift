@@ -8,7 +8,7 @@ protocol PESPacketHeader {
     var startCode: Data { get set }
     var streamID: UInt8 { get set }
     var packetLength: UInt16 { get set }
-    var optionalPESHeader: PESOptionalHeader? { get set }
+    var optionalPESHeader: PESOptionalHeader { get set }
     var data: Data { get set }
 }
 
@@ -147,7 +147,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
     var startCode: Data = PacketizedElementaryStream.startCode
     var streamID: UInt8 = 0
     var packetLength: UInt16 = 0
-    var optionalPESHeader: PESOptionalHeader?
+    var optionalPESHeader: PESOptionalHeader = .init()
     var data = Data()
 
     var payload: Data {
@@ -156,7 +156,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
                 .writeBytes(startCode)
                 .writeUInt8(streamID)
                 .writeUInt16(packetLength)
-                .writeBytes(optionalPESHeader?.data ?? Data())
+                .writeBytes(optionalPESHeader.data)
                 .writeBytes(data)
                 .data
         }
@@ -167,12 +167,8 @@ struct PacketizedElementaryStream: PESPacketHeader {
                 streamID = try buffer.readUInt8()
                 packetLength = try buffer.readUInt16()
                 optionalPESHeader = try PESOptionalHeader(data: buffer.readBytes(buffer.bytesAvailable))
-                if let optionalPESHeader: PESOptionalHeader = optionalPESHeader {
-                    buffer.position = PacketizedElementaryStream
-                        .untilPacketLengthSize + 3 + Int(optionalPESHeader.pesHeaderLength)
-                } else {
-                    buffer.position = PacketizedElementaryStream.untilPacketLengthSize
-                }
+                buffer.position = PacketizedElementaryStream
+                    .untilPacketLengthSize + 3 + Int(optionalPESHeader.pesHeaderLength)
                 data = try buffer.readBytes(buffer.bytesAvailable)
             } catch {
                 logger.error("\(buffer)")
@@ -205,14 +201,13 @@ struct PacketizedElementaryStream: PESPacketHeader {
     ) {
         data.append(contentsOf: config.makeHeader(Int(count)))
         data.append(bytes, count: Int(count))
-        optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader!.dataAlignmentIndicator = true
-        optionalPESHeader!.setTimestamp(
+        optionalPESHeader.dataAlignmentIndicator = true
+        optionalPESHeader.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: CMTime.invalid
         )
-        let length = data.count + optionalPESHeader!.data.count
+        let length = data.count + optionalPESHeader.data.count
         if length < Int(UInt16.max) {
             packetLength = UInt16(length)
         } else {
@@ -243,14 +238,13 @@ struct PacketizedElementaryStream: PESPacketHeader {
         if let stream = AVCFormatStream(bytes: bytes, count: count) {
             data.append(stream.toByteStream())
         }
-        optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader!.dataAlignmentIndicator = true
-        optionalPESHeader!.setTimestamp(
+        optionalPESHeader.dataAlignmentIndicator = true
+        optionalPESHeader.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: decodeTimeStamp
         )
-        let length = data.count + optionalPESHeader!.data.count
+        let length = data.count + optionalPESHeader.data.count
         if length < Int(UInt16.max) {
             packetLength = UInt16(length)
         }
@@ -283,14 +277,13 @@ struct PacketizedElementaryStream: PESPacketHeader {
         if let stream = AVCFormatStream(bytes: bytes, count: count) {
             data.append(stream.toByteStream())
         }
-        optionalPESHeader = PESOptionalHeader()
-        optionalPESHeader!.dataAlignmentIndicator = true
-        optionalPESHeader!.setTimestamp(
+        optionalPESHeader.dataAlignmentIndicator = true
+        optionalPESHeader.setTimestamp(
             timestamp,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: decodeTimeStamp
         )
-        let length = data.count + optionalPESHeader!.data.count
+        let length = data.count + optionalPESHeader.data.count
         if length < Int(UInt16.max) {
             packetLength = UInt16(length)
         }
@@ -391,7 +384,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
             break
         }
         var sampleBuffer: CMSampleBuffer?
-        var timing = optionalPESHeader?.makeSampleTimingInfo(previousPresentationTimeStamp) ?? .invalid
+        var timing = optionalPESHeader.makeSampleTimingInfo(previousPresentationTimeStamp) ?? .invalid
         guard let blockBuffer, CMSampleBufferCreate(
             allocator: kCFAllocatorDefault,
             dataBuffer: blockBuffer,
