@@ -278,14 +278,17 @@ extension TSWriter: AudioCodecDelegate {
             }
         }
 
-        guard var PES = PacketizedElementaryStream.create(
-            audioBuffer.data.assumingMemoryBound(to: UInt8.self),
+        guard let config = audioConfig else {
+            return
+        }
+
+        guard var PES = PacketizedElementaryStream(
+            bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid,
             timestamp: audioTimestamp,
-            config: audioConfig,
-            randomAccessIndicator: true,
+            config: config,
             streamID: TSWriter.audioStreamId
         ) else {
             return
@@ -352,13 +355,17 @@ extension TSWriter: VideoCodecDelegate {
             }
         }
 
+        guard let config = videoConfig else {
+            return
+        }
+
         guard var PES = PacketizedElementaryStream.create(
             UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
             count: UInt32(length),
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             decodeTimeStamp: sampleBuffer.decodeTimeStamp,
             timestamp: videoTimestamp,
-            config: videoConfig,
+            config: config,
             randomAccessIndicator: !sampleBuffer.isNotSync,
             streamID: TSWriter.videoStreamId
         ) else {

@@ -151,21 +151,10 @@ struct PacketizedElementaryStream: PESPacketHeader {
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
-        config: Any?,
+        config: DecoderConfigurationRecord,
         randomAccessIndicator: Bool,
         streamID: UInt8
     ) -> PacketizedElementaryStream? {
-        if let config: AudioSpecificConfig = config as? AudioSpecificConfig {
-            return PacketizedElementaryStream(
-                bytes: bytes,
-                count: count,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: decodeTimeStamp,
-                timestamp: timestamp,
-                config: config,
-                streamID: streamID
-            )
-        }
         if let config: AVCDecoderConfigurationRecord = config as? AVCDecoderConfigurationRecord {
             return PacketizedElementaryStream(
                 bytes: bytes,
