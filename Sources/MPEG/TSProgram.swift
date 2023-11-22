@@ -17,8 +17,6 @@ protocol TSPSITableHeader {
     var sectionLength: UInt16 { get set }
 }
 
-// MARK: -
-
 protocol TSPSITableSyntax {
     var tableIdExtension: UInt16 { get set }
     var versionNumber: UInt8 { get set }
@@ -29,25 +27,17 @@ protocol TSPSITableSyntax {
     var crc32: UInt32 { get set }
 }
 
-// MARK: -
-
 class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
     static let reservedBits: UInt8 = 0x03
     static let defaultTableIDExtension: UInt16 = 1
 
-    // MARK: PSIPointer
-
     var pointerField: UInt8 = 0
     var pointerFillerBytes = Data()
-
-    // MARK: PSITableHeader
 
     var tableId: UInt8 = 0
     var sectionSyntaxIndicator = false
     var privateBit = false
     var sectionLength: UInt16 = 0
-
-    // MARK: PSITableSyntax
 
     var tableIdExtension: UInt16 = TSProgram.defaultTableIDExtension
     var versionNumber: UInt8 = 0
@@ -65,9 +55,8 @@ class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
 
     func arrayOfPackets(_ PID: UInt16) -> [TSPacket] {
         var packets: [TSPacket] = []
-        var packet = TSPacket()
+        var packet = TSPacket(pid: PID)
         packet.payloadUnitStartIndicator = true
-        packet.pid = PID
         _ = packet.fill(data, useAdaptationField: false)
         packets.append(packet)
         return packets

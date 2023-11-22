@@ -21,7 +21,9 @@ struct TSPacket {
         return TSPacket.size - TSPacket.headerSize - adaptationFieldSize - payload.count
     }
 
-    init() {}
+    init(pid: UInt16) {
+        self.pid = pid
+    }
 
     init?(data: Data) {
         guard TSPacket.size == data.count else {
