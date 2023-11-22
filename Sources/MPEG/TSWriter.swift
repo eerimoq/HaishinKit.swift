@@ -360,16 +360,30 @@ extension TSWriter: VideoCodecDelegate {
         }
 
         let randomAccessIndicator = !sampleBuffer.isNotSync
+        let PES: PacketizedElementaryStream
+        let bytes = UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length)
 
-        guard var PES = PacketizedElementaryStream.create(
-            bytes: UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length),
-            count: UInt32(length),
-            presentationTimeStamp: sampleBuffer.presentationTimeStamp,
-            decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-            timestamp: videoTimestamp,
-            config: randomAccessIndicator ? config : nil,
-            streamID: TSWriter.videoStreamId
-        ) else {
+        if let config: AVCDecoderConfigurationRecord = config as? AVCDecoderConfigurationRecord {
+            PES = PacketizedElementaryStream(
+                bytes: bytes,
+                count: UInt32(length),
+                presentationTimeStamp: sampleBuffer.presentationTimeStamp,
+                decodeTimeStamp: sampleBuffer.decodeTimeStamp,
+                timestamp: videoTimestamp,
+                config: randomAccessIndicator ? config : nil,
+                streamID: TSWriter.videoStreamId
+            )
+        } else if let config: HEVCDecoderConfigurationRecord = config as? HEVCDecoderConfigurationRecord {
+            PES = PacketizedElementaryStream(
+                bytes: bytes,
+                count: UInt32(length),
+                presentationTimeStamp: sampleBuffer.presentationTimeStamp,
+                decodeTimeStamp: sampleBuffer.decodeTimeStamp,
+                timestamp: videoTimestamp,
+                config: randomAccessIndicator ? config : nil,
+                streamID: TSWriter.videoStreamId
+            )
+        } else {
             return
         }
 

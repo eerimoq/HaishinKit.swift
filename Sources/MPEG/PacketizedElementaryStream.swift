@@ -144,41 +144,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
     static let untilPacketLengthSize: Int = 6
     static let startCode = Data([0x00, 0x00, 0x01])
 
-    // swiftlint:disable:next function_parameter_count
-    static func create(
-        bytes: UnsafePointer<UInt8>,
-        count: UInt32,
-        presentationTimeStamp: CMTime,
-        decodeTimeStamp: CMTime,
-        timestamp: CMTime,
-        config: DecoderConfigurationRecord?,
-        streamID: UInt8
-    ) -> PacketizedElementaryStream? {
-        if let config: AVCDecoderConfigurationRecord? = config as? AVCDecoderConfigurationRecord? {
-            return PacketizedElementaryStream(
-                bytes: bytes,
-                count: count,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: decodeTimeStamp,
-                timestamp: timestamp,
-                config: config,
-                streamID: streamID
-            )
-        }
-        if let config: HEVCDecoderConfigurationRecord? = config as? HEVCDecoderConfigurationRecord? {
-            return PacketizedElementaryStream(
-                bytes: bytes,
-                count: count,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: decodeTimeStamp,
-                timestamp: timestamp,
-                config: config,
-                streamID: streamID
-            )
-        }
-        return nil
-    }
-
     var startCode: Data = PacketizedElementaryStream.startCode
     var streamID: UInt8 = 0
     var packetLength: UInt16 = 0
