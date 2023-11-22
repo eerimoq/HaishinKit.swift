@@ -299,7 +299,6 @@ struct PacketizedElementaryStream: PESPacketHeader {
         packet.pid = PID
         if let PCR {
             packet.adaptationField = TSAdaptationField()
-            packet.adaptationField!.pcrFlag = true
             packet.adaptationField!.pcr = TSProgramClockReference.encode(PCR, 0)
             packet.adaptationField!.compute()
         }
