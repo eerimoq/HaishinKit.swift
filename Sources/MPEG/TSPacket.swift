@@ -54,7 +54,7 @@ struct TSPacket {
 extension TSPacket: DataConvertible {
     var data: Data {
         get {
-            var bytes = Data([
+            let bytes = Data([
                 0x47,
                 (payloadUnitStartIndicator ? 0x40 : 0) | UInt8(pid >> 8),
                 UInt8(pid & 0x00FF),

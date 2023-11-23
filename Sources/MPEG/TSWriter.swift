@@ -118,11 +118,11 @@ public class TSWriter: Running {
                                    PES: PacketizedElementaryStream) -> Data
     {
         let timestamp = decodeTimeStamp == .invalid ? presentationTimeStamp : decodeTimeStamp
-        let packets: [TSPacket] = split(PID, PES: PES, timestamp: timestamp)
+        let packets = split(PID, PES: PES, timestamp: timestamp)
         packets[0].adaptationField?.randomAccessIndicator = randomAccessIndicator
         rotateFileHandle(timestamp)
 
-        var bytes = Data()
+        var bytes = Data(capacity: packets.count * 188)
         for var packet in packets {
             switch PID {
             case TSWriter.defaultAudioPID:
