@@ -123,9 +123,8 @@ public class TSWriter: Running {
         rotateFileHandle(timestamp)
 
         let count = packets.count * 188
-        let buffer = UnsafeMutableRawPointer.allocate(byteCount: count, alignment: 8)
         var data = Data(
-            bytesNoCopy: buffer,
+            bytesNoCopy: UnsafeMutableRawPointer.allocate(byteCount: count, alignment: 8),
             count: count,
             deallocator: .custom { (pointer: UnsafeMutableRawPointer, _: Int) in pointer.deallocate() }
         )
@@ -145,7 +144,9 @@ public class TSWriter: Running {
                 packet.fixedHeader(pointer: pointer)
                 pointer = UnsafeMutableRawBufferPointer(rebasing: pointer[4...])
                 if let adaptationField = packet.adaptationField {
-                    pointer.copyBytes(from: adaptationField.data)
+                    adaptationField.data.withUnsafeBytes { (adaptationPointer: UnsafeRawBufferPointer) in
+                        pointer.copyMemory(from: adaptationPointer)
+                    }
                     pointer = UnsafeMutableRawBufferPointer(rebasing: pointer[adaptationField.data.count...])
                 }
                 packet.payload.withUnsafeBytes { (payloadPointer: UnsafeRawBufferPointer) in
