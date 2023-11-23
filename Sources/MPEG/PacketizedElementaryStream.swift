@@ -302,21 +302,18 @@ struct PacketizedElementaryStream: PESPacketHeader {
             packet.adaptationField!.compute()
         }
         packet.payloadUnitStartIndicator = true
-        let position = packet.fill(payload, useAdaptationField: true)
+        var position = packet.fill(payload, useAdaptationField: true)
         packets.append(packet)
 
         // middle
-        let rest = (payload.count - position) % 184
-        for index in stride(
-            from: payload.startIndex.advanced(by: position),
-            to: payload.endIndex.advanced(by: -rest),
-            by: 184
-        ) {
-            var packet = TSPacket(pid: PID)
-            packet.payload = payload.subdata(in: index ..< index.advanced(by: 184))
+        packet = TSPacket(pid: PID)
+        while position <= payload.count - 184 {
+            packet.payload = payload[position ..< position + 184]
             packets.append(packet)
+            position += 184
         }
 
+        let rest = (payload.count - position) % 184
         switch rest {
         case 0:
             break
