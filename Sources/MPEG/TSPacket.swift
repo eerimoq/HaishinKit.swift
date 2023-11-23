@@ -50,13 +50,19 @@ struct TSPacket {
         return length
     }
 
-    func fixedHeader() -> Data {
-        return Data([
-            0x47,
-            (payloadUnitStartIndicator ? 0x40 : 0) | UInt8(pid >> 8),
-            UInt8(pid & 0x00FF),
-            (adaptationField != nil ? 0x20 : 0) | 0x10 | continuityCounter,
-        ])
+    func fixedHeader(pointer: UnsafeMutableRawBufferPointer) {
+        pointer.storeBytes(of: 0x47, toByteOffset: 0, as: UInt8.self)
+        pointer.storeBytes(
+            of: (payloadUnitStartIndicator ? 0x40 : 0) | UInt8(pid >> 8),
+            toByteOffset: 1,
+            as: UInt8.self
+        )
+        pointer.storeBytes(of: UInt8(pid & 0x00FF), toByteOffset: 2, as: UInt8.self)
+        pointer.storeBytes(
+            of: (adaptationField != nil ? 0x20 : 0) | 0x10 | continuityCounter,
+            toByteOffset: 3,
+            as: UInt8.self
+        )
     }
 }
 

@@ -122,26 +122,40 @@ public class TSWriter: Running {
         packets[0].adaptationField?.randomAccessIndicator = randomAccessIndicator
         rotateFileHandle(timestamp)
 
-        var bytes = Data(capacity: packets.count * 188)
-        for var packet in packets {
-            switch PID {
-            case TSWriter.defaultAudioPID:
-                packet.continuityCounter = audioContinuityCounter
-                audioContinuityCounter = (audioContinuityCounter + 1) & 0x0F
-            case TSWriter.defaultVideoPID:
-                packet.continuityCounter = videoContinuityCounter
-                videoContinuityCounter = (videoContinuityCounter + 1) & 0x0F
-            default:
-                break
+        let count = packets.count * 188
+        let buffer = UnsafeMutableRawPointer.allocate(byteCount: count, alignment: 8)
+        var data = Data(
+            bytesNoCopy: buffer,
+            count: count,
+            deallocator: .custom { (pointer: UnsafeMutableRawPointer, _: Int) in pointer.deallocate() }
+        )
+        data.withUnsafeMutableBytes { (pointer: UnsafeMutableRawBufferPointer) in
+            var pointer = pointer
+            for var packet in packets {
+                switch PID {
+                case TSWriter.defaultAudioPID:
+                    packet.continuityCounter = audioContinuityCounter
+                    audioContinuityCounter = (audioContinuityCounter + 1) & 0x0F
+                case TSWriter.defaultVideoPID:
+                    packet.continuityCounter = videoContinuityCounter
+                    videoContinuityCounter = (videoContinuityCounter + 1) & 0x0F
+                default:
+                    break
+                }
+                packet.fixedHeader(pointer: pointer)
+                pointer = UnsafeMutableRawBufferPointer(rebasing: pointer[4...])
+                if let adaptationField = packet.adaptationField {
+                    pointer.copyBytes(from: adaptationField.data)
+                    pointer = UnsafeMutableRawBufferPointer(rebasing: pointer[adaptationField.data.count...])
+                }
+                packet.payload.withUnsafeBytes { (payloadPointer: UnsafeRawBufferPointer) in
+                    pointer.copyMemory(from: payloadPointer)
+                }
+                pointer = UnsafeMutableRawBufferPointer(rebasing: pointer[packet.payload.count...])
             }
-            bytes.append(packet.fixedHeader())
-            if let adaptationField = packet.adaptationField {
-                bytes.append(adaptationField.data)
-            }
-            bytes.append(packet.payload)
         }
 
-        return bytes
+        return data
     }
 
     func rotateFileHandle(_ timestamp: CMTime) {
