@@ -134,7 +134,11 @@ public class TSWriter: Running {
             default:
                 break
             }
-            bytes.append(packet.data)
+            bytes.append(packet.fixedHeader())
+            if let adaptationField = packet.adaptationField {
+                bytes.append(adaptationField.data)
+            }
+            bytes.append(packet.payload)
         }
 
         return bytes
