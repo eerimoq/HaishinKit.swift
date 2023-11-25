@@ -20,7 +20,13 @@ public class PiPHKView: UIView {
     /// A value that specifies how the video is displayed within a player layer’s bounds.
     public var videoGravity: AVLayerVideoGravity = .resizeAspect {
         didSet {
-            layer.videoGravity = videoGravity
+            if Thread.isMainThread {
+                layer.videoGravity = videoGravity
+            } else {
+                DispatchQueue.main.sync {
+                    layer.videoGravity = videoGravity
+                }
+            }
         }
     }
 
@@ -65,10 +71,6 @@ public class PiPHKView: UIView {
     /// Returns an object initialized from data in a given unarchiver.
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-    }
-
-    deinit {
-        attachStream(nil)
     }
 
     /// Prepares the receiver for service after it has been loaded from an Interface Builder archive, or

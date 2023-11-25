@@ -23,7 +23,8 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     weak var drawable: (any NetStreamDrawable)? {
         didSet {
-            drawable?.videoOrientation = videoOrientation
+            //print("drawable", drawable)
+            //drawable?.videoOrientation = videoOrientation
         }
     }
 
