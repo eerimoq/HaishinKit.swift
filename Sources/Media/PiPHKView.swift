@@ -29,15 +29,22 @@ public class PiPHKView: UIView {
         currentStream?.mixer.videoIO.formatDescription
     }
 
-    public var videoOrientation: AVCaptureVideoOrientation = .portrait {
+    public var isMirrored = false {
         didSet {
+            let transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
             if Thread.isMainThread {
-                layer.flushAndRemoveImage()
+                layer.setAffineTransform(transform)
             } else {
                 DispatchQueue.main.sync {
-                    layer.flushAndRemoveImage()
+                    layer.setAffineTransform(transform)
                 }
             }
+        }
+    }
+
+    public var videoOrientation: AVCaptureVideoOrientation = .portrait {
+        didSet {
+            currentStream?.mixer.videoIO.videoOrientation = videoOrientation
         }
     }
 
