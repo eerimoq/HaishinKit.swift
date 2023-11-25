@@ -42,13 +42,13 @@ public class PiPHKView: UIView {
         }
     }
 
+    public var fps: Double?
+
     public var videoOrientation: AVCaptureVideoOrientation = .portrait {
         didSet {
             currentStream?.mixer.videoIO.videoOrientation = videoOrientation
         }
     }
-
-    private var currentSampleBuffer: CMSampleBuffer?
 
     private weak var currentStream: NetStream? {
         didSet {
@@ -96,7 +96,6 @@ extension PiPHKView: NetStreamDrawable {
 
     public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
         if Thread.isMainThread {
-            currentSampleBuffer = sampleBuffer
             if let sampleBuffer {
                 layer.enqueue(sampleBuffer)
             }
