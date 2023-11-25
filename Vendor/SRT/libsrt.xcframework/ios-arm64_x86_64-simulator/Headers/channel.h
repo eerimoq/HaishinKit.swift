@@ -64,8 +64,7 @@ namespace srt
 
 class CChannel
 {
-    void createSocket(int family);
-
+    void createSocket(int family, CallbackHolder<srt_send_callback_fn> sendHook);
 public:
     // XXX There's currently no way to access the socket ID set for
     // whatever the channel is currently working for. Required to find
@@ -79,9 +78,9 @@ public:
     /// Open a UDP channel.
     /// @param [in] addr The local address that UDP will use.
 
-    void open(const sockaddr_any& addr);
+    void open(const sockaddr_any& addr, CallbackHolder<srt_send_callback_fn> sendHook);
 
-    void open(int family);
+    void open(int family, CallbackHolder<srt_send_callback_fn> sendHook);
 
     /// Open a UDP channel based on an existing UDP socket.
     /// @param [in] udpsock UDP socket descriptor.
@@ -170,6 +169,7 @@ private:
 
 private:
     UDPSOCKET m_iSocket; // socket descriptor
+    CallbackHolder<srt_send_callback_fn> m_cbSendHook;
 
     // Mutable because when querying original settings
     // this comprises the cache for extracted values,

@@ -784,6 +784,8 @@ SRT_API       int srt_connect_bind (SRTSOCKET u, const struct sockaddr* source,
                                     const struct sockaddr* target, int len);
 SRT_API       int srt_rendezvous   (SRTSOCKET u, const struct sockaddr* local_name, int local_namelen,
                                     const struct sockaddr* remote_name, int remote_namelen);
+typedef int srt_send_callback_fn(void* opaq, int socket, void *buf_1, int size_1, void *buf_2, int size_2);
+SRT_API       int srt_send_callback(SRTSOCKET u, srt_send_callback_fn* hook_fn, void* hook_opaque);
 
 SRT_API       int srt_close        (SRTSOCKET u);
 SRT_API       int srt_getpeername  (SRTSOCKET u, struct sockaddr* name, int* namelen);

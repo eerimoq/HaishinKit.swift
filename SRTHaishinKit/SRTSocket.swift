@@ -7,6 +7,7 @@ protocol SRTSocketDelegate: AnyObject {
     func socket(_ socket: SRTSocket, status: SRT_SOCKSTATUS)
     func socket(_ socket: SRTSocket, incomingDataAvailable data: Data, bytes: Int32)
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket)
+    func socket(_ socket: SRTSocket, sendHook data: Data) -> Bool
 }
 
 final class SRTSocket {
@@ -87,6 +88,27 @@ final class SRTSocket {
         if socket == SRT_INVALID_SOCK {
             throw makeSocketError()
         }
+        let context = Unmanaged.passRetained(self).toOpaque()
+        srt_send_callback(socket,
+                          { context, _, buf1, size1, buf2, size2 in
+                              guard let context, let buf1, let buf2 else {
+                                  return -1
+                              }
+                              let socket: SRTSocket = Unmanaged.fromOpaque(context).takeUnretainedValue()
+                              var data = Data(capacity: Int(size1 + size2))
+                              buf1.withMemoryRebound(to: UInt8.self, capacity: Int(size1)) { buf in
+                                  data.append(buf, count: Int(size1))
+                              }
+                              buf2.withMemoryRebound(to: UInt8.self, capacity: Int(size2)) { buf in
+                                  data.append(buf, count: Int(size2))
+                              }
+                              if socket.delegate?.socket(socket, sendHook: data) ?? false {
+                                  return size1 + size2
+                              } else {
+                                  return -1
+                              }
+                          },
+                          context)
         self.options = options
         guard configure(.pre) else {
             throw makeSocketError()

@@ -18,6 +18,7 @@ public class SRTConnection: NSObject {
 
     private var stream: SRTStream?
     var clients: [SRTSocket] = []
+    private var sendHook: ((Data) -> Bool)?
 
     /// The SRT's performance data.
     public var performanceData: SRTPerformanceData {
@@ -40,13 +41,14 @@ public class SRTConnection: NSObject {
     }
 
     /// Open a two-way connection to an application on SRT Server.
-    public func open(_ uri: URL?, mode: SRTMode = .caller) throws {
+    public func open(_ uri: URL?, sendHook: @escaping (Data) -> Bool, mode: SRTMode = .caller) throws {
         guard let uri = uri, let scheme = uri.scheme, let host = uri.host, let port = uri.port,
               scheme == "srt"
         else {
             return
-        }
+    }
         self.uri = uri
+        self.sendHook = sendHook
         let options = SRTSocketOption.from(uri: uri)
         let addr = sockaddr_in(mode.host(host), port: UInt16(port))
         socket = .init()
@@ -116,5 +118,9 @@ extension SRTConnection: SRTSocketDelegate {
 
     func socket(_: SRTSocket, didAcceptSocket client: SRTSocket) {
         clients.append(client)
+    }
+
+    func socket(_: SRTSocket, sendHook data: Data) -> Bool {
+        return sendHook?(data) ?? false
     }
 }
