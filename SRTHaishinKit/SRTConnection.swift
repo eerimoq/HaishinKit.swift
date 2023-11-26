@@ -46,7 +46,7 @@ public class SRTConnection: NSObject {
               scheme == "srt"
         else {
             return
-    }
+        }
         self.uri = uri
         self.sendHook = sendHook
         let options = SRTSocketOption.from(uri: uri)
