@@ -8,9 +8,9 @@ if [ ! -e OpenSSL ] ; then
 fi
 
 if [ ! -e srt ] ; then
-  git clone git@github.com:Haivision/srt.git
+  git clone git@github.com:eerimoq/srt.git
   pushd srt
-  git checkout refs/tags/v1.5.3
+  git checkout moblin
   popd
 fi
 
