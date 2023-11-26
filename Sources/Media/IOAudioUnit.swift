@@ -12,6 +12,7 @@ public enum GeneratorMode {
 public var audioGeneratorMode: GeneratorMode = .off
 public var squareWaveGeneratorAmplitude: Int16 = 200
 public var squareWaveGeneratorInterval: UInt64 = 60
+public var useFirstChannelForAudioLevel: Bool = false
 
 final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
@@ -197,6 +198,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             var audioLevel: Float
             if muted {
                 audioLevel = .nan
+            } else if useFirstChannelForAudioLevel {
+                audioLevel = 0.0
+                for channel in connection.audioChannels.prefix(1) {
+                    audioLevel += channel.averagePowerLevel
+                }
             } else if connection.audioChannels.count > 1 {
                 audioLevel = .infinity
             } else {
