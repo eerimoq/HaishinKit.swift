@@ -99,6 +99,10 @@ extension PiPHKView: NetStreamDrawable {
     public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
         if Thread.isMainThread {
             if let sampleBuffer {
+                if layer.status == .failed {
+                    layer.flush()
+                    print(sampleBuffer)
+                }
                 layer.enqueue(sampleBuffer)
             }
         } else {
