@@ -212,7 +212,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
                 }
                 audioLevel /= Float(connection.audioChannels.count)
             }
-            mixer.delegate?.mixer(mixer, audioLevel: audioLevel)
+            mixer.delegate?.mixer(mixer,
+                                  audioLevel: audioLevel,
+                                  numberOfChannels: connection.audioChannels.count,
+                                  numberOfSamples: sampleBuffer.numSamples,
+                                  stride: 0)
         }
         appendSampleBuffer(sampleBuffer)
     }
