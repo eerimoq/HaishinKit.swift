@@ -191,7 +191,7 @@ public class TSWriter: Running {
 
     private func writeBytesPointer(pointer: UnsafeRawBufferPointer, count: Int) {
         for offset in stride(from: 0, to: count, by: payloadSize) {
-            var length = min(payloadSize, count - offset)
+            let length = min(payloadSize, count - offset)
             writePacketPointer(
                 pointer: UnsafeRawBufferPointer(rebasing: pointer[offset ..< offset + length]),
                 count: length
@@ -207,7 +207,7 @@ public class TSWriter: Running {
 
     private func writeVideo(data: Data) {
         outputLock.sync {
-            if var videoData = videoData[0] {
+            if let videoData = videoData[0] {
                 videoData.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) in
                     writeBytesPointer(
                         pointer: UnsafeRawBufferPointer(
@@ -320,7 +320,7 @@ extension TSWriter: AudioCodecDelegate {
             return
         }
 
-        guard var PES = PacketizedElementaryStream(
+        guard let PES = PacketizedElementaryStream(
             bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,

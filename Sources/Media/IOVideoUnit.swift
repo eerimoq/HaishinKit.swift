@@ -198,7 +198,7 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard var imageBuffer = sampleBuffer.imageBuffer else {
+        guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
         imageBuffer.lockBaseAddress()
