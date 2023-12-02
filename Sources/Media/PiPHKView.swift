@@ -101,7 +101,6 @@ extension PiPHKView: NetStreamDrawable {
             if let sampleBuffer {
                 if layer.status == .failed {
                     layer.flush()
-                    print(sampleBuffer)
                 }
                 layer.enqueue(sampleBuffer)
             }
