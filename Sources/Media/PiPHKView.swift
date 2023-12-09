@@ -7,6 +7,8 @@ public class PiPHKView: UIView {
     /// The view’s background color.
     public static var defaultBackgroundColor: UIColor = .black
 
+    private var streamChange = true
+
     /// Returns the class used to create the layer for instances of this class.
     override public class var layerClass: AnyClass {
         AVSampleBufferDisplayLayer.self
@@ -32,29 +34,23 @@ public class PiPHKView: UIView {
 
     /// A value that displays a video format.
     public var videoFormatDescription: CMVideoFormatDescription? {
-        currentStream?.mixer.videoIO.formatDescription
+        return currentStream?.mixer.videoIO.formatDescription
     }
-
-    public var isMirrored = false {
-        didSet {
-            let transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
-            if Thread.isMainThread {
-                layer.setAffineTransform(transform)
-            } else {
-                DispatchQueue.main.sync {
-                    layer.setAffineTransform(transform)
-                }
-            }
-        }
-    }
-
-    public var fps: Double?
 
     public var videoOrientation: AVCaptureVideoOrientation = .portrait {
         didSet {
             currentStream?.mixer.videoIO.videoOrientation = videoOrientation
         }
     }
+
+    public var isMirrored = false
+
+    private func applyIsMirrored() {
+        let transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
+        layer.setAffineTransform(transform)
+    }
+
+    public var fps: Double?
 
     private weak var currentStream: NetStream? {
         didSet {
@@ -85,6 +81,7 @@ public class PiPHKView: UIView {
 
 extension PiPHKView: NetStreamDrawable {
     public func attachStream(_ stream: NetStream?) {
+        streamChange = true
         guard let stream else {
             currentStream = nil
             return
@@ -97,17 +94,18 @@ extension PiPHKView: NetStreamDrawable {
     }
 
     public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
-        if Thread.isMainThread {
-            if let sampleBuffer {
-                if layer.status == .failed {
-                    layer.flush()
-                }
-                layer.enqueue(sampleBuffer)
+        guard let sampleBuffer else {
+            return
+        }
+        DispatchQueue.main.async {
+            if self.layer.status == .failed {
+                self.layer.flush()
             }
-        } else {
-            DispatchQueue.main.async {
-                self.enqueue(sampleBuffer)
+            if self.streamChange {
+                self.applyIsMirrored()
+                self.streamChange = false
             }
+            self.layer.enqueue(sampleBuffer)
         }
     }
 }

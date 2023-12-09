@@ -265,7 +265,7 @@ extension IOVideoUnit: IOUnitDecoding {
 private func setSampleBufferAttachments(_ sampleBuffer: CMSampleBuffer) {
     let attachments: CFArray! = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: true)
     let dictionary = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0),
-        to: CFMutableDictionary.self)
+                                   to: CFMutableDictionary.self)
     let key = Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque()
     let value = Unmanaged.passUnretained(kCFBooleanTrue).toOpaque()
     CFDictionarySetValue(dictionary, key, value)
