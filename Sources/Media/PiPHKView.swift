@@ -43,6 +43,7 @@ public class PiPHKView: UIView {
         }
     }
 
+    public var previousIsMirrored = false
     public var isMirrored = false
 
     private func applyIsMirrored() {
@@ -101,9 +102,9 @@ extension PiPHKView: NetStreamDrawable {
             if self.layer.status == .failed {
                 self.layer.flush()
             }
-            if self.streamChange {
+            if self.isMirrored != self.previousIsMirrored {
                 self.applyIsMirrored()
-                self.streamChange = false
+                self.previousIsMirrored = self.isMirrored
             }
             self.layer.enqueue(sampleBuffer)
         }
