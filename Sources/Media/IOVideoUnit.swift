@@ -198,7 +198,6 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        logger.info("Append sample buffer")
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
@@ -278,6 +277,7 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from _: AVCaptureConnection
     ) {
+        logger.info("Append sample buffer")
         if capture.output == captureOutput {
             guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
             else {
