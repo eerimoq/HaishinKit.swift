@@ -198,6 +198,7 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        logger.info("Append sample buffer")
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
