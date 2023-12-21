@@ -188,7 +188,7 @@ public struct VideoCodecSettings {
                 options.insert(.init(key: .requireHardwareAcceleratedVideoEncoder, value: kCFBooleanTrue))
             }
         #endif
-        if !isBaseline {
+        if !isBaseline && profileLevel.contains("H264") {
             options.insert(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }
         if let extraOptions {
