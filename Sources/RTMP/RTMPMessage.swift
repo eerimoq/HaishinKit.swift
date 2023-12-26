@@ -1,6 +1,6 @@
 import AVFoundation
 
-enum RTMPMessageType: UInt8 {
+public enum RTMPMessageType: UInt8 {
     case chunkSize = 0x01
     case abort = 0x02
     case ack = 0x03
@@ -53,7 +53,7 @@ enum RTMPMessageType: UInt8 {
     }
 }
 
-class RTMPMessage {
+public class RTMPMessage {
     let type: RTMPMessageType
     var length: Int = 0
     var streamId: UInt32 = 0
@@ -70,7 +70,7 @@ class RTMPMessage {
 extension RTMPMessage: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
 
-    var debugDescription: String {
+    public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }
@@ -80,7 +80,7 @@ extension RTMPMessage: CustomDebugStringConvertible {
 /**
  5.4.1. Set Chunk Size (1)
  */
-final class RTMPSetChunkSizeMessage: RTMPMessage {
+public final class RTMPSetChunkSizeMessage: RTMPMessage {
     var size: UInt32 = 0
 
     override var payload: Data {
@@ -100,11 +100,11 @@ final class RTMPSetChunkSizeMessage: RTMPMessage {
         }
     }
 
-    init() {
+    public init() {
         super.init(type: .chunkSize)
     }
 
-    init(_ size: UInt32) {
+    public init(_ size: UInt32) {
         super.init(type: .chunkSize)
         self.size = size
     }
@@ -184,14 +184,14 @@ final class RTMPAcknowledgementMessage: RTMPMessage {
 /**
  5.4.4. Window Acknowledgement Size (5)
  */
-final class RTMPWindowAcknowledgementSizeMessage: RTMPMessage {
+public final class RTMPWindowAcknowledgementSizeMessage: RTMPMessage {
     var size: UInt32 = 0
 
-    init() {
+    public init() {
         super.init(type: .windowAck)
     }
 
-    init(_ size: UInt32) {
+    public init(_ size: UInt32) {
         super.init(type: .windowAck)
         self.size = size
     }
@@ -224,8 +224,8 @@ final class RTMPWindowAcknowledgementSizeMessage: RTMPMessage {
 /**
  5.4.5. Set Peer Bandwidth (6)
  */
-final class RTMPSetPeerBandwidthMessage: RTMPMessage {
-    enum Limit: UInt8 {
+public final class RTMPSetPeerBandwidthMessage: RTMPMessage {
+    public enum Limit: UInt8 {
         case hard = 0x00
         case soft = 0x01
         case dynamic = 0x02
@@ -235,8 +235,14 @@ final class RTMPSetPeerBandwidthMessage: RTMPMessage {
     var size: UInt32 = 0
     var limit: Limit = .hard
 
-    init() {
+    public init() {
         super.init(type: .bandwidth)
+    }
+
+    public init(size: UInt32, limit: Limit) {
+        super.init(type: .bandwidth)
+        self.size = size
+        self.limit = limit
     }
 
     override var payload: Data {
@@ -270,7 +276,7 @@ final class RTMPSetPeerBandwidthMessage: RTMPMessage {
 /**
  7.1.1. Command Message (20, 17)
  */
-final class RTMPCommandMessage: RTMPMessage {
+public final class RTMPCommandMessage: RTMPMessage {
     let objectEncoding: RTMPObjectEncoding
     var commandName: String = ""
     var transactionId: Int = 0
@@ -322,12 +328,12 @@ final class RTMPCommandMessage: RTMPMessage {
 
     private var serializer: any AMFSerializer = AMF0Serializer()
 
-    init(objectEncoding: RTMPObjectEncoding) {
+    public init(objectEncoding: RTMPObjectEncoding) {
         self.objectEncoding = objectEncoding
         super.init(type: objectEncoding.commandType)
     }
 
-    init(
+    public init(
         streamId: UInt32,
         transactionId: Int,
         objectEncoding: RTMPObjectEncoding,
