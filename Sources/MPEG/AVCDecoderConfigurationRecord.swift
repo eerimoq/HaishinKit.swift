@@ -10,7 +10,7 @@ protocol DecoderConfigurationRecord {
 /*
  - seealso: ISO/IEC 14496-15 2010
  */
-struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
+public struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
     static func getData(_ formatDescription: CMFormatDescription?) -> Data? {
         guard let formatDescription else {
             return nil
@@ -48,7 +48,7 @@ struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         Int32((lengthSizeMinusOneWithReserved >> 6) + 1)
     }
 
-    init() {}
+    public init() {}
 
     init(data: Data) {
         self.data = data
@@ -88,7 +88,7 @@ struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
 extension AVCDecoderConfigurationRecord: DataConvertible {
     // MARK: DataConvertible
 
-    var data: Data {
+    public var data: Data {
         get {
             let buffer = ByteArray()
                 .writeUInt8(configurationVersion)
@@ -140,7 +140,7 @@ extension AVCDecoderConfigurationRecord: DataConvertible {
 extension AVCDecoderConfigurationRecord: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
 
-    var debugDescription: String {
+    public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// The type of flv supports video codecs.
-enum FLVVideoCodec: UInt8 {
+public enum FLVVideoCodec: UInt8 {
     /// The JPEG codec.
     case jpeg = 1
     /// The Sorenson H263 codec.

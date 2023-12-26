@@ -1,5 +1,5 @@
 /// The type of flv supports avc packet types.
-enum FLVAVCPacketType: UInt8 {
+public enum FLVAVCPacketType: UInt8 {
     /// The sequence data.
     case seq = 0
     /// The NAL unit data.
