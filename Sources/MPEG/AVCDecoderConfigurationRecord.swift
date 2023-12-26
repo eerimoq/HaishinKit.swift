@@ -54,7 +54,7 @@ public struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         self.data = data
     }
 
-    func makeFormatDescription(_ formatDescriptionOut: UnsafeMutablePointer<CMFormatDescription?>)
+    public func makeFormatDescription(_ formatDescriptionOut: UnsafeMutablePointer<CMFormatDescription?>)
         -> OSStatus
     {
         return pictureParameterSets[0].withUnsafeBytes { (ppsBuffer: UnsafeRawBufferPointer) -> OSStatus in

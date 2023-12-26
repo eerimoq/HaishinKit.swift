@@ -1,5 +1,5 @@
 /// The type of flv supports video frame types.
-enum FLVFrameType: UInt8 {
+public enum FLVFrameType: UInt8 {
     /// The keyframe.
     case key = 1
     /// The inter frame.
