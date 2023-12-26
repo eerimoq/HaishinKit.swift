@@ -42,6 +42,8 @@ public class VideoCodec {
         case failedToSetOption(status: OSStatus, option: VTSessionOption)
     }
 
+    public init() {}
+
     /// The videoCodec's attributes value.
     public static var defaultAttributes: [NSString: AnyObject]? = [
         kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
@@ -65,7 +67,7 @@ public class VideoCodec {
 
     var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoCodec.lock")
     var expectedFrameRate = IOMixer.defaultFrameRate
-    var formatDescription: CMFormatDescription? {
+    public var formatDescription: CMFormatDescription? {
         didSet {
             guard !CMFormatDescriptionEqual(formatDescription, otherFormatDescription: oldValue) else {
                 return
@@ -88,7 +90,7 @@ public class VideoCodec {
         return attributes
     }
 
-    weak var delegate: (any VideoCodecDelegate)?
+    public weak var delegate: (any VideoCodecDelegate)?
     private(set) var session: (any VTSessionConvertible)? {
         didSet {
             oldValue?.invalidate()
@@ -122,7 +124,7 @@ public class VideoCodec {
         }
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
             return
         }
