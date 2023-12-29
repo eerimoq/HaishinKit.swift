@@ -225,6 +225,14 @@ open class NetStream: NSObject {
         }
     }
 
+    /// Append a video sample buffer.
+    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
+    open func appendVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        mixer.videoIO.lockQueue.async {
+            self.mixer.videoIO.appendSampleBuffer(sampleBuffer)
+        }
+    }
+
     /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
