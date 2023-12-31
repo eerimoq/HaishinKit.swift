@@ -102,8 +102,16 @@ final class IOVideoUnit: NSObject, IOUnit {
     private(set) var multiCamCapture: IOVideoCaptureUnit = .init()
     var multiCamCaptureSettings: MultiCamCaptureSettings = .default
     private var multiCamSampleBuffer: CMSampleBuffer?
+    private var replaceVideo: Bool = false
+    private var replaceSampleBuffers: [CMSampleBuffer] = []
+    private var firstPresentationTimeStamp: Double = .nan
+    private var currentReplaceSampleBuffer: CMSampleBuffer?
 
-    func attachCamera(_ device: AVCaptureDevice?) throws {
+    func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: Bool) throws {
+        self.replaceVideo = replaceVideo
+        firstPresentationTimeStamp = .nan
+        currentReplaceSampleBuffer = nil
+        replaceSampleBuffers.removeAll()
         guard let mixer, capture.device != device else {
             return
         }
@@ -197,7 +205,64 @@ final class IOVideoUnit: NSObject, IOUnit {
         }
     }
 
+    func addReplaceVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        replaceSampleBuffers.append(sampleBuffer)
+        replaceSampleBuffers.sort { sampleBuffer1, sampleBuffer2 in
+            sampleBuffer1.presentationTimeStamp < sampleBuffer2.presentationTimeStamp
+        }
+    }
+
+    private func makeSampleBuffer(realSampleBuffer: CMSampleBuffer,
+                                  replaceSampleBuffer: CMSampleBuffer) -> CMSampleBuffer
+    {
+        var timing = CMSampleTimingInfo(
+            duration: realSampleBuffer.duration,
+            presentationTimeStamp: realSampleBuffer.presentationTimeStamp,
+            decodeTimeStamp: realSampleBuffer.decodeTimeStamp
+        )
+        var sampleBuffer: CMSampleBuffer?
+        var sampleSize = replaceSampleBuffer.dataBuffer?.dataLength ?? 0
+        guard CMSampleBufferCreateReadyWithImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: replaceSampleBuffer.imageBuffer!,
+            formatDescription: replaceSampleBuffer.formatDescription!,
+            sampleTiming: &timing,
+            sampleBufferOut: &sampleBuffer
+        ) == noErr else {
+            return realSampleBuffer
+        }
+        sampleBuffer?.isNotSync = replaceSampleBuffer.isNotSync
+        return sampleBuffer ?? realSampleBuffer
+    }
+
+    private func replaceSampleBuffer(_ realSampleBuffer: CMSampleBuffer) -> CMSampleBuffer {
+        let realPresentationTimeStamp = realSampleBuffer.presentationTimeStamp.seconds
+        var sampleBuffer = currentReplaceSampleBuffer
+        while !replaceSampleBuffers.isEmpty {
+            let replaceSampleBuffer = replaceSampleBuffers.first!
+            let presentationTimeStamp = replaceSampleBuffer.presentationTimeStamp.seconds
+            if firstPresentationTimeStamp.isNaN {
+                firstPresentationTimeStamp = realPresentationTimeStamp - presentationTimeStamp
+            }
+            if firstPresentationTimeStamp + presentationTimeStamp + 2 > realPresentationTimeStamp {
+                break
+            }
+            sampleBuffer = replaceSampleBuffer
+            replaceSampleBuffers.remove(at: 0)
+        }
+        currentReplaceSampleBuffer = sampleBuffer
+        if let sampleBuffer {
+            return makeSampleBuffer(realSampleBuffer: realSampleBuffer, replaceSampleBuffer: sampleBuffer)
+        } else {
+            return realSampleBuffer
+        }
+    }
+
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        var sampleBuffer = sampleBuffer
+        if replaceVideo {
+            sampleBuffer = replaceSampleBuffer(sampleBuffer)
+        }
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }

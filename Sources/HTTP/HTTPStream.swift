@@ -35,7 +35,8 @@ open class HTTPStream: NetStream {
         override open func attachCamera(
             _ device: AVCaptureDevice?,
             onError: ((Error) -> Void)? = nil,
-            onSuccess: (() -> Void)? = nil
+            onSuccess: (() -> Void)? = nil,
+            replaceVideo _: Bool = false
         ) {
             if device == nil {
                 tsWriter.expectedMedias.remove(.video)

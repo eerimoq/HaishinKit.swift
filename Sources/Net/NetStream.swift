@@ -182,11 +182,12 @@ open class NetStream: NSObject {
     open func attachCamera(
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil,
-        onSuccess: (() -> Void)? = nil
+        onSuccess: (() -> Void)? = nil,
+        replaceVideo: Bool = false
     ) {
         lockQueue.async {
             do {
-                try self.mixer.videoIO.attachCamera(device)
+                try self.mixer.videoIO.attachCamera(device, replaceVideo)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -227,9 +228,9 @@ open class NetStream: NSObject {
 
     /// Append a video sample buffer.
     /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    open func appendVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    open func addReplaceVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.appendSampleBuffer(sampleBuffer)
+            self.mixer.videoIO.addReplaceVideoSampleBuffer(sampleBuffer)
         }
     }
 

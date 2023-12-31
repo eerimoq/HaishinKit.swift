@@ -116,14 +116,15 @@ public class SRTStream: NetStream {
     override public func attachCamera(
         _ camera: AVCaptureDevice?,
         onError: ((Error) -> Void)? = nil,
-        onSuccess: (() -> Void)? = nil
+        onSuccess: (() -> Void)? = nil,
+        replaceVideo: Bool = false
     ) {
         if camera == nil {
             writer.expectedMedias.remove(.video)
         } else {
             writer.expectedMedias.insert(.video)
         }
-        super.attachCamera(camera, onError: onError, onSuccess: onSuccess)
+        super.attachCamera(camera, onError: onError, onSuccess: onSuccess, replaceVideo: replaceVideo)
     }
 
     override public func attachAudio(
