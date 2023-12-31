@@ -102,12 +102,12 @@ final class IOVideoUnit: NSObject, IOUnit {
     private(set) var multiCamCapture: IOVideoCaptureUnit = .init()
     var multiCamCaptureSettings: MultiCamCaptureSettings = .default
     private var multiCamSampleBuffer: CMSampleBuffer?
-    private var replaceVideo: Bool = false
+    private var replaceVideo: NetStreamReplaceVideo?
     private var replaceSampleBuffers: [CMSampleBuffer] = []
     private var firstPresentationTimeStamp: Double = .nan
     private var currentReplaceSampleBuffer: CMSampleBuffer?
 
-    func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: Bool) throws {
+    func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: NetStreamReplaceVideo?) throws {
         self.replaceVideo = replaceVideo
         firstPresentationTimeStamp = .nan
         currentReplaceSampleBuffer = nil
@@ -235,7 +235,9 @@ final class IOVideoUnit: NSObject, IOUnit {
         return sampleBuffer ?? realSampleBuffer
     }
 
-    private func replaceSampleBuffer(_ realSampleBuffer: CMSampleBuffer) -> CMSampleBuffer {
+    private func replaceSampleBuffer(_ realSampleBuffer: CMSampleBuffer,
+                                     _ latency: Double) -> CMSampleBuffer
+    {
         let realPresentationTimeStamp = realSampleBuffer.presentationTimeStamp.seconds
         var sampleBuffer = currentReplaceSampleBuffer
         while !replaceSampleBuffers.isEmpty {
@@ -244,7 +246,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             if firstPresentationTimeStamp.isNaN {
                 firstPresentationTimeStamp = realPresentationTimeStamp - presentationTimeStamp
             }
-            if firstPresentationTimeStamp + presentationTimeStamp + 2 > realPresentationTimeStamp {
+            if firstPresentationTimeStamp + presentationTimeStamp + latency > realPresentationTimeStamp {
                 break
             }
             sampleBuffer = replaceSampleBuffer
@@ -260,8 +262,8 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         var sampleBuffer = sampleBuffer
-        if replaceVideo {
-            sampleBuffer = replaceSampleBuffer(sampleBuffer)
+        if let replaceVideo {
+            sampleBuffer = replaceSampleBuffer(sampleBuffer, replaceVideo.latency)
         }
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return

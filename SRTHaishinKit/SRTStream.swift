@@ -117,7 +117,7 @@ public class SRTStream: NetStream {
         _ camera: AVCaptureDevice?,
         onError: ((Error) -> Void)? = nil,
         onSuccess: (() -> Void)? = nil,
-        replaceVideo: Bool = false
+        replaceVideo: NetStreamReplaceVideo? = nil
     ) {
         if camera == nil {
             writer.expectedMedias.remove(.video)

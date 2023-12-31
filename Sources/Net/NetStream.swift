@@ -6,6 +6,14 @@ import CoreMedia
 #endif
 import UIKit
 
+public struct NetStreamReplaceVideo {
+    var latency: Double
+
+    public init(latency: Double) {
+        self.latency = latency
+    }
+}
+
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
     /// Tells the receiver to session was interrupted.
@@ -183,7 +191,7 @@ open class NetStream: NSObject {
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil,
         onSuccess: (() -> Void)? = nil,
-        replaceVideo: Bool = false
+        replaceVideo: NetStreamReplaceVideo? = nil
     ) {
         lockQueue.async {
             do {
