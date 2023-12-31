@@ -109,9 +109,7 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: NetStreamReplaceVideo?) throws {
         self.replaceVideo = replaceVideo
-        firstPresentationTimeStamp = .nan
-        currentReplaceSampleBuffer = nil
-        replaceSampleBuffers.removeAll()
+        resetReplaceVideo()
         guard let mixer, capture.device != device else {
             return
         }
@@ -212,6 +210,12 @@ final class IOVideoUnit: NSObject, IOUnit {
         }
     }
 
+    func resetReplaceVideo() {
+        firstPresentationTimeStamp = .nan
+        currentReplaceSampleBuffer = nil
+        replaceSampleBuffers.removeAll()
+    }
+
     private func makeSampleBuffer(realSampleBuffer: CMSampleBuffer,
                                   replaceSampleBuffer: CMSampleBuffer) -> CMSampleBuffer
     {
@@ -242,6 +246,10 @@ final class IOVideoUnit: NSObject, IOUnit {
         var sampleBuffer = currentReplaceSampleBuffer
         while !replaceSampleBuffers.isEmpty {
             let replaceSampleBuffer = replaceSampleBuffers.first!
+            // Get first frame quickly
+            if currentReplaceSampleBuffer == nil {
+                sampleBuffer = replaceSampleBuffer
+            }
             let presentationTimeStamp = replaceSampleBuffer.presentationTimeStamp.seconds
             if firstPresentationTimeStamp.isNaN {
                 firstPresentationTimeStamp = realPresentationTimeStamp - presentationTimeStamp

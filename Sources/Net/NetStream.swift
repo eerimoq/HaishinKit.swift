@@ -242,6 +242,12 @@ open class NetStream: NSObject {
         }
     }
 
+    open func resetReplaceVideo() {
+        mixer.videoIO.lockQueue.async {
+            self.mixer.videoIO.resetReplaceVideo()
+        }
+    }
+
     /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
