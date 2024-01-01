@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreImage
+import UIKit
 
 final class IOVideoUnit: NSObject, IOUnit {
     enum Error: Swift.Error {
@@ -106,10 +107,15 @@ final class IOVideoUnit: NSObject, IOUnit {
     private var replaceSampleBuffers: [CMSampleBuffer] = []
     private var firstPresentationTimeStamp: Double = .nan
     private var currentReplaceSampleBuffer: CMSampleBuffer?
+    private var blackImageBuffer: CVPixelBuffer?
+    private var blackFormatDescription: CMVideoFormatDescription?
+    private var blackPixelBufferPool: CVPixelBufferPool?
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: NetStreamReplaceVideo?) throws {
-        self.replaceVideo = replaceVideo
-        resetReplaceVideo()
+        lockQueue.sync {
+            self.replaceVideo = replaceVideo
+            resetReplaceVideo()
+        }
         guard let mixer, capture.device != device else {
             return
         }
@@ -225,7 +231,6 @@ final class IOVideoUnit: NSObject, IOUnit {
             decodeTimeStamp: realSampleBuffer.decodeTimeStamp
         )
         var sampleBuffer: CMSampleBuffer?
-        var sampleSize = replaceSampleBuffer.dataBuffer?.dataLength ?? 0
         guard CMSampleBufferCreateReadyWithImageBuffer(
             allocator: kCFAllocatorDefault,
             imageBuffer: replaceSampleBuffer.imageBuffer!,
@@ -237,6 +242,59 @@ final class IOVideoUnit: NSObject, IOUnit {
         }
         sampleBuffer?.isNotSync = replaceSampleBuffer.isNotSync
         return sampleBuffer ?? realSampleBuffer
+    }
+
+    private func makeBlackSampleBuffer(realSampleBuffer: CMSampleBuffer) -> CMSampleBuffer {
+        if blackImageBuffer == nil || blackFormatDescription == nil {
+            let width = 1280
+            let height = 720
+            let pixelBufferAttributes: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: UInt(kCVPixelFormatType_32BGRA),
+                kCVPixelBufferWidthKey as String: Int(width),
+                kCVPixelBufferHeightKey as String: Int(height),
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:],
+            ]
+            CVPixelBufferPoolCreate(
+                kCFAllocatorDefault,
+                nil,
+                pixelBufferAttributes as NSDictionary?,
+                &blackPixelBufferPool
+            )
+            guard let blackPixelBufferPool else {
+                return realSampleBuffer
+            }
+            CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, blackPixelBufferPool, &blackImageBuffer)
+            guard let blackImageBuffer else {
+                return realSampleBuffer
+            }
+            let image = createBlackImage(width: Double(width), height: Double(height))
+            CIContext().render(image, to: blackImageBuffer)
+            CMVideoFormatDescriptionCreateForImageBuffer(
+                allocator: kCFAllocatorDefault,
+                imageBuffer: blackImageBuffer,
+                formatDescriptionOut: &blackFormatDescription
+            )
+            guard blackFormatDescription != nil else {
+                return realSampleBuffer
+            }
+        }
+        var timing = CMSampleTimingInfo(
+            duration: realSampleBuffer.duration,
+            presentationTimeStamp: realSampleBuffer.presentationTimeStamp,
+            decodeTimeStamp: realSampleBuffer.decodeTimeStamp
+        )
+        var sampleBuffer: CMSampleBuffer?
+        CMSampleBufferCreateReadyWithImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: blackImageBuffer!,
+            formatDescription: blackFormatDescription!,
+            sampleTiming: &timing,
+            sampleBufferOut: &sampleBuffer
+        )
+        guard let sampleBuffer else {
+            return realSampleBuffer
+        }
+        return sampleBuffer
     }
 
     private func replaceSampleBuffer(_ realSampleBuffer: CMSampleBuffer,
@@ -264,7 +322,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         if let sampleBuffer {
             return makeSampleBuffer(realSampleBuffer: realSampleBuffer, replaceSampleBuffer: sampleBuffer)
         } else {
-            return realSampleBuffer
+            return makeBlackSampleBuffer(realSampleBuffer: realSampleBuffer)
         }
     }
 
@@ -380,4 +438,16 @@ extension IOVideoUnit: VideoCodecDelegate {
     func videoCodecWillDropFame(_: VideoCodec) -> Bool {
         return false
     }
+}
+
+private func createBlackImage(width: Double, height: Double) -> CIImage {
+    UIGraphicsBeginImageContext(CGSize(width: width, height: height))
+    let context = UIGraphicsGetCurrentContext()!
+    context.setFillColor(UIColor.black.cgColor)
+    context.fill([
+        CGRect(x: 0, y: 0, width: width, height: height),
+    ])
+    let image = CIImage(image: UIGraphicsGetImageFromCurrentImageContext()!)!
+    UIGraphicsEndImageContext()
+    return image
 }
