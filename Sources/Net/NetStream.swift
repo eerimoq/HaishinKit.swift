@@ -7,9 +7,11 @@ import CoreMedia
 import UIKit
 
 public struct NetStreamReplaceVideo {
+    var id: UUID
     var latency: Double
 
-    public init(latency: Double) {
+    public init(id: UUID, latency: Double) {
+        self.id = id
         self.latency = latency
     }
 }
@@ -191,11 +193,11 @@ open class NetStream: NSObject {
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil,
         onSuccess: (() -> Void)? = nil,
-        replaceVideo: NetStreamReplaceVideo? = nil
+        replaceVideoCameraId: UUID? = nil
     ) {
         lockQueue.async {
             do {
-                try self.mixer.videoIO.attachCamera(device, replaceVideo)
+                try self.mixer.videoIO.attachCamera(device, replaceVideoCameraId)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -236,15 +238,21 @@ open class NetStream: NSObject {
 
     /// Append a video sample buffer.
     /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    open func addReplaceVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    open func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
         mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.addReplaceVideoSampleBuffer(sampleBuffer)
+            self.mixer.videoIO.addReplaceVideoSampleBuffer(id: id, sampleBuffer)
         }
     }
 
-    open func resetReplaceVideo() {
+    open func addReplaceVideo(cameraId: UUID, latency: Double) {
         mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.resetReplaceVideo()
+            self.mixer.videoIO.addReplaceVideo(cameraId: cameraId, latency: latency)
+        }
+    }
+
+    open func removeReplaceVideo(cameraId: UUID) {
+        mixer.videoIO.lockQueue.async {
+            self.mixer.videoIO.removeReplaceVideo(cameraId: cameraId)
         }
     }
 

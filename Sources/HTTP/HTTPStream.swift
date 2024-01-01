@@ -36,7 +36,7 @@ open class HTTPStream: NetStream {
             _ device: AVCaptureDevice?,
             onError: ((Error) -> Void)? = nil,
             onSuccess: (() -> Void)? = nil,
-            replaceVideo _: NetStreamReplaceVideo? = nil
+            replaceVideoCameraId _: UUID? = nil
         ) {
             if device == nil {
                 tsWriter.expectedMedias.remove(.video)
