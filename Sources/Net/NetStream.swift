@@ -297,6 +297,21 @@ open class NetStream: NSObject {
             self.mixer.audioIO.unregisterEffect(effect)
         }
     }
+
+    /// Starts recording.
+    public func startRecording(
+        url: URL,
+        _ settings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings
+    ) {
+        mixer.recorder.url = url
+        mixer.recorder.outputSettings = settings
+        mixer.recorder.startRunning()
+    }
+
+    /// Stop recording.
+    public func stopRecording() {
+        mixer.recorder.stopRunning()
+    }
 }
 
 extension NetStream: IOMixerDelegate {

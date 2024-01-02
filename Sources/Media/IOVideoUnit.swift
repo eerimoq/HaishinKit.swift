@@ -389,6 +389,10 @@ final class IOVideoUnit: NSObject, IOUnit {
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             duration: sampleBuffer.duration
         )
+        mixer?.recorder.appendPixelBuffer(
+            imageBuffer,
+            withPresentationTime: sampleBuffer.presentationTimeStamp
+        )
     }
 }
 

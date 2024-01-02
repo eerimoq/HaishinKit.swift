@@ -47,6 +47,7 @@ public class IORecorder {
     public var outputSettings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings
     /// The running indicies whether recording or not.
     public private(set) var isRunning: Atomic<Bool> = .init(false)
+    public var url: URL?
 
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
     private var isReadyForStartWriting: Bool {
@@ -63,17 +64,10 @@ public class IORecorder {
     private var videoPresentationTime: CMTime = .zero
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
 
-    #if os(iOS)
-        private lazy var moviesDirectory: URL = {
-            URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask,
-                                                                     true)[0])
-        }()
-    #else
-        private lazy var moviesDirectory: URL = {
-            URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.moviesDirectory, .userDomainMask,
-                                                                     true)[0])
-        }()
-    #endif
+    private lazy var moviesDirectory: URL = {
+        URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask,
+                                                                 true)[0])
+    }()
 
     /// Append a sample buffer for recording.
     public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
@@ -264,11 +258,13 @@ extension IORecorder: Running {
             guard !self.isRunning.value else {
                 return
             }
+            guard let url = self.url else {
+                return
+            }
             do {
                 self.videoPresentationTime = .zero
                 self.audioPresentationTime = .zero
-                let url = self.moviesDirectory.appendingPathComponent(UUID().uuidString)
-                    .appendingPathExtension("mp4")
+                print(url)
                 self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
                 self.isRunning.mutate { $0 = true }
             } catch {
