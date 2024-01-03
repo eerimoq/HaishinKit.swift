@@ -442,7 +442,7 @@ public enum SRTSocketOption: String {
         }
         var params: [String: String] = [:]
         for item in queryItems {
-            params[item.name] = item.value ?? ""
+            params[item.name] = item.value?.removingPercentEncoding ?? ""
         }
         return params
     }
