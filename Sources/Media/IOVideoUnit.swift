@@ -378,7 +378,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             let image = effect(imageBuffer, info: sampleBuffer)
             extent = image.extent
             if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
-                logger.info("effect image wrong size")
+                logger.info("effect image wrong size \(extent)")
                 return
             }
             context.render(image, to: imageBuffer)

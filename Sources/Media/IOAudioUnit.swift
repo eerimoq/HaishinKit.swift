@@ -200,19 +200,11 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             var audioLevel: Float
             if muted {
                 audioLevel = .nan
-            } else if useFirstChannelForAudioLevel {
+            } else {
                 audioLevel = 0.0
                 for channel in connection.audioChannels.prefix(1) {
                     audioLevel += channel.averagePowerLevel
                 }
-            } else if connection.audioChannels.count > 1 {
-                audioLevel = .infinity
-            } else {
-                audioLevel = 0.0
-                for channel in connection.audioChannels {
-                    audioLevel += channel.averagePowerLevel
-                }
-                audioLevel /= Float(connection.audioChannels.count)
             }
             mixer.delegate?.mixer(mixer,
                                   audioLevel: audioLevel,
