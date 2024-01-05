@@ -12,7 +12,6 @@ public enum GeneratorMode {
 public var audioGeneratorMode: GeneratorMode = .off
 public var squareWaveGeneratorAmplitude: Int16 = 200
 public var squareWaveGeneratorInterval: UInt64 = 60
-public var useFirstChannelForAudioLevel: Bool = false
 
 final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
