@@ -5,7 +5,7 @@ import AVFoundation
  - seealso: http://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
  - seealso: http://wiki.multimedia.cx/?title=Understanding_AAC
  */
-struct AudioSpecificConfig: Equatable {
+public struct AudioSpecificConfig: Equatable {
     static let adtsHeaderSize: Int = 7
 
     enum AudioObjectType: UInt8 {
@@ -149,7 +149,7 @@ struct AudioSpecificConfig: Equatable {
         return bytes
     }
 
-    init?(bytes: [UInt8]) {
+    public init?(bytes: [UInt8]) {
         guard
             let type = AudioObjectType(rawValue: bytes[0] >> 3),
             let frequency = SamplingFrequency(rawValue: (bytes[0] & 0b0000_0111) << 1 | (bytes[1] >> 7)),
@@ -190,7 +190,7 @@ struct AudioSpecificConfig: Equatable {
         return adts
     }
 
-    func audioStreamBasicDescription() -> AudioStreamBasicDescription {
+    public func audioStreamBasicDescription() -> AudioStreamBasicDescription {
         AudioStreamBasicDescription(
             mSampleRate: frequency.sampleRate,
             mFormatID: kAudioFormatMPEG4AAC,
@@ -208,7 +208,7 @@ struct AudioSpecificConfig: Equatable {
 extension AudioSpecificConfig: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
 
-    var debugDescription: String {
+    public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }

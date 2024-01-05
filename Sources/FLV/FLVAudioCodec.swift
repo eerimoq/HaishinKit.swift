@@ -1,7 +1,7 @@
 import AVFoundation
 
 /// The type of flv supports audio codecs.
-enum FLVAudioCodec: UInt8 {
+public enum FLVAudioCodec: UInt8 {
     /// The PCM codec.
     case pcm = 0
     /// The ADPCM codec.
@@ -66,7 +66,7 @@ enum FLVAudioCodec: UInt8 {
         }
     }
 
-    var headerSize: Int {
+    public var headerSize: Int {
         switch self {
         case .aac:
             return 2
