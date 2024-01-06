@@ -110,6 +110,10 @@ extension CMSampleBuffer {
         return value
     }
 
+    func setAttachmentDisplayImmediately() {
+        setAttachmentValue(for: kCMSampleAttachmentKey_DisplayImmediately, value: true)
+    }
+
     @inline(__always)
     private func setAttachmentValue(for key: CFString, value: Bool) {
         guard

@@ -410,7 +410,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
-        setSampleBufferAttachments(sampleBuffer)
+        sampleBuffer.setAttachmentDisplayImmediately()
         imageBuffer.lockBaseAddress()
         defer {
             imageBuffer.unlockBaseAddress()
@@ -473,15 +473,6 @@ extension IOVideoUnit: IOUnitDecoding {
         codec.stopRunning()
         drawable?.enqueue(nil)
     }
-}
-
-private func setSampleBufferAttachments(_ sampleBuffer: CMSampleBuffer) {
-    let attachments: CFArray! = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: true)
-    let dictionary = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0),
-                                   to: CFMutableDictionary.self)
-    let key = Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque()
-    let value = Unmanaged.passUnretained(kCFBooleanTrue).toOpaque()
-    CFDictionarySetValue(dictionary, key, value)
 }
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
