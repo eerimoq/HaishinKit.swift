@@ -171,6 +171,7 @@ public class IOMixer {
             audioSession.stopRunning()
         }
         IOMixer.audioEngineHolder.release(audioEngine)
+        videoIO.stop()
     }
 
     private var audioTimeStamp = CMTime.zero

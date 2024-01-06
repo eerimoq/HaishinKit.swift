@@ -173,6 +173,62 @@ final class IOVideoUnit: NSObject, IOUnit {
     private var blackImageBuffer: CVPixelBuffer?
     private var blackFormatDescription: CMVideoFormatDescription?
     private var blackPixelBufferPool: CVPixelBufferPool?
+    private var latestSampleBuffer: CMSampleBuffer?
+    private var latestSampleBufferDate: Date?
+    private var gapFillerTimer: DispatchSourceTimer?
+
+    override init() {
+        gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
+        super.init()
+        gapFillerTimer!.schedule(deadline: .now() + 0.1, repeating: 0.1)
+        gapFillerTimer!.setEventHandler(handler: handleGapFillerTimer)
+        gapFillerTimer!.activate()
+    }
+
+    func stop() {
+        gapFillerTimer?.cancel()
+        gapFillerTimer = nil
+    }
+
+    deinit {
+        gapFillerTimer?.cancel()
+        gapFillerTimer = nil
+    }
+
+    private func handleGapFillerTimer() {
+        guard let latestSampleBufferDate else {
+            return
+        }
+        let delta = Date().timeIntervalSince(latestSampleBufferDate)
+        guard delta > 0.1 else {
+            return
+        }
+        guard let latestSampleBuffer else {
+            return
+        }
+        let timeDelta = CMTime(seconds: delta, preferredTimescale: 1000)
+        var timing = CMSampleTimingInfo(
+            duration: latestSampleBuffer.duration,
+            presentationTimeStamp: latestSampleBuffer.presentationTimeStamp + timeDelta,
+            decodeTimeStamp: latestSampleBuffer.decodeTimeStamp + timeDelta
+        )
+        var sampleBuffer: CMSampleBuffer?
+        guard CMSampleBufferCreateReadyWithImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: latestSampleBuffer.imageBuffer!,
+            formatDescription: latestSampleBuffer.formatDescription!,
+            sampleTiming: &timing,
+            sampleBufferOut: &sampleBuffer
+        ) == noErr else {
+            return
+        }
+        guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer!, mediaType: AVMediaType.video) == true
+        else {
+            return
+        }
+        // print("Using filler buffer", latestSampleBufferDate, delta)
+        appendSampleBuffer(sampleBuffer!)
+    }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
         lockQueue.sync {
@@ -435,6 +491,11 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         from _: AVCaptureConnection
     ) {
         if capture.output == captureOutput {
+            /* let delta = sampleBuffer.presentationTimeStamp
+                 .seconds - (latestSampleBuffer?.presentationTimeStamp.seconds ?? 0)
+             print("Video: PTS:", sampleBuffer.presentationTimeStamp.seconds, "Delta:", delta) */
+            latestSampleBuffer = sampleBuffer
+            latestSampleBufferDate = Date()
             guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
             else {
                 return
