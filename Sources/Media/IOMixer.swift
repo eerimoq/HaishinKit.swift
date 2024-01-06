@@ -80,8 +80,6 @@ public class IOMixer {
     private var readyState: ReadyState = .standby
     private(set) lazy var audioEngine: AVAudioEngine? = IOMixer.audioEngineHolder.retain()
 
-    var isMultitaskingCameraAccessEnabled = true
-
     var isMultiCamSessionEnabled = false {
         didSet {
             guard oldValue != isMultiCamSessionEnabled else {
@@ -215,9 +213,6 @@ public class IOMixer {
             session.sessionPreset = sessionPreset
         } else {
             logger.info("Cannot set preset \(sessionPreset)")
-        }
-        if isMultitaskingCameraAccessEnabled && session.isMultitaskingCameraAccessSupported {
-            session.isMultitaskingCameraAccessEnabled = true
         }
         return session
     }

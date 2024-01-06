@@ -6,16 +6,6 @@ import CoreMedia
 #endif
 import UIKit
 
-public struct NetStreamReplaceVideo {
-    var id: UUID
-    var latency: Double
-
-    public init(id: UUID, latency: Double) {
-        self.id = id
-        self.latency = latency
-    }
-}
-
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
     /// Tells the receiver to session was interrupted.
