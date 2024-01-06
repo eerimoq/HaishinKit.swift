@@ -112,7 +112,7 @@
             }
         }
 
-        public func enqueue(_: CMSampleBuffer?) {}
+        public func enqueue(_: CMSampleBuffer?, isFirstAfterAttach _: Bool) {}
     }
 
 #endif

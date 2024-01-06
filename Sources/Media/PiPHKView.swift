@@ -43,7 +43,6 @@ public class PiPHKView: UIView {
         }
     }
 
-    public var previousIsMirrored = false
     public var isMirrored = false
 
     private func applyIsMirrored() {
@@ -94,7 +93,7 @@ extension PiPHKView: NetStreamDrawable {
         }
     }
 
-    public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
+    public func enqueue(_ sampleBuffer: CMSampleBuffer?, isFirstAfterAttach: Bool) {
         guard let sampleBuffer else {
             return
         }
@@ -102,9 +101,8 @@ extension PiPHKView: NetStreamDrawable {
             if self.layer.status == .failed {
                 self.layer.flush()
             }
-            if self.isMirrored != self.previousIsMirrored {
+            if isFirstAfterAttach {
                 self.applyIsMirrored()
-                self.previousIsMirrored = self.isMirrored
             }
             self.layer.enqueue(sampleBuffer)
         }

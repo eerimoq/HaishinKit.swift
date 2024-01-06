@@ -8,7 +8,7 @@ protocol IOUnit {
     var mixer: IOMixer? { get set }
     var muted: Bool { get set }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer)
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool)
 }
 
 protocol IOUnitEncoding {

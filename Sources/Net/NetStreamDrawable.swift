@@ -13,5 +13,5 @@ public protocol NetStreamDrawable: AnyObject {
     func attachStream(_ stream: NetStream?)
 
     /// Enqueue a CMSampleBuffer? to draw.
-    func enqueue(_ sampleBuffer: CMSampleBuffer?)
+    func enqueue(_ sampleBuffer: CMSampleBuffer?, isFirstAfterAttach: Bool)
 }

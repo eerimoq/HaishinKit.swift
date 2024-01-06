@@ -15,7 +15,7 @@ protocol IOMixerDelegate: AnyObject {
         reason: AVCaptureSession.InterruptionReason?
     )
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
-    func mixer(_ mixer: IOMixer, audioLevel: Float, numberOfChannels: Int, numberOfSamples: Int, stride: Int)
+    func mixer(_ mixer: IOMixer, audioLevel: Float)
 }
 
 /// An object that mixies audio and video for streaming.
@@ -171,7 +171,6 @@ public class IOMixer {
             audioSession.stopRunning()
         }
         IOMixer.audioEngineHolder.release(audioEngine)
-        videoIO.stop()
     }
 
     private var audioTimeStamp = CMTime.zero
@@ -283,7 +282,7 @@ extension IOMixer: MediaLinkDelegate {
     // MARK: MediaLinkDelegate
 
     func mediaLink(_: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
-        drawable?.enqueue(sampleBuffer)
+        drawable?.enqueue(sampleBuffer, isFirstAfterAttach: false)
     }
 
     func mediaLink(_: MediaLink, didBufferingChanged: Bool) {

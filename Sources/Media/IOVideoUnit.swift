@@ -2,6 +2,8 @@ import AVFoundation
 import CoreImage
 import UIKit
 
+public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
+
 class ReplaceVideo {
     var sampleBuffers: [CMSampleBuffer] = []
     var firstPresentationTimeStamp: Double = .nan
@@ -176,21 +178,21 @@ final class IOVideoUnit: NSObject, IOUnit {
     private var latestSampleBuffer: CMSampleBuffer?
     private var latestSampleBufferDate: Date?
     private var gapFillerTimer: DispatchSourceTimer?
+    private var firstFrameDate: Date?
+    private var isFirstAfterAttach = false
 
     override init() {
         gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
         super.init()
         gapFillerTimer!.schedule(deadline: .now() + 0.1, repeating: 0.1)
-        gapFillerTimer!.setEventHandler(handler: handleGapFillerTimer)
+        gapFillerTimer!.setEventHandler { [weak self] in
+            self?.handleGapFillerTimer()
+        }
         gapFillerTimer!.activate()
     }
 
-    func stop() {
-        gapFillerTimer?.cancel()
-        gapFillerTimer = nil
-    }
-
     deinit {
+        // print("deinit")
         gapFillerTimer?.cancel()
         gapFillerTimer = nil
     }
@@ -227,7 +229,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             return
         }
         // print("Using filler buffer", latestSampleBufferDate, delta)
-        appendSampleBuffer(sampleBuffer!)
+        appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false)
     }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
@@ -260,6 +262,11 @@ final class IOVideoUnit: NSObject, IOUnit {
             try multiCamCapture.attachDevice(nil, videoUnit: self)
         }
         try capture.attachDevice(device, videoUnit: self)
+        // Not perfect. Should be set before registering the capture callback
+        lockQueue.sync {
+            firstFrameDate = nil
+            isFirstAfterAttach = true
+        }
     }
 
     func attachMultiCamera(_ device: AVCaptureDevice?) throws {
@@ -398,7 +405,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         return sampleBuffer
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool) {
         for replaceVideo in replaceVideos.values {
             replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
         }
@@ -438,7 +445,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
             context.render(image, to: imageBuffer)
         }
-        drawable?.enqueue(sampleBuffer)
+        drawable?.enqueue(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
         codec.appendImageBuffer(
             imageBuffer,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
@@ -471,7 +478,7 @@ extension IOVideoUnit: IOUnitDecoding {
 
     func stopDecoding() {
         codec.stopRunning()
-        drawable?.enqueue(nil)
+        drawable?.enqueue(nil, isFirstAfterAttach: false)
     }
 }
 
@@ -487,11 +494,21 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
              print("Video: PTS:", sampleBuffer.presentationTimeStamp.seconds, "Delta:", delta) */
             latestSampleBuffer = sampleBuffer
             latestSampleBufferDate = Date()
+            if firstFrameDate == nil {
+                firstFrameDate = latestSampleBufferDate
+                return
+            }
+            guard latestSampleBufferDate!
+                .timeIntervalSince(firstFrameDate!) > ioVideoUnitIgnoreFramesAfterAttachSeconds
+            else {
+                return
+            }
             guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
             else {
                 return
             }
-            appendSampleBuffer(sampleBuffer)
+            appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
+            isFirstAfterAttach = false
         } else if multiCamCapture.output == captureOutput {
             multiCamSampleBuffer = sampleBuffer
         }

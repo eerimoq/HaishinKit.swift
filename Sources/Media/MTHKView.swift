@@ -78,7 +78,7 @@ extension MTHKView: NetStreamDrawable {
         }
     }
 
-    public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
+    public func enqueue(_ sampleBuffer: CMSampleBuffer?, isFirstAfterAttach _: Bool) {
         imageQueue.async {
             guard let sampleBuffer else {
                 return

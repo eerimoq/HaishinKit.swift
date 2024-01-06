@@ -61,7 +61,7 @@ final class IOAudioUnit: NSObject, IOUnit {
             .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach _: Bool) {
         guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
             return
         }
@@ -199,19 +199,14 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             var audioLevel: Float
             if muted {
                 audioLevel = .nan
+            } else if let channel = connection.audioChannels.first {
+                audioLevel = channel.averagePowerLevel
             } else {
                 audioLevel = 0.0
-                for channel in connection.audioChannels.prefix(1) {
-                    audioLevel += channel.averagePowerLevel
-                }
             }
-            mixer.delegate?.mixer(mixer,
-                                  audioLevel: audioLevel,
-                                  numberOfChannels: connection.audioChannels.count,
-                                  numberOfSamples: sampleBuffer.numSamples,
-                                  stride: 0)
+            mixer.delegate?.mixer(mixer, audioLevel: audioLevel)
         }
-        appendSampleBuffer(sampleBuffer)
+        appendSampleBuffer(sampleBuffer, isFirstAfterAttach: false)
     }
 }
 
