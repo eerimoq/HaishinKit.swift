@@ -110,7 +110,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
 
     func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
         setSampleBufferDelegate(nil)
-        detachSession(videoUnit.mixer?.session)
+        detachSession(videoUnit.mixer?.videoSession)
         self.device = device
         guard let device else {
             input = nil
@@ -130,7 +130,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         } else {
             connection = nil
         }
-        attachSession(videoUnit.mixer?.session)
+        attachSession(videoUnit.mixer?.videoSession)
         output?.connections.forEach {
             if $0.isVideoOrientationSupported {
                 $0.videoOrientation = videoOrientation
@@ -213,7 +213,7 @@ class IOAudioCaptureUnit: IOCaptureUnit {
 
     func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
         setSampleBufferDelegate(nil)
-        detachSession(audioUnit.mixer?.session)
+        detachSession(audioUnit.mixer?.audioSession)
         guard let device else {
             self.device = nil
             input = nil
@@ -223,7 +223,7 @@ class IOAudioCaptureUnit: IOCaptureUnit {
         self.device = device
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureAudioDataOutput()
-        attachSession(audioUnit.mixer?.session)
+        attachSession(audioUnit.mixer?.audioSession)
         setSampleBufferDelegate(audioUnit)
     }
 

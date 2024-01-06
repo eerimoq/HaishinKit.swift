@@ -52,12 +52,12 @@ final class IOAudioUnit: NSObject, IOUnit {
         guard let mixer else {
             return
         }
-        mixer.session.beginConfiguration()
+        mixer.audioSession.beginConfiguration()
         defer {
-            mixer.session.commitConfiguration()
+            mixer.audioSession.commitConfiguration()
         }
         try capture.attachDevice(device, audioUnit: self)
-        mixer.session
+        mixer.audioSession
             .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
     }
 

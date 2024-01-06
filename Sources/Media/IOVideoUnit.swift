@@ -139,9 +139,9 @@ final class IOVideoUnit: NSObject, IOUnit {
             guard videoOrientation != oldValue else {
                 return
             }
-            mixer?.session.beginConfiguration()
+            mixer?.videoSession.beginConfiguration()
             defer {
-                mixer?.session.commitConfiguration()
+                mixer?.videoSession.commitConfiguration()
                 // https://github.com/shogo4405/HaishinKit.swift/issues/190
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     if self.torch {
@@ -182,21 +182,20 @@ final class IOVideoUnit: NSObject, IOUnit {
             return
         }
         guard let device else {
-            logger.info("Detaching camera")
             mixer.mediaSync = .passthrough
-            mixer.session.beginConfiguration()
+            mixer.videoSession.beginConfiguration()
             defer {
-                mixer.session.commitConfiguration()
+                mixer.videoSession.commitConfiguration()
             }
-            capture.detachSession(mixer.session)
+            capture.detachSession(mixer.videoSession)
             try capture.attachDevice(nil, videoUnit: self)
             return
         }
         logger.info("Attaching camera")
         mixer.mediaSync = .video
-        mixer.session.beginConfiguration()
+        mixer.videoSession.beginConfiguration()
         defer {
-            mixer.session.commitConfiguration()
+            mixer.videoSession.commitConfiguration()
             if torch {
                 setTorchMode(.on)
             }
@@ -216,20 +215,20 @@ final class IOVideoUnit: NSObject, IOUnit {
         }
         guard let device else {
             logger.info("Detaching multi camera")
-            mixer.session.beginConfiguration()
+            mixer.videoSession.beginConfiguration()
             defer {
-                mixer.session.commitConfiguration()
+                mixer.videoSession.commitConfiguration()
             }
-            multiCamCapture.detachSession(mixer.session)
+            multiCamCapture.detachSession(mixer.videoSession)
             try multiCamCapture.attachDevice(nil, videoUnit: self)
             mixer.isMultiCamSessionEnabled = false
             return
         }
         logger.info("Attaching multi camera")
         mixer.isMultiCamSessionEnabled = true
-        mixer.session.beginConfiguration()
+        mixer.videoSession.beginConfiguration()
         defer {
-            mixer.session.commitConfiguration()
+            mixer.videoSession.commitConfiguration()
         }
         if capture.device == device {
             try multiCamCapture.attachDevice(nil, videoUnit: self)

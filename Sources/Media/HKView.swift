@@ -97,15 +97,15 @@
                 return
             }
 
-            stream.mixer.session.beginConfiguration()
-            layer.session = stream.mixer.session
+            stream.mixer.videoSession.beginConfiguration()
+            layer.session = stream.mixer.videoSession
             videoOrientation = stream.mixer.videoIO.videoOrientation
-            stream.mixer.session.commitConfiguration()
+            stream.mixer.videoSession.commitConfiguration()
 
             stream.lockQueue.async {
                 stream.mixer.videoIO.drawable = self
                 DispatchQueue.main.async {
-                    self.layer.session = stream.mixer.session
+                    self.layer.session = stream.mixer.videoSession
                 }
                 self.currentStream = stream
                 stream.mixer.startRunning()

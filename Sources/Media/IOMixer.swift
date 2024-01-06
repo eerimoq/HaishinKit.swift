@@ -86,35 +86,44 @@ public class IOMixer {
                 return
             }
             logger.info("did set isMultiCamSessionEnabled to \(isMultiCamSessionEnabled)")
-            session = makeSession()
+            videoSession = makeSession()
+            audioSession = makeSession()
         }
     }
 
     var sessionPreset: AVCaptureSession.Preset = .default {
         didSet {
-            guard sessionPreset != oldValue, session.canSetSessionPreset(sessionPreset) else {
+            guard sessionPreset != oldValue, videoSession.canSetSessionPreset(sessionPreset) else {
                 return
             }
-            session.beginConfiguration()
-            session.sessionPreset = sessionPreset
-            session.commitConfiguration()
+            videoSession.beginConfiguration()
+            videoSession.sessionPreset = sessionPreset
+            videoSession.commitConfiguration()
         }
     }
 
-    /// The capture session instance.
-    public internal(set) lazy var session: AVCaptureSession = makeSession() {
+    public internal(set) lazy var videoSession: AVCaptureSession = makeSession() {
+        didSet {
+            if oldValue.isRunning {
+                removeSessionObservers(oldValue)
+                oldValue.stopRunning()
+            }
+            videoIO.capture.detachSession(oldValue)
+            if videoSession.canSetSessionPreset(sessionPreset) {
+                videoSession.sessionPreset = sessionPreset
+            }
+            videoIO.capture.attachSession(videoSession)
+        }
+    }
+
+    public internal(set) lazy var audioSession: AVCaptureSession = makeSession() {
         didSet {
             if oldValue.isRunning {
                 removeSessionObservers(oldValue)
                 oldValue.stopRunning()
             }
             audioIO.capture.detachSession(oldValue)
-            videoIO.capture.detachSession(oldValue)
-            if session.canSetSessionPreset(sessionPreset) {
-                session.sessionPreset = sessionPreset
-            }
-            audioIO.capture.attachSession(session)
-            videoIO.capture.attachSession(session)
+            audioIO.capture.attachSession(audioSession)
         }
     }
 
@@ -155,8 +164,11 @@ public class IOMixer {
     }()
 
     deinit {
-        if session.isRunning {
-            session.stopRunning()
+        if videoSession.isRunning {
+            videoSession.stopRunning()
+        }
+        if audioSession.isRunning {
+            audioSession.stopRunning()
         }
         IOMixer.audioEngineHolder.release(audioEngine)
     }
@@ -285,26 +297,38 @@ extension IOMixer: Running {
         guard !isRunning.value else {
             return
         }
-        addSessionObservers(session)
-        session.startRunning()
-        isRunning.mutate { $0 = session.isRunning }
+        addSessionObservers(videoSession)
+        videoSession.startRunning()
+        isRunning.mutate { $0 = videoSession.isRunning }
+        addSessionObservers(audioSession)
+        audioSession.startRunning()
+        isRunning.mutate { $0 = audioSession.isRunning }
     }
 
     public func stopRunning() {
         guard isRunning.value else {
             return
         }
-        removeSessionObservers(session)
-        session.stopRunning()
-        isRunning.mutate { $0 = session.isRunning }
+        removeSessionObservers(videoSession)
+        videoSession.stopRunning()
+        isRunning.mutate { $0 = videoSession.isRunning }
+        removeSessionObservers(audioSession)
+        audioSession.stopRunning()
+        isRunning.mutate { $0 = audioSession.isRunning }
     }
 
     func startCaptureSessionIfNeeded() {
-        guard isRunning.value && !session.isRunning else {
+        guard isRunning.value else {
             return
         }
-        session.startRunning()
-        isRunning.mutate { $0 = session.isRunning }
+        if !videoSession.isRunning {
+            videoSession.startRunning()
+        }
+        isRunning.mutate { $0 = videoSession.isRunning }
+        if !audioSession.isRunning {
+            audioSession.startRunning()
+        }
+        isRunning.mutate { $0 = audioSession.isRunning }
     }
 
     private func addSessionObservers(_ session: AVCaptureSession) {
@@ -329,18 +353,16 @@ extension IOMixer: Running {
     }
 
     private func removeSessionObservers(_ session: AVCaptureSession) {
-        #if os(iOS)
-            NotificationCenter.default.removeObserver(
-                self,
-                name: .AVCaptureSessionWasInterrupted,
-                object: session
-            )
-            NotificationCenter.default.removeObserver(
-                self,
-                name: .AVCaptureSessionInterruptionEnded,
-                object: session
-            )
-        #endif
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .AVCaptureSessionWasInterrupted,
+            object: session
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .AVCaptureSessionInterruptionEnded,
+            object: session
+        )
         NotificationCenter.default.removeObserver(self, name: .AVCaptureSessionRuntimeError, object: session)
     }
 
@@ -354,7 +376,7 @@ extension IOMixer: Running {
         let error = AVError(_nsError: errorValue)
         switch error.code {
         case .unsupportedDeviceActiveFormat:
-            let isMultiCamSupported = session is AVCaptureMultiCamSession
+            let isMultiCamSupported = videoSession is AVCaptureMultiCamSession
             guard let device = error.device, let format = device.videoFormat(
                 width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
                 height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,
@@ -377,14 +399,12 @@ extension IOMixer: Running {
                     )
                 }
                 device.unlockForConfiguration()
-                session.startRunning()
+                videoSession.startRunning()
             } catch {
                 logger.warn(error)
             }
-        #if os(iOS)
-            case .mediaServicesWereReset:
-                startCaptureSessionIfNeeded()
-        #endif
+        case .mediaServicesWereReset:
+            startCaptureSessionIfNeeded()
         default:
             break
         }
@@ -407,6 +427,6 @@ extension IOMixer: Running {
 
     @objc
     private func sessionInterruptionEnded(_: Notification) {
-        delegate?.mixer(self, sessionInterruptionEnded: session)
+        delegate?.mixer(self, sessionInterruptionEnded: videoSession)
     }
 }
