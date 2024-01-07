@@ -240,10 +240,21 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
-        lockQueue.sync {
+        let isOtherReplaceVideo = lockQueue.sync {
+            let oldReplaceVideo = self.selectedReplaceVideoCameraId
             self.selectedReplaceVideoCameraId = replaceVideo
+            return replaceVideo != oldReplaceVideo
         }
-        guard let mixer, capture.device != device else {
+        guard let mixer else {
+            return
+        }
+        if capture.device == device {
+            if isOtherReplaceVideo {
+                lockQueue.sync {
+                    firstFrameDate = nil
+                    isFirstAfterAttach = true
+                }
+            }
             return
         }
         guard let device else {
