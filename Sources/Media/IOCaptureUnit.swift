@@ -99,6 +99,16 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
     }
 
+    /// Spcifies the video mirroed indicates whether the video flowing through the connection should be
+    /// mirrored about its vertical axis.
+    public var isVideoMirrored = false {
+        didSet {
+            output?.connections.filter { $0.isVideoMirroringSupported }.forEach {
+                $0.isVideoMirrored = isVideoMirrored
+            }
+        }
+    }
+
     /// Specifies the preferredVideoStabilizationMode most appropriate for use with the connection.
     public var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .off {
         didSet {
@@ -132,6 +142,9 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
         attachSession(videoUnit.mixer?.videoSession)
         output?.connections.forEach {
+            if $0.isVideoMirroringSupported {
+                $0.isVideoMirrored = isVideoMirrored
+            }
             if $0.isVideoOrientationSupported {
                 $0.videoOrientation = videoOrientation
             }
