@@ -22,6 +22,13 @@ class ReplaceVideo {
             if currentSampleBuffer == nil {
                 sampleBuffer = replaceSampleBuffer
             }
+            // Just for sanity. Should depend on FPS and latency.
+            if sampleBuffers.count > 200 {
+                // logger.info("Over 200 frames buffered. Dropping oldest frame.")
+                sampleBuffer = replaceSampleBuffer
+                sampleBuffers.remove(at: 0)
+                continue
+            }
             let presentationTimeStamp = replaceSampleBuffer.presentationTimeStamp.seconds
             if firstPresentationTimeStamp.isNaN {
                 firstPresentationTimeStamp = realPresentationTimeStamp - presentationTimeStamp
