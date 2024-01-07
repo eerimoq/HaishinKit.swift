@@ -424,14 +424,6 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool) {
-        for replaceVideo in replaceVideos.values {
-            replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
-        }
-        var sampleBuffer = sampleBuffer
-        if let selectedReplaceVideoCameraId {
-            sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
-                .getSampleBuffer(sampleBuffer) ?? makeBlackSampleBuffer(realSampleBuffer: sampleBuffer)
-        }
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
@@ -507,9 +499,14 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         from _: AVCaptureConnection
     ) {
         if capture.output == captureOutput {
-            /* let delta = sampleBuffer.presentationTimeStamp
-                 .seconds - (latestSampleBuffer?.presentationTimeStamp.seconds ?? 0)
-             print("Video: PTS:", sampleBuffer.presentationTimeStamp.seconds, "Delta:", delta) */
+            for replaceVideo in replaceVideos.values {
+                replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
+            }
+            var sampleBuffer = sampleBuffer
+            if let selectedReplaceVideoCameraId {
+                sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
+                    .getSampleBuffer(sampleBuffer) ?? makeBlackSampleBuffer(realSampleBuffer: sampleBuffer)
+            }
             latestSampleBuffer = sampleBuffer
             latestSampleBufferDate = Date()
             if firstFrameDate == nil {
