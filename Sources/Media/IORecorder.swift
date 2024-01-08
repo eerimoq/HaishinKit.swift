@@ -122,6 +122,7 @@ public class IORecorder {
         lockQueue.async {
             if self.dimensions.width != pixelBuffer.width || self.dimensions.height != pixelBuffer.height {
                 self.dimensions = .init(width: Int32(pixelBuffer.width), height: Int32(pixelBuffer.height))
+                logger.info("set dimensions to \(self.dimensions)")
             }
             guard
                 let writer = self.writer,
@@ -130,6 +131,7 @@ public class IORecorder {
                 self.isReadyForStartWriting,
                 self.videoPresentationTime.seconds < withPresentationTime.seconds
             else {
+                logger.info("not writing for some reason")
                 return
             }
 
@@ -137,6 +139,7 @@ public class IORecorder {
             case .unknown:
                 writer.startWriting()
                 writer.startSession(atSourceTime: withPresentationTime)
+                logger.info("start session")
             default:
                 break
             }
