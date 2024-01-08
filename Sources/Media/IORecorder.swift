@@ -250,6 +250,8 @@ public class IORecorder {
     }
 }
 
+extension String: Error {}
+
 extension IORecorder: Running {
     // MARK: Running
 

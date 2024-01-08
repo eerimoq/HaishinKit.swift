@@ -16,6 +16,8 @@ protocol IOMixerDelegate: AnyObject {
     )
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
     func mixer(_ mixer: IOMixer, audioLevel: Float)
+    func mixer(_ mixer: IOMixer, recorderErrorOccured error: IORecorder.Error)
+    func mixer(_ mixer: IOMixer, recorderFinishWriting writer: AVAssetWriter)
 }
 
 /// An object that mixies audio and video for streaming.
@@ -128,8 +130,6 @@ public class IOMixer {
     }
 
     public private(set) var isRunning: Atomic<Bool> = .init(false)
-    /// The recorder instance.
-    public lazy var recorder = IORecorder()
 
     /// Specifies the drawable object.
     public weak var drawable: (any NetStreamDrawable)? {
@@ -161,6 +161,12 @@ public class IOMixer {
         var mediaLink = MediaLink()
         mediaLink.delegate = self
         return mediaLink
+    }()
+
+    lazy var recorder: IORecorder = {
+        var recorder = IORecorder()
+        recorder.delegate = self
+        return recorder
     }()
 
     deinit {
@@ -279,14 +285,22 @@ extension IOMixer: IOUnitDecoding {
 }
 
 extension IOMixer: MediaLinkDelegate {
-    // MARK: MediaLinkDelegate
-
     func mediaLink(_: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
         drawable?.enqueue(sampleBuffer, isFirstAfterAttach: false)
     }
 
     func mediaLink(_: MediaLink, didBufferingChanged: Bool) {
         logger.info(didBufferingChanged)
+    }
+}
+
+extension IOMixer: IORecorderDelegate {
+    public func recorder(_: IORecorder, errorOccured error: IORecorder.Error) {
+        delegate?.mixer(self, recorderErrorOccured: error)
+    }
+
+    public func recorder(_: IORecorder, finishWriting writer: AVAssetWriter) {
+        delegate?.mixer(self, recorderFinishWriting: writer)
     }
 }
 

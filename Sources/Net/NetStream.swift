@@ -25,6 +25,8 @@ public protocol NetStreamDelegate: AnyObject {
     /// Tells the receiver to the stream opened.
     func streamDidOpen(_ stream: NetStream)
     func stream(_ stream: NetStream, audioLevel: Float)
+    func stream(_ stream: NetStream, recorderErrorOccured error: IORecorder.Error)
+    func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
 
 /// The `NetStream` class is the foundation of a RTMPStream, HTTPStream.
@@ -313,5 +315,13 @@ extension NetStream: IOMixerDelegate {
 
     func mixer(_: IOMixer, audioLevel: Float) {
         delegate?.stream(self, audioLevel: audioLevel)
+    }
+
+    func mixer(_: IOMixer, recorderErrorOccured error: IORecorder.Error) {
+        delegate?.stream(self, recorderErrorOccured: error)
+    }
+
+    func mixer(_: IOMixer, recorderFinishWriting writer: AVAssetWriter) {
+        delegate?.stream(self, recorderFinishWriting: writer)
     }
 }
