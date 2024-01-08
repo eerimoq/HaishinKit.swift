@@ -50,8 +50,6 @@ public class PiPHKView: UIView {
         layer.setAffineTransform(transform)
     }
 
-    public var fps: Double?
-
     private weak var currentStream: NetStream? {
         didSet {
             oldValue?.mixer.videoIO.drawable = nil

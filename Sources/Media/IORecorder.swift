@@ -64,11 +64,6 @@ public class IORecorder {
     private var videoPresentationTime: CMTime = .zero
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
 
-    private lazy var moviesDirectory: URL = {
-        URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask,
-                                                                 true)[0])
-    }()
-
     /// Append a sample buffer for recording.
     public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
@@ -177,8 +172,8 @@ public class IORecorder {
     private func makeWriterInput(_ mediaType: AVMediaType,
                                  sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput?
     {
-        guard writerInputs[mediaType] == nil else {
-            return writerInputs[mediaType]
+        if let input = writerInputs[mediaType] {
+            return input
         }
 
         var outputSettings: [String: Any] = [:]
@@ -254,8 +249,6 @@ public class IORecorder {
 }
 
 extension IORecorder: Running {
-    // MARK: Running
-
     public func startRunning() {
         lockQueue.async {
             guard !self.isRunning.value else {
