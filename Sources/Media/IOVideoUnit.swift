@@ -255,6 +255,7 @@ final class IOVideoUnit: NSObject, IOUnit {
                     isFirstAfterAttach = true
                 }
             }
+            logger.info("same device")
             return
         }
         guard let device else {
@@ -265,6 +266,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
             capture.detachSession(mixer.videoSession)
             try capture.attachDevice(nil, videoUnit: self)
+            logger.info("no device")
             return
         }
         logger.info("Attaching camera")

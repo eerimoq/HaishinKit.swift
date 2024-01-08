@@ -126,8 +126,10 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             input = nil
             output = nil
             connection = nil
+            logger.info("Attach device nil")
             return
         }
+        logger.info("Attach device: \(device.deviceType) \(device.position)")
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureVideoDataOutput()
         if let output, let port = input?.ports
@@ -138,6 +140,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         {
             connection = AVCaptureConnection(inputPorts: [port], output: output)
         } else {
+            logger.info("no connection")
             connection = nil
         }
         attachSession(videoUnit.mixer?.videoSession)
