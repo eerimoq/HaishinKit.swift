@@ -15,7 +15,7 @@ protocol IOMixerDelegate: AnyObject {
         reason: AVCaptureSession.InterruptionReason?
     )
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
-    func mixer(_ mixer: IOMixer, audioLevel: Float)
+    func mixer(_ mixer: IOMixer, audioLevel: Float, numberOfAudioChannels: Int)
     func mixer(_ mixer: IOMixer, recorderErrorOccured error: IORecorder.Error)
     func mixer(_ mixer: IOMixer, recorderFinishWriting writer: AVAssetWriter)
 }

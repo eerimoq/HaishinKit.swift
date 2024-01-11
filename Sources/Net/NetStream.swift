@@ -24,7 +24,7 @@ public protocol NetStreamDelegate: AnyObject {
     func streamWillDropFrame(_ stream: NetStream) -> Bool
     /// Tells the receiver to the stream opened.
     func streamDidOpen(_ stream: NetStream)
-    func stream(_ stream: NetStream, audioLevel: Float)
+    func stream(_ stream: NetStream, audioLevel: Float, numberOfAudioChannels: Int)
     func stream(_ stream: NetStream, recorderErrorOccured error: IORecorder.Error)
     func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
@@ -313,8 +313,8 @@ extension NetStream: IOMixerDelegate {
         delegate?.stream(self, sessionInterruptionEnded: session)
     }
 
-    func mixer(_: IOMixer, audioLevel: Float) {
-        delegate?.stream(self, audioLevel: audioLevel)
+    func mixer(_: IOMixer, audioLevel: Float, numberOfAudioChannels: Int) {
+        delegate?.stream(self, audioLevel: audioLevel, numberOfAudioChannels: numberOfAudioChannels)
     }
 
     func mixer(_: IOMixer, recorderErrorOccured error: IORecorder.Error) {
