@@ -313,7 +313,6 @@ extension IOMixer: Running {
         }
         addSessionObservers(videoSession)
         videoSession.startRunning()
-        isRunning.mutate { $0 = videoSession.isRunning }
         addSessionObservers(audioSession)
         audioSession.startRunning()
         isRunning.mutate { $0 = audioSession.isRunning }
@@ -325,7 +324,6 @@ extension IOMixer: Running {
         }
         removeSessionObservers(videoSession)
         videoSession.stopRunning()
-        isRunning.mutate { $0 = videoSession.isRunning }
         removeSessionObservers(audioSession)
         audioSession.stopRunning()
         isRunning.mutate { $0 = audioSession.isRunning }
