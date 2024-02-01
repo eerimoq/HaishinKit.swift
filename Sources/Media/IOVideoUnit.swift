@@ -138,8 +138,14 @@ final class IOVideoUnit: NSObject, IOUnit {
 
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
-            capture.setFrameRate(frameRate)
-            multiCamCapture.setFrameRate(frameRate)
+            capture.setFrameRate(frameRate: frameRate, appleLog: appleLog)
+            multiCamCapture.setFrameRate(frameRate: frameRate, appleLog: appleLog)
+        }
+    }
+
+    var appleLog = false {
+        didSet {
+            capture.setFrameRate(frameRate: frameRate, appleLog: appleLog)
         }
     }
 

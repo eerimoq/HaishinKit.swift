@@ -389,11 +389,12 @@ extension IOMixer: Running {
         switch error.code {
         case .unsupportedDeviceActiveFormat:
             let isMultiCamSupported = videoSession is AVCaptureMultiCamSession
-            guard let device = error.device, let format = device.videoFormat(
+            guard let device = error.device, let format = device.findVideoFormat(
                 width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
                 height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,
                 frameRate: videoIO.frameRate,
-                isMultiCamSupported: isMultiCamSupported
+                isMultiCamSupported: isMultiCamSupported,
+                appleLogSupported: false
             ), device.activeFormat != format else {
                 return
             }

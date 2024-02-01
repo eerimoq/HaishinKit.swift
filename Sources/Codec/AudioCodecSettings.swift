@@ -149,7 +149,6 @@ public struct AudioCodecSettings: Codable {
         guard let converter else {
             return
         }
-        // print("xxx", bitRate, oldValue?.bitRate)
         if bitRate != oldValue?.bitRate {
             let minAvailableBitRate = converter.applicableEncodeBitRates?.min(by: { a, b in
                 a.intValue < b.intValue
@@ -158,9 +157,6 @@ public struct AudioCodecSettings: Codable {
                 a.intValue < b.intValue
             })?.intValue ?? bitRate
             converter.bitRate = min(maxAvailableBitRate, max(minAvailableBitRate, bitRate))
-            // print("xxx", converter.inputFormat, converter.outputFormat)
-            // print("xxx", converter.availableEncodeBitRates)
-            // print("xxx", converter.applicableEncodeBitRates)
             logger.info("Audio bitrate: \(converter.bitRate), maximum: \(maxAvailableBitRate)")
         }
     }

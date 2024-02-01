@@ -92,6 +92,14 @@ open class NetStream: NSObject {
         }
     }
 
+    /// Specifies if appleLog should be used.
+    public func setAppleLog(enabled: Bool, onComplete: @escaping () -> Void) {
+        lockQueue.async {
+            self.mixer.videoIO.appleLog = enabled
+            onComplete()
+        }
+    }
+
     /// Specifies the sessionPreset for the AVCaptureSession.
     public var sessionPreset: AVCaptureSession.Preset {
         get {

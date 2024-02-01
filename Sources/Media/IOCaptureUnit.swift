@@ -47,6 +47,7 @@ extension IOCaptureUnit {
                 logger.error("Cannot add output")
             }
         }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = false
     }
 
     func detachSession(_ session: AVCaptureSession?) {
@@ -158,39 +159,41 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         setSampleBufferDelegate(videoUnit)
     }
 
-    func setFrameRate(_ frameRate: Float64) {
+    func setFrameRate(frameRate: Float64, appleLog: Bool) {
         guard let device else {
             return
         }
+        guard let format = device.findVideoFormat(
+            width: device.activeFormat.formatDescription.dimensions.width,
+            height: device.activeFormat.formatDescription.dimensions.height,
+            frameRate: frameRate,
+            isMultiCamSupported: device.activeFormat.isMultiCamSupported,
+            appleLogSupported: appleLog
+        ) else {
+            logger.info("No matching video format found")
+            return
+        }
+        logger.info("Selected format: \(format)")
         do {
             try device.lockForConfiguration()
-            if device.activeFormat.isFrameRateSupported(frameRate) {
-                device.activeVideoMinFrameDuration = CMTime(
-                    value: 100,
-                    timescale: CMTimeScale(100 * frameRate)
-                )
-                device.activeVideoMaxFrameDuration = CMTime(
-                    value: 100,
-                    timescale: CMTimeScale(100 * frameRate)
-                )
-            } else {
-                if let format = device.videoFormat(
-                    width: device.activeFormat.formatDescription.dimensions.width,
-                    height: device.activeFormat.formatDescription.dimensions.height,
-                    frameRate: frameRate,
-                    isMultiCamSupported: device.activeFormat.isMultiCamSupported
-                ) {
-                    device.activeFormat = format
-                    device.activeVideoMinFrameDuration = CMTime(
-                        value: 100,
-                        timescale: CMTimeScale(100 * frameRate)
-                    )
-                    device.activeVideoMaxFrameDuration = CMTime(
-                        value: 100,
-                        timescale: CMTimeScale(100 * frameRate)
-                    )
+            device.activeFormat = format
+            if appleLog {
+                if #available(iOS 17.0, *) {
+                    device.activeColorSpace = .appleLog
+                } else {
+                    device.activeColorSpace = .sRGB
                 }
+            } else {
+                device.activeColorSpace = .sRGB
             }
+            device.activeVideoMinFrameDuration = CMTime(
+                value: 100,
+                timescale: CMTimeScale(100 * frameRate)
+            )
+            device.activeVideoMaxFrameDuration = CMTime(
+                value: 100,
+                timescale: CMTimeScale(100 * frameRate)
+            )
             device.unlockForConfiguration()
         } catch {
             logger.error("while locking device for fps:", error)
@@ -213,7 +216,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
     func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
         if let videoUnit {
             videoOrientation = videoUnit.videoOrientation
-            setFrameRate(videoUnit.frameRate)
+            setFrameRate(frameRate: videoUnit.frameRate, appleLog: videoUnit.appleLog)
         }
         output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
     }
