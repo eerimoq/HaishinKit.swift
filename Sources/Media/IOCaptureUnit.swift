@@ -159,7 +159,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         setSampleBufferDelegate(videoUnit)
     }
 
-    func setFrameRate(frameRate: Float64, appleLog: Bool) {
+    func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
         guard let device else {
             return
         }
@@ -168,24 +168,18 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             height: device.activeFormat.formatDescription.dimensions.height,
             frameRate: frameRate,
             isMultiCamSupported: device.activeFormat.isMultiCamSupported,
-            appleLogSupported: appleLog
+            colorSpace: colorSpace
         ) else {
             logger.info("No matching video format found")
             return
         }
-        logger.info("Selected format: \(format)")
         do {
             try device.lockForConfiguration()
-            device.activeFormat = format
-            if appleLog {
-                if #available(iOS 17.0, *) {
-                    device.activeColorSpace = .appleLog
-                } else {
-                    device.activeColorSpace = .sRGB
-                }
-            } else {
-                device.activeColorSpace = .sRGB
+            if device.activeFormat != format {
+                logger.info("Selected video format: \(format)")
+                device.activeFormat = format
             }
+            device.activeColorSpace = colorSpace
             device.activeVideoMinFrameDuration = CMTime(
                 value: 100,
                 timescale: CMTimeScale(100 * frameRate)
@@ -216,7 +210,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
     func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
         if let videoUnit {
             videoOrientation = videoUnit.videoOrientation
-            setFrameRate(frameRate: videoUnit.frameRate, appleLog: videoUnit.appleLog)
+            setFrameRate(frameRate: videoUnit.frameRate, colorSpace: videoUnit.colorSpace)
         }
         output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
     }

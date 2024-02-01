@@ -394,7 +394,7 @@ extension IOMixer: Running {
                 height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,
                 frameRate: videoIO.frameRate,
                 isMultiCamSupported: isMultiCamSupported,
-                appleLogSupported: false
+                colorSpace: .sRGB
             ), device.activeFormat != format else {
                 return
             }

@@ -93,9 +93,9 @@ open class NetStream: NSObject {
     }
 
     /// Specifies if appleLog should be used.
-    public func setAppleLog(enabled: Bool, onComplete: @escaping () -> Void) {
+    public func setColorSpace(colorSpace: AVCaptureColorSpace, onComplete: @escaping () -> Void) {
         lockQueue.async {
-            self.mixer.videoIO.appleLog = enabled
+            self.mixer.videoIO.colorSpace = colorSpace
             onComplete()
         }
     }
