@@ -240,8 +240,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         else {
             return
         }
-        // print("Using filler buffer", latestSampleBufferDate, delta)
-        appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false)
+        appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false, skipEffects: true)
     }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
@@ -426,7 +425,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         return sampleBuffer
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool, skipEffects: Bool) {
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
@@ -449,7 +448,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
             multiCamPixelBuffer.unlockBaseAddress()
         }
-        if !effects.isEmpty {
+        if !effects.isEmpty && !skipEffects {
             let image = effect(imageBuffer, info: sampleBuffer)
             extent = image.extent
             if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
@@ -525,7 +524,7 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
             else {
                 return
             }
-            appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
+            appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false)
             isFirstAfterAttach = false
         } else if multiCamCapture.output == captureOutput {
             multiCamSampleBuffer = sampleBuffer
