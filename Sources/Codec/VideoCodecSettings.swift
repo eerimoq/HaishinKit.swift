@@ -141,6 +141,12 @@ public struct VideoCodecSettings {
             extraOptions == rhs.extraOptions)
     }
 
+    private func createDataRateLimits(bitRate: UInt32) -> CFArray {
+        let byteLimit = (Double(bitRate) / 8) as CFNumber
+        let secLimit = Double(1.0) as CFNumber
+        return [byteLimit, secLimit] as CFArray
+    }
+
     func apply(_ codec: VideoCodec, rhs: VideoCodecSettings) {
         guard bitRate != rhs.bitRate else {
             return
@@ -152,8 +158,7 @@ public struct VideoCodecSettings {
                 errorOccurred: .failedToSetOption(status: status, option: option)
             )
         }
-        let dataRateLimits = [NSNumber(value: bitRate / 8), NSNumber(value: 1)] as! CFArray
-        let optionLimit = VTSessionOption(key: .dataRateLimits, value: dataRateLimits)
+        let optionLimit = VTSessionOption(key: .dataRateLimits, value: createDataRateLimits(bitRate: bitRate))
         if let status = codec.session?.setOption(optionLimit), status != noErr {
             codec.delegate?.videoCodec(
                 codec,
@@ -168,6 +173,7 @@ public struct VideoCodecSettings {
             .init(key: .realTime, value: kCFBooleanTrue),
             .init(key: .profileLevel, value: profileLevel as NSObject),
             .init(key: bitRateMode.key, value: NSNumber(value: bitRate)),
+            .init(key: .dataRateLimits, value: createDataRateLimits(bitRate: bitRate)),
             // It seemes that VT supports the range 0 to 30.
             .init(
                 key: .expectedFrameRate,
