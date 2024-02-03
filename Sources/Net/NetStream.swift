@@ -126,16 +126,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Specifies the multi camera capture properties.
-    public var multiCamCaptureSettings: MultiCamCaptureSettings {
-        get {
-            mixer.videoIO.multiCamCaptureSettings
-        }
-        set {
-            mixer.videoIO.multiCamCaptureSettings = newValue
-        }
-    }
-
     /// Specifies the hasAudio indicies whether no signal audio or not.
     public var hasAudio: Bool {
         get {
@@ -199,18 +189,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Attaches the 2ndary camera  object for picture in picture.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachMultiCamera(_ device: AVCaptureDevice?, onError: ((_ error: Error) -> Void)? = nil) {
-        lockQueue.async {
-            do {
-                try self.mixer.videoIO.attachMultiCamera(device)
-            } catch {
-                onError?(error)
-            }
-        }
-    }
-
     /// Attaches the audio capture object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     open func attachAudio(
@@ -254,13 +232,6 @@ open class NetStream: NSObject {
     public func videoCapture() -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
             self.mixer.videoIO.capture
-        }
-    }
-
-    /// Returns the IOVideoCaptureUnit by index.
-    public func multiVideoCapture() -> IOVideoCaptureUnit? {
-        return mixer.videoIO.lockQueue.sync {
-            self.mixer.videoIO.multiCamCapture
         }
     }
 

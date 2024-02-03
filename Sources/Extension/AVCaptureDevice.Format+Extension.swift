@@ -2,13 +2,6 @@ import AVFoundation
 import Foundation
 
 extension AVCaptureDevice.Format {
-    @available(iOS, obsoleted: 13.0)
-    var isMultiCamSupported: Bool {
-        return false
-    }
-}
-
-extension AVCaptureDevice.Format {
     func isFrameRateSupported(_ frameRate: Float64) -> Bool {
         var durations: [CMTime] = []
         var frameRates: [Float64] = []

@@ -167,7 +167,6 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             width: device.activeFormat.formatDescription.dimensions.width,
             height: device.activeFormat.formatDescription.dimensions.height,
             frameRate: frameRate,
-            isMultiCamSupported: device.activeFormat.isMultiCamSupported,
             colorSpace: colorSpace
         ) else {
             logger.info("No matching video format found")

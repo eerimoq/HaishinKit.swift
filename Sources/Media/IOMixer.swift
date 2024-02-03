@@ -82,17 +82,6 @@ public class IOMixer {
     private var readyState: ReadyState = .standby
     private(set) lazy var audioEngine: AVAudioEngine? = IOMixer.audioEngineHolder.retain()
 
-    var isMultiCamSessionEnabled = false {
-        didSet {
-            guard oldValue != isMultiCamSessionEnabled else {
-                return
-            }
-            logger.info("did set isMultiCamSessionEnabled to \(isMultiCamSessionEnabled)")
-            videoSession = makeSession()
-            audioSession = makeSession()
-        }
-    }
-
     var sessionPreset: AVCaptureSession.Preset = .default {
         didSet {
             guard sessionPreset != oldValue, videoSession.canSetSessionPreset(sessionPreset) else {
@@ -220,13 +209,7 @@ public class IOMixer {
 
     private func makeSession() -> AVCaptureSession {
         let session: AVCaptureSession
-        if isMultiCamSessionEnabled {
-            logger.info("Multi camera session")
-            session = AVCaptureMultiCamSession()
-        } else {
-            logger.info("Single camera session")
-            session = AVCaptureSession()
-        }
+        session = AVCaptureSession()
         if session.canSetSessionPreset(sessionPreset) {
             session.sessionPreset = sessionPreset
         } else {
@@ -388,12 +371,10 @@ extension IOMixer: Running {
         let error = AVError(_nsError: errorValue)
         switch error.code {
         case .unsupportedDeviceActiveFormat:
-            let isMultiCamSupported = videoSession is AVCaptureMultiCamSession
             guard let device = error.device, let format = device.findVideoFormat(
                 width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
                 height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,
                 frameRate: videoIO.frameRate,
-                isMultiCamSupported: isMultiCamSupported,
                 colorSpace: .sRGB
             ), device.activeFormat != format else {
                 return

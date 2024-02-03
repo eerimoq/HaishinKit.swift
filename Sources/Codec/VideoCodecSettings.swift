@@ -145,7 +145,6 @@ public struct VideoCodecSettings {
         guard bitRate != rhs.bitRate else {
             return
         }
-
         let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
         if let status = codec.session?.setOption(option), status != noErr {
             codec.delegate?.videoCodec(
@@ -153,7 +152,6 @@ public struct VideoCodecSettings {
                 errorOccurred: .failedToSetOption(status: status, option: option)
             )
         }
-
         let dataRateLimits = [NSNumber(value: bitRate / 8), NSNumber(value: 1)] as! CFArray
         let optionLimit = VTSessionOption(key: .dataRateLimits, value: dataRateLimits)
         if let status = codec.session?.setOption(optionLimit), status != noErr {
@@ -181,13 +179,6 @@ public struct VideoCodecSettings {
                 "ScalingMode": scalingMode.rawValue,
             ] as NSObject),
         ])
-        #if os(macOS)
-            if isHardwareEncoderEnabled {
-                options.insert(.init(key: .encoderID, value: format.encoderID))
-                options.insert(.init(key: .enableHardwareAcceleratedVideoEncoder, value: kCFBooleanTrue))
-                options.insert(.init(key: .requireHardwareAcceleratedVideoEncoder, value: kCFBooleanTrue))
-            }
-        #endif
         if !isBaseline && profileLevel.contains("H264") {
             options.insert(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }

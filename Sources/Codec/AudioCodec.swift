@@ -98,7 +98,6 @@ public class AudioCodec {
             }
             outputBuffers.removeAll()
             ringBuffer = .init(&inSourceFormat)
-            logger.info("Creating audio converter")
             audioConverter = makeAudioConverter(&inSourceFormat)
         }
     }

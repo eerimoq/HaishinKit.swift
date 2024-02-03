@@ -139,7 +139,6 @@ final class IOVideoUnit: NSObject, IOUnit {
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
             capture.setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
-            multiCamCapture.setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
         }
     }
 
@@ -166,7 +165,6 @@ final class IOVideoUnit: NSObject, IOUnit {
             }
             drawable?.videoOrientation = videoOrientation
             capture.videoOrientation = videoOrientation
-            multiCamCapture.videoOrientation = videoOrientation
         }
     }
 
@@ -180,9 +178,6 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     private(set) var capture: IOVideoCaptureUnit = .init()
-    private(set) var multiCamCapture: IOVideoCaptureUnit = .init()
-    var multiCamCaptureSettings: MultiCamCaptureSettings = .default
-    private var multiCamSampleBuffer: CMSampleBuffer?
     private var selectedReplaceVideoCameraId: UUID?
     private var replaceVideos: [UUID: ReplaceVideo] = [:]
     private var blackImageBuffer: CVPixelBuffer?
@@ -279,9 +274,6 @@ final class IOVideoUnit: NSObject, IOUnit {
                 setTorchMode(.on)
             }
         }
-        if multiCamCapture.device == device {
-            try multiCamCapture.attachDevice(nil, videoUnit: self)
-        }
         try capture.attachDevice(device, videoUnit: self)
         // Not perfect. Should be set before registering the capture callback
         lockQueue.sync {
@@ -290,38 +282,8 @@ final class IOVideoUnit: NSObject, IOUnit {
         }
     }
 
-    func attachMultiCamera(_ device: AVCaptureDevice?) throws {
-        guard AVCaptureMultiCamSession.isMultiCamSupported else {
-            throw Error.multiCamNotSupported
-        }
-        guard let mixer, multiCamCapture.device != device else {
-            return
-        }
-        guard let device else {
-            mixer.videoSession.beginConfiguration()
-            defer {
-                mixer.videoSession.commitConfiguration()
-            }
-            multiCamCapture.detachSession(mixer.videoSession)
-            try multiCamCapture.attachDevice(nil, videoUnit: self)
-            mixer.isMultiCamSessionEnabled = false
-            return
-        }
-        logger.info("Attaching multi camera")
-        mixer.isMultiCamSessionEnabled = true
-        mixer.videoSession.beginConfiguration()
-        defer {
-            mixer.videoSession.commitConfiguration()
-        }
-        if capture.device == device {
-            try multiCamCapture.attachDevice(nil, videoUnit: self)
-        }
-        try multiCamCapture.attachDevice(device, videoUnit: self)
-    }
-
     func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
         capture.setTorchMode(torchMode)
-        multiCamCapture.setTorchMode(torchMode)
     }
 
     @inline(__always)
@@ -434,20 +396,6 @@ final class IOVideoUnit: NSObject, IOUnit {
         defer {
             imageBuffer.unlockBaseAddress()
         }
-        if let multiCamPixelBuffer = multiCamSampleBuffer?.imageBuffer {
-            multiCamPixelBuffer.lockBaseAddress()
-            switch multiCamCaptureSettings.mode {
-            case .pip:
-                imageBuffer.over(
-                    multiCamPixelBuffer,
-                    regionOfInterest: multiCamCaptureSettings.regionOfInterest,
-                    radius: multiCamCaptureSettings.cornerRadius
-                )
-            case .splitView:
-                imageBuffer.split(multiCamPixelBuffer, direction: multiCamCaptureSettings.direction)
-            }
-            multiCamPixelBuffer.unlockBaseAddress()
-        }
         if !effects.isEmpty && !skipEffects {
             let image = effect(imageBuffer, info: sampleBuffer)
             extent = image.extent
@@ -526,8 +474,6 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
             }
             appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false)
             isFirstAfterAttach = false
-        } else if multiCamCapture.output == captureOutput {
-            multiCamSampleBuffer = sampleBuffer
         }
     }
 }
