@@ -1,14 +1,8 @@
 import AVFoundation
 import CoreFoundation
 import VideoToolbox
+import UIKit
 
-#if os(iOS)
-    import UIKit
-#endif
-
-/**
- * The interface a VideoCodec uses to inform its delegate.
- */
 public protocol VideoCodecDelegate: AnyObject {
     /// Tells the receiver to set a formatDescription.
     func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?)
@@ -20,15 +14,7 @@ public protocol VideoCodecDelegate: AnyObject {
     func videoCodecWillDropFame(_ codec: VideoCodec) -> Bool
 }
 
-// MARK: -
-
-/**
- * The VideoCodec class provides methods for encode or decode for video.
- */
 public class VideoCodec {
-    /**
-     * The VideoCodec error domain codes.
-     */
     public enum Error: Swift.Error {
         /// The VideoCodec failed to create the VTSession.
         case failedToCreate(status: OSStatus)
@@ -105,7 +91,7 @@ public class VideoCodec {
             return
         }
         if invalidateSession {
-            session = VTSessionMode.compression.makeSession(self)
+            session = makeVideoCompressionSession(self)
         }
         _ = session?.encodeFrame(
             imageBuffer,
@@ -129,7 +115,7 @@ public class VideoCodec {
             return
         }
         if invalidateSession {
-            session = VTSessionMode.decompression.makeSession(self)
+            session = makeVideoDecompressionSession(self)
             needsSync.mutate { $0 = true }
         }
         if !sampleBuffer.isNotSync {
