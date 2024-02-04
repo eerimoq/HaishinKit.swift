@@ -89,7 +89,6 @@ public class AudioCodec {
         }
     }
 
-    var effects: [AudioEffect] = []
     var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioCodec.lock")
     var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
@@ -122,12 +121,6 @@ public class AudioCodec {
                 guard let buffer = getOutputBuffer() else {
                     logger.info("no output buffer")
                     return
-                }
-                for effect in effects {
-                    effect.execute(
-                        ringBuffer.current,
-                        presentationTimeStamp: ringBuffer.presentationTimeStamp
-                    )
                 }
                 var error: NSError?
                 audioConverter.convert(to: buffer, error: &error) { _, status in

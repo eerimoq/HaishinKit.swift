@@ -4,15 +4,6 @@ import AVFoundation
     import SwiftPMSupport
 #endif
 
-public enum GeneratorMode {
-    case off
-    case squareWave
-}
-
-public var audioGeneratorMode: GeneratorMode = .off
-public var squareWaveGeneratorAmplitude: Int16 = 200
-public var squareWaveGeneratorInterval: UInt64 = 60
-
 final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
@@ -91,24 +82,6 @@ final class IOAudioUnit: NSObject, IOUnit {
         presentationTimeStamp = sampleBuffer.presentationTimeStamp
     }
 
-    func registerEffect(_ effect: AudioEffect) -> Bool {
-        if codec.effects.contains(effect) {
-            return false
-        } else {
-            codec.effects.append(effect)
-            return true
-        }
-    }
-
-    func unregisterEffect(_ effect: AudioEffect) -> Bool {
-        if let index = codec.effects.firstIndex(of: effect) {
-            codec.effects.remove(at: index)
-            return true
-        } else {
-            return false
-        }
-    }
-
     private func numGapSamples(_ sampleBuffer: CMSampleBuffer) -> Int {
         guard let mSampleRate = inSourceFormat?.mSampleRate,
               presentationTimeStamp != Self.defaultPresentationTimeStamp
@@ -127,24 +100,6 @@ final class IOAudioUnit: NSObject, IOUnit {
             preferredTimescale: sampleRate
         ) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
-    }
-
-    private func generateSquareWave(sampleBuffer: CMSampleBuffer) {
-        if let dataBuffer = sampleBuffer.dataBuffer {
-            if var data = dataBuffer.data {
-                for i in stride(from: 0, to: data.count, by: 2) {
-                    var sample = data.getInt16(offset: i)
-                    if (generatorCount % squareWaveGeneratorInterval) < 30 {
-                        sample = squareWaveGeneratorAmplitude
-                    } else {
-                        sample = -squareWaveGeneratorAmplitude
-                    }
-                    data.setInt16(value: sample, offset: i)
-                    generatorCount += 1
-                }
-                data.replaceBlockBuffer(blockBuffer: dataBuffer)
-            }
-        }
     }
 }
 
@@ -188,12 +143,6 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
     ) {
         guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
             return
-        }
-        switch audioGeneratorMode {
-        case .squareWave:
-            generateSquareWave(sampleBuffer: sampleBuffer)
-        default:
-            break
         }
         if let mixer {
             var audioLevel: Float
