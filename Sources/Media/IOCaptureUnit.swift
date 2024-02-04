@@ -119,49 +119,12 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
     }
 
-    func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
-        setSampleBufferDelegate(nil)
-        detachSession(videoUnit.mixer?.videoSession)
-        self.device = device
-        guard let device else {
-            input = nil
-            output = nil
-            connection = nil
-            logger.info("Attach device nil")
-            return
-        }
-        logger.info("Attach device: \(device.deviceType) \(device.position)")
-        input = try AVCaptureDeviceInput(device: device)
-        output = AVCaptureVideoDataOutput()
-        if let output, let port = input?.ports
-            .first(where: {
-                $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
-                    .sourceDevicePosition == device.position
-            })
-        {
-            connection = AVCaptureConnection(inputPorts: [port], output: output)
-        } else {
-            logger.info("no connection")
-            connection = nil
-        }
-        attachSession(videoUnit.mixer?.videoSession)
-        output?.connections.forEach {
-            if $0.isVideoMirroringSupported {
-                $0.isVideoMirrored = isVideoMirrored
-            }
-            if $0.isVideoOrientationSupported {
-                $0.videoOrientation = videoOrientation
-            }
-            if $0.isVideoStabilizationSupported {
-                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
-            }
-        }
-        setSampleBufferDelegate(videoUnit)
-    }
-
     func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
         guard let device else {
             return
+        }
+        for format in device.formats {
+            logger.info("Format: \(format)")
         }
         guard let format = device.findVideoFormat(
             width: device.activeFormat.formatDescription.dimensions.width,
@@ -172,10 +135,10 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
             logger.info("No matching video format found")
             return
         }
+        logger.info("Selected video format: \(format)")
         do {
             try device.lockForConfiguration()
             if device.activeFormat != format {
-                logger.info("Selected video format: \(format)")
                 device.activeFormat = format
             }
             device.activeColorSpace = colorSpace
@@ -191,6 +154,43 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         } catch {
             logger.error("while locking device for fps:", error)
         }
+    }
+
+    func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
+        setSampleBufferDelegate(nil)
+        detachSession(videoUnit.mixer?.videoSession)
+        self.device = device
+        guard let device else {
+            input = nil
+            output = nil
+            connection = nil
+            return
+        }
+        input = try AVCaptureDeviceInput(device: device)
+        output = AVCaptureVideoDataOutput()
+        if let output, let port = input?.ports
+            .first(where: {
+                $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
+                    .sourceDevicePosition == device.position
+            })
+        {
+            connection = AVCaptureConnection(inputPorts: [port], output: output)
+        } else {
+            connection = nil
+        }
+        attachSession(videoUnit.mixer?.videoSession)
+        output?.connections.forEach {
+            if $0.isVideoMirroringSupported {
+                $0.isVideoMirrored = isVideoMirrored
+            }
+            if $0.isVideoOrientationSupported {
+                $0.videoOrientation = videoOrientation
+            }
+            if $0.isVideoStabilizationSupported {
+                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+            }
+        }
+        setSampleBufferDelegate(videoUnit)
     }
 
     func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
