@@ -4,6 +4,7 @@ import AVFoundation
 #endif
 
 import UIKit
+
 extension AVCaptureSession.Preset {
     static let `default`: AVCaptureSession.Preset = .hd1280x720
 }
@@ -22,9 +23,7 @@ protocol IOMixerDelegate: AnyObject {
 
 /// An object that mixies audio and video for streaming.
 public class IOMixer {
-    /// The default fps for an IOMixer, value is 30.
     public static let defaultFrameRate: Float64 = 30
-    /// The AVAudioEngine shared instance holder.
     public static let audioEngineHolder: InstanceHolder<AVAudioEngine> = .init {
         AVAudioEngine()
     }
@@ -219,54 +218,6 @@ public class IOMixer {
     }
 }
 
-extension IOMixer: IOUnitEncoding {
-    /// Starts encoding for video and audio data.
-    public func startEncoding(_ delegate: any AVCodecDelegate) {
-        guard readyState == .standby else {
-            return
-        }
-        readyState = .encoding
-        videoIO.startEncoding(delegate)
-        audioIO.startEncoding(delegate)
-    }
-
-    /// Stop encoding.
-    public func stopEncoding() {
-        guard readyState == .encoding else {
-            return
-        }
-        videoTimeStamp = CMTime.zero
-        audioTimeStamp = CMTime.zero
-        videoIO.stopEncoding()
-        audioIO.stopEncoding()
-        readyState = .standby
-    }
-}
-
-extension IOMixer: IOUnitDecoding {
-    /// Starts decoding for video and audio data.
-    public func startDecoding() {
-        guard readyState == .standby else {
-            return
-        }
-        audioIO.startDecoding()
-        videoIO.startDecoding()
-        mediaLink.startRunning()
-        readyState = .decoding
-    }
-
-    /// Stop decoding.
-    public func stopDecoding() {
-        guard readyState == .decoding else {
-            return
-        }
-        mediaLink.stopRunning()
-        audioIO.stopDecoding()
-        videoIO.stopDecoding()
-        readyState = .standby
-    }
-}
-
 extension IOMixer: MediaLinkDelegate {
     func mediaLink(_: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
         drawable?.enqueue(sampleBuffer, isFirstAfterAttach: false)
@@ -288,7 +239,45 @@ extension IOMixer: IORecorderDelegate {
 }
 
 extension IOMixer: Running {
-    // MARK: Running
+    public func startEncoding(_ delegate: any AVCodecDelegate) {
+        guard readyState == .standby else {
+            return
+        }
+        readyState = .encoding
+        videoIO.startEncoding(delegate)
+        audioIO.startEncoding(delegate)
+    }
+
+    public func stopEncoding() {
+        guard readyState == .encoding else {
+            return
+        }
+        videoTimeStamp = CMTime.zero
+        audioTimeStamp = CMTime.zero
+        videoIO.stopEncoding()
+        audioIO.stopEncoding()
+        readyState = .standby
+    }
+
+    public func startDecoding() {
+        guard readyState == .standby else {
+            return
+        }
+        audioIO.startDecoding()
+        videoIO.startDecoding()
+        mediaLink.startRunning()
+        readyState = .decoding
+    }
+
+    public func stopDecoding() {
+        guard readyState == .decoding else {
+            return
+        }
+        mediaLink.stopRunning()
+        audioIO.stopDecoding()
+        videoIO.stopDecoding()
+        readyState = .standby
+    }
 
     public func startRunning() {
         guard !isRunning.value else {

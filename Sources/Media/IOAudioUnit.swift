@@ -101,9 +101,7 @@ final class IOAudioUnit: NSObject, IOUnit {
         ) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
     }
-}
 
-extension IOAudioUnit: IOUnitEncoding {
     func startEncoding(_ delegate: any AVCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
@@ -114,9 +112,7 @@ extension IOAudioUnit: IOUnitEncoding {
         codec.delegate = nil
         inSourceFormat = nil
     }
-}
 
-extension IOAudioUnit: IOUnitDecoding {
     func startDecoding() {
         if let playerNode = mixer?.mediaLink.playerNode {
             mixer?.audioEngine?.attach(playerNode)

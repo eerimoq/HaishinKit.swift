@@ -10,13 +10,3 @@ protocol IOUnit {
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool, skipEffects: Bool)
 }
-
-protocol IOUnitEncoding {
-    func startEncoding(_ delegate: any AVCodecDelegate)
-    func stopEncoding()
-}
-
-protocol IOUnitDecoding {
-    func startDecoding()
-    func stopDecoding()
-}

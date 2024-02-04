@@ -416,9 +416,7 @@ final class IOVideoUnit: NSObject, IOUnit {
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
     }
-}
 
-extension IOVideoUnit: IOUnitEncoding {
     func startEncoding(_ delegate: any AVCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
@@ -428,9 +426,7 @@ extension IOVideoUnit: IOUnitEncoding {
         codec.stopRunning()
         codec.delegate = nil
     }
-}
 
-extension IOVideoUnit: IOUnitDecoding {
     func startDecoding() {
         codec.delegate = self
         codec.startRunning()
@@ -479,8 +475,6 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
 }
 
 extension IOVideoUnit: VideoCodecDelegate {
-    // MARK: VideoCodecDelegate
-
     func videoCodec(_: VideoCodec, didOutput _: CMFormatDescription?) {}
 
     func videoCodec(_: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
