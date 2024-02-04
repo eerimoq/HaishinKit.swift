@@ -99,8 +99,6 @@ public struct VideoCodecSettings {
 
     /// Specifies the HardwareEncoder is enabled(TRUE), or not(FALSE) for macOS.
     public var isHardwareEncoderEnabled = true
-    /// Specifies extra options. Overrides any other options.
-    public var extraOptions: Set<VTSessionOption>?
 
     var format: Format = .h264
 
@@ -113,8 +111,7 @@ public struct VideoCodecSettings {
         scalingMode: ScalingMode = .trim,
         bitRateMode: BitRateMode = .average,
         allowFrameReordering: Bool? = nil, // swiftlint:disable:this discouraged_optional_boolean
-        isHardwareEncoderEnabled: Bool = true,
-        extraOptions: Set<VTSessionOption>? = nil
+        isHardwareEncoderEnabled: Bool = true
     ) {
         self.videoSize = videoSize
         self.profileLevel = profileLevel
@@ -124,7 +121,6 @@ public struct VideoCodecSettings {
         self.bitRateMode = bitRateMode
         self.allowFrameReordering = allowFrameReordering
         self.isHardwareEncoderEnabled = isHardwareEncoderEnabled
-        self.extraOptions = extraOptions
         if profileLevel.contains("HEVC") {
             format = .hevc
         }
@@ -137,8 +133,7 @@ public struct VideoCodecSettings {
             allowFrameReordering == rhs.allowFrameReordering &&
             bitRateMode == rhs.bitRateMode &&
             profileLevel == rhs.profileLevel &&
-            isHardwareEncoderEnabled == rhs.isHardwareEncoderEnabled &&
-            extraOptions == rhs.extraOptions)
+            isHardwareEncoderEnabled == rhs.isHardwareEncoderEnabled)
     }
 
     private func createDataRateLimits(bitRate: UInt32) -> CFArray {
@@ -167,9 +162,9 @@ public struct VideoCodecSettings {
         }
     }
 
-    func options(_ codec: VideoCodec) -> Set<VTSessionOption> {
+    func options(_ codec: VideoCodec) -> [VTSessionOption] {
         let isBaseline = profileLevel.contains("Baseline")
-        var options = Set<VTSessionOption>([
+        var options: [VTSessionOption] = [
             .init(key: .realTime, value: kCFBooleanTrue),
             .init(key: .profileLevel, value: profileLevel as NSObject),
             .init(key: bitRateMode.key, value: NSNumber(value: bitRate)),
@@ -184,12 +179,9 @@ public struct VideoCodecSettings {
             .init(key: .pixelTransferProperties, value: [
                 "ScalingMode": scalingMode.rawValue,
             ] as NSObject),
-        ])
-        if !isBaseline && profileLevel.contains("H264") {
-            options.insert(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
-        }
-        if let extraOptions {
-            options = options.union(extraOptions)
+        ]
+        if !isBaseline, profileLevel.contains("H264") {
+            options.append(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }
         return options
     }

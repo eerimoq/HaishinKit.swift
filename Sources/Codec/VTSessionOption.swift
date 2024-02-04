@@ -1,6 +1,5 @@
 import Foundation
 
-/// A structure that represents  Key-Value-Object for the VideoToolbox option.
 public struct VTSessionOption {
     let key: VTSessionOptionKey
     let value: AnyObject
@@ -12,8 +11,6 @@ public struct VTSessionOption {
 }
 
 extension VTSessionOption: Hashable {
-    // MARK: Hashable
-
     public static func == (lhs: VTSessionOption, rhs: VTSessionOption) -> Bool {
         return lhs.key.CFString == rhs.key.CFString
     }

@@ -40,14 +40,6 @@ public struct VTSessionOptionKey {
         VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameInterval)
     public static let maxKeyFrameIntervalDuration =
         VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration)
-    #if os(macOS)
-        public static let usingHardwareAcceleratedVideoEncoder =
-            VTSessionOptionKey(CFString: kVTCompressionPropertyKey_UsingHardwareAcceleratedVideoEncoder)
-        public static let requireHardwareAcceleratedVideoEncoder =
-            VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder)
-        public static let enableHardwareAcceleratedVideoEncoder =
-            VTSessionOptionKey(CFString: kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder)
-    #endif
     public static let multiPassStorage =
         VTSessionOptionKey(CFString: kVTCompressionPropertyKey_MultiPassStorage)
     public static let forceKeyFrame = VTSessionOptionKey(CFString: kVTEncodeFrameOptionKey_ForceKeyFrame)

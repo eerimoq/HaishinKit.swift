@@ -8,8 +8,6 @@ extension VTCompressionSession {
 }
 
 extension VTCompressionSession: VTSessionConvertible {
-    // MARK: VTSessionConvertible
-
     @discardableResult
     @inline(__always)
     func encodeFrame(

@@ -4,7 +4,7 @@ import VideoToolbox
 
 protocol VTSessionConvertible {
     func setOption(_ option: VTSessionOption) -> OSStatus
-    func setOptions(_ options: Set<VTSessionOption>) -> OSStatus
+    func setOptions(_ options: [VTSessionOption]) -> OSStatus
     func encodeFrame(
         _ imageBuffer: CVImageBuffer,
         presentationTimeStamp: CMTime,
@@ -21,7 +21,7 @@ extension VTSessionConvertible where Self: VTSession {
         return VTSessionSetProperty(self, key: option.key.CFString, value: option.value)
     }
 
-    func setOptions(_ options: Set<VTSessionOption>) -> OSStatus {
+    func setOptions(_ options: [VTSessionOption]) -> OSStatus {
         var properties: [AnyHashable: AnyObject] = [:]
         for option in options {
             properties[option.key.CFString] = option.value
