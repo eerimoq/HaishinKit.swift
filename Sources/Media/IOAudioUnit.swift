@@ -4,7 +4,6 @@ import SwiftPMSupport
 final class IOAudioUnit: NSObject {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
-    private var generatorCount: UInt64 = 0
 
     lazy var codec: AudioCodec = {
         var codec = AudioCodec()

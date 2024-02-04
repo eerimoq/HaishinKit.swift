@@ -121,20 +121,12 @@ public class AudioCodec {
                     logger.info("no output buffer")
                     return
                 }
-                var error: NSError?
-                audioConverter.convert(to: buffer, error: &error) { _, status in
-                    status.pointee = .haveData
-                    return ringBuffer.current
-                }
-                if let error {
-                    delegate?.audioCodec(self, errorOccurred: .failedToConvert(error: error))
-                } else {
-                    delegate?.audioCodec(
-                        self,
-                        didOutput: buffer,
-                        presentationTimeStamp: ringBuffer.presentationTimeStamp
-                    )
-                }
+                convertBuffer(
+                    audioConverter: audioConverter,
+                    inputBuffer: ringBuffer.current,
+                    outputBuffer: buffer,
+                    presentationTimeStamp: ringBuffer.presentationTimeStamp
+                )
                 ringBuffer.next()
             }
             if offset + numSamples < sampleBuffer.numSamples {
@@ -181,15 +173,29 @@ public class AudioCodec {
         guard isRunning.value, let audioConverter, let buffer = getOutputBuffer() else {
             return
         }
+        convertBuffer(
+            audioConverter: audioConverter,
+            inputBuffer: audioBuffer,
+            outputBuffer: buffer,
+            presentationTimeStamp: presentationTimeStamp
+        )
+    }
+
+    private func convertBuffer(
+        audioConverter: AVAudioConverter,
+        inputBuffer: AVAudioBuffer,
+        outputBuffer: AVAudioBuffer,
+        presentationTimeStamp: CMTime
+    ) {
         var error: NSError?
-        audioConverter.convert(to: buffer, error: &error) { _, status in
+        audioConverter.convert(to: outputBuffer, error: &error) { _, status in
             status.pointee = .haveData
-            return audioBuffer
+            return inputBuffer
         }
         if let error {
             delegate?.audioCodec(self, errorOccurred: .failedToConvert(error: error))
         } else {
-            delegate?.audioCodec(self, didOutput: buffer, presentationTimeStamp: presentationTimeStamp)
+            delegate?.audioCodec(self, didOutput: outputBuffer, presentationTimeStamp: presentationTimeStamp)
         }
     }
 

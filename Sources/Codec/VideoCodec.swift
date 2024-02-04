@@ -1,7 +1,7 @@
 import AVFoundation
 import CoreFoundation
-import VideoToolbox
 import UIKit
+import VideoToolbox
 
 public protocol VideoCodecDelegate: AnyObject {
     /// Tells the receiver to set a formatDescription.
