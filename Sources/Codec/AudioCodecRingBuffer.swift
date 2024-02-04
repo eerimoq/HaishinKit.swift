@@ -2,14 +2,10 @@ import Accelerate
 import AVFoundation
 import Foundation
 
-final class AudioCodecRingBuffer {
-    enum Error: Swift.Error {
-        case isReady
-        case noBlockBuffer
-    }
+public var numberOfAudioRingBuffers = 6
 
+final class AudioCodecRingBuffer {
     static let numSamples: UInt32 = 1024
-    static let maxBuffers: Int = 6
 
     var isReady: Bool {
         numSamples == index
@@ -26,7 +22,6 @@ final class AudioCodecRingBuffer {
     private var buffers: [AVAudioPCMBuffer] = []
     private var cursor: Int = 0
     private var workingBuffer: AVAudioPCMBuffer
-    private var maxBuffers: Int = AudioCodecRingBuffer.maxBuffers
 
     init?(
         _ inSourceFormat: inout AudioStreamBasicDescription,
@@ -39,7 +34,7 @@ final class AudioCodecRingBuffer {
         else {
             return nil
         }
-        for _ in 0 ..< maxBuffers {
+        for _ in 0 ..< numberOfAudioRingBuffers {
             guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numSamples) else {
                 return nil
             }
