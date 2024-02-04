@@ -12,7 +12,7 @@ public protocol IOScreenCaptureUnitDelegate: AnyObject {
 }
 
 /// The interface that provides methods to screen capture.
-public protocol IOScreenCaptureUnit: Running {
+public protocol IOScreenCaptureUnit {
     /// Specifies the CVPixelBufferPool's attributes.
     var attributes: [NSString: NSObject] { get }
     /// Specifies the delegate.

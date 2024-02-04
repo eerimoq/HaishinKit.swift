@@ -105,7 +105,6 @@ public class AudioCodec {
     private var outputBuffers: [AVAudioBuffer] = []
     private var audioConverter: AVAudioConverter?
 
-    /// Append a CMSampleBuffer.
     public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, offset: Int = 0) {
         guard isRunning.value else {
             return
@@ -248,10 +247,6 @@ public class AudioCodec {
         }
         return converter
     }
-}
-
-extension AudioCodec: Running {
-    // MARK: Running
 
     public func startRunning() {
         lockQueue.async {

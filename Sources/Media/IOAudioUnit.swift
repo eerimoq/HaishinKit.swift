@@ -1,8 +1,5 @@
 import AVFoundation
-
-#if canImport(SwiftPMSupport)
-    import SwiftPMSupport
-#endif
+import SwiftPMSupport
 
 final class IOAudioUnit: NSObject, IOUnit {
     private static let defaultPresentationTimeStamp: CMTime = .invalid

@@ -149,10 +149,6 @@
             )
             CVPixelBufferUnlockBaseAddress(pixelBuffer!, [])
         }
-    }
-
-    extension IOUIScreenCaptureUnit: Running {
-        // MARK: Running
 
         public func startRunning() {
             lockQueue.sync {

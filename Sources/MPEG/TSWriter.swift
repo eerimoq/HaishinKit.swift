@@ -1,10 +1,7 @@
 import AVFoundation
 import CoreMedia
 import Foundation
-
-#if canImport(SwiftPMSupport)
-    import SwiftPMSupport
-#endif
+import SwiftPMSupport
 
 public var payloadSize: Int = 1316
 
@@ -23,7 +20,7 @@ public extension TSWriterDelegate {
 }
 
 /// The TSWriter class represents writes MPEG-2 transport stream data.
-public class TSWriter: Running {
+public class TSWriter {
     public static let defaultPATPID: UInt16 = 0
     public static let defaultPMTPID: UInt16 = 4095
     public static let defaultVideoPID: UInt16 = 256
@@ -269,7 +266,7 @@ public class TSWriter: Running {
     private func split(_ PID: UInt16, PES: PacketizedElementaryStream, timestamp: CMTime) -> [TSPacket] {
         var PCR: UInt64?
         let duration = timestamp.seconds - PCRTimestamp.seconds
-        if PCRPID == PID && duration >= 0.02 {
+        if PCRPID == PID, duration >= 0.02 {
             PCR =
                 UInt64((timestamp
                         .seconds - (PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp)

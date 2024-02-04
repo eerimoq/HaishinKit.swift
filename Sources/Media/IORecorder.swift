@@ -1,7 +1,5 @@
 import AVFoundation
-#if canImport(SwiftPMSupport)
-    import SwiftPMSupport
-#endif
+import SwiftPMSupport
 
 /// The interface an IORecorder uses to inform its delegate.
 public protocol IORecorderDelegate: AnyObject {
@@ -10,8 +8,6 @@ public protocol IORecorderDelegate: AnyObject {
     /// Tells the receiver to finish writing.
     func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter)
 }
-
-// MARK: -
 
 /// The IORecorder class represents video and audio recorder.
 public class IORecorder {
@@ -189,10 +185,9 @@ public class IORecorder {
                 for (key, value) in defaultOutputSettings {
                     switch key {
                     case AVSampleRateKey:
-                        outputSettings[key] = AnyUtil.isZero(value) ? inSourceFormat.mSampleRate : value
+                        outputSettings[key] = isZero(value) ? inSourceFormat.mSampleRate : value
                     case AVNumberOfChannelsKey:
-                        outputSettings[key] = AnyUtil
-                            .isZero(value) ? Int(inSourceFormat.mChannelsPerFrame) : value
+                        outputSettings[key] = isZero(value) ? Int(inSourceFormat.mChannelsPerFrame) : value
                     default:
                         outputSettings[key] = value
                     }
@@ -201,9 +196,9 @@ public class IORecorder {
                 for (key, value) in defaultOutputSettings {
                     switch key {
                     case AVVideoHeightKey:
-                        outputSettings[key] = AnyUtil.isZero(value) ? Int(dimensions.height) : value
+                        outputSettings[key] = isZero(value) ? Int(dimensions.height) : value
                     case AVVideoWidthKey:
-                        outputSettings[key] = AnyUtil.isZero(value) ? Int(dimensions.width) : value
+                        outputSettings[key] = isZero(value) ? Int(dimensions.width) : value
                     default:
                         outputSettings[key] = value
                     }
@@ -246,9 +241,7 @@ public class IORecorder {
         pixelBufferAdaptor = adaptor
         return adaptor
     }
-}
 
-extension IORecorder: Running {
     public func startRunning() {
         lockQueue.async {
             guard !self.isRunning.value else {

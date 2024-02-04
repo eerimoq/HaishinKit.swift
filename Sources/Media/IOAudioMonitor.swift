@@ -105,10 +105,6 @@ final class IOAudioMonitor {
         }
         return audioUnit
     }
-}
-
-extension IOAudioMonitor: Running {
-    // MARK: Running
 
     func startRunning() {
         guard !isRunning.value else {

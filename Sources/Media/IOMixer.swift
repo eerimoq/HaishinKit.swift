@@ -1,7 +1,5 @@
 import AVFoundation
-#if canImport(SwiftPMSupport)
-    import SwiftPMSupport
-#endif
+import SwiftPMSupport
 
 import UIKit
 
@@ -236,9 +234,7 @@ extension IOMixer: IORecorderDelegate {
     public func recorder(_: IORecorder, finishWriting writer: AVAssetWriter) {
         delegate?.mixer(self, recorderFinishWriting: writer)
     }
-}
 
-extension IOMixer: Running {
     public func startEncoding(_ delegate: any AVCodecDelegate) {
         guard readyState == .standby else {
             return

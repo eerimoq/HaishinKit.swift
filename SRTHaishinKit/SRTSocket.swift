@@ -227,10 +227,6 @@ final class SRTSocket {
             return srt_recvmsg(socket, buffer, windowSizeC)
         }
     }
-}
-
-extension SRTSocket: Running {
-    // MARK: Running
 
     func startRunning() {
         guard !isRunning.value else {

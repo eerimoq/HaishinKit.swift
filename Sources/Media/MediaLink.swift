@@ -1,8 +1,5 @@
 import AVFoundation
-
-#if canImport(SwiftPMSupport)
-    import SwiftPMSupport
-#endif
+import SwiftPMSupport
 
 protocol MediaLinkDelegate: AnyObject {
     func mediaLink(_ mediaLink: MediaLink, dequeue sampleBuffer: CMSampleBuffer)
@@ -125,8 +122,6 @@ final class MediaLink {
 }
 
 extension MediaLink: ChoreographerDelegate {
-    // MARK: ChoreographerDelegate
-
     func choreographer(_: any Choreographer, didFrame duration: Double) {
         guard let bufferQueue else {
             return
@@ -151,10 +146,6 @@ extension MediaLink: ChoreographerDelegate {
         }
         isBuffering = true
     }
-}
-
-extension MediaLink: Running {
-    // MARK: Running
 
     func startRunning() {
         lockQueue.async {

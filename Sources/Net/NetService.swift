@@ -99,10 +99,6 @@ extension NetService: NetClientDelegate {
     func client(client: NetClient, isDisconnected _: Bool) {
         disconnect(client)
     }
-}
-
-extension NetService: Running {
-    // MARK: Runnbale
 
     public func startRunning() {
         lockQueue.async {

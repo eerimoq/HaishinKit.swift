@@ -204,9 +204,7 @@ public class VideoCodec {
             break
         }
     }
-}
 
-extension VideoCodec: Running {
     public func startRunning() {
         lockQueue.async {
             self.isRunning.mutate { $0 = true }
