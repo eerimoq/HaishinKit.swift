@@ -83,10 +83,6 @@ public struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
                 }
         }
     }
-}
-
-extension AVCDecoderConfigurationRecord: DataConvertible {
-    // MARK: DataConvertible
 
     public var data: Data {
         get {

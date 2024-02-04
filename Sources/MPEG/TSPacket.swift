@@ -64,9 +64,7 @@ struct TSPacket {
             as: UInt8.self
         )
     }
-}
 
-extension TSPacket: DataConvertible {
     var data: Data {
         get {
             let bytes = Data([

@@ -61,7 +61,7 @@ final class IOAudioUnit: NSObject {
             for i in 0 ... numSampleBuffers {
                 let numSamples = numSampleBuffers == i ? numGapSamples % sampleBuffer
                     .numSamples : sampleBuffer.numSamples
-                guard let gapSampleBuffer = CMAudioSampleBufferFactory.makeSampleBuffer(
+                guard let gapSampleBuffer = makeAudioSampleBuffer(
                     sampleBuffer,
                     numSamples: numSamples,
                     presentationTimeStamp: gapPresentationTimeStamp

@@ -29,9 +29,7 @@ class TSAdaptationField {
         stuffingBytes = Data(repeating: 0xFF, count: size)
         length += UInt8(size)
     }
-}
 
-extension TSAdaptationField: DataConvertible {
     var data: Data {
         get {
             var byte: UInt8 = 0

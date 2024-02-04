@@ -61,9 +61,7 @@ class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
         packets.append(packet)
         return packets
     }
-}
 
-extension TSProgram: DataConvertible {
     var data: Data {
         get {
             let tableData: Data = self.tableData

@@ -39,10 +39,6 @@ struct ESSpecificData {
     init?(_ data: Data) {
         self.data = data
     }
-}
-
-extension ESSpecificData: DataConvertible {
-    // MARK: DataConvertible
 
     var data: Data {
         get {

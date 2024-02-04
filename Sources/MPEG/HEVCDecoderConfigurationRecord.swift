@@ -80,10 +80,6 @@ struct HEVCDecoderConfigurationRecord: DecoderConfigurationRecord {
             }
         }
     }
-}
-
-extension HEVCDecoderConfigurationRecord: DataConvertible {
-    // MARK: DataConvertible
 
     var data: Data {
         get {

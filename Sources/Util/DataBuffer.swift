@@ -1,6 +1,11 @@
 import Foundation
 
 final class DataBuffer {
+    private var data: Data
+    private var head: Int = 0
+    private var tail: Int = 0
+    private let baseCapacity: Int
+
     var bytes: UnsafePointer<UInt8>? {
         data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> UnsafePointer<UInt8>? in
             bytes.baseAddress?.assumingMemoryBound(to: UInt8.self).advanced(by: head)
@@ -16,16 +21,11 @@ final class DataBuffer {
         return value < 0 ? value + capacity : value
     }
 
-    private var data: Data
     private(set) var capacity: Int = 0 {
         didSet {
             logger.info("extends a buffer size from ", oldValue, " to ", capacity)
         }
     }
-
-    private var head: Int = 0
-    private var tail: Int = 0
-    private let baseCapacity: Int
 
     init(capacity: Int) {
         self.capacity = capacity

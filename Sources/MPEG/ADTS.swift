@@ -61,9 +61,7 @@ struct ADTSHeader: Equatable {
         }
         return formatDescription
     }
-}
 
-extension ADTSHeader: DataConvertible {
     var data: Data {
         get {
             Data()

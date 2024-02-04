@@ -82,9 +82,7 @@ struct PESOptionalHeader {
             decodeTimeStamp: decodeTimeStamp
         )
     }
-}
 
-extension PESOptionalHeader: DataConvertible {
     var data: Data {
         get {
             var bytes = Data([0x00, 0x00])
