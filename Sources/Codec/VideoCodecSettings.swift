@@ -137,6 +137,7 @@ public struct VideoCodecSettings {
     }
 
     private func createDataRateLimits(bitRate: UInt32) -> CFArray {
+        // Multiply with 1.5 to reach target bitrate.
         let byteLimit = (Double(bitRate) / 8) as CFNumber
         let secLimit = Double(1.0) as CFNumber
         return [byteLimit, secLimit] as CFArray
