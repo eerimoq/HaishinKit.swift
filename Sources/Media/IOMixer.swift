@@ -235,7 +235,7 @@ extension IOMixer: IORecorderDelegate {
         delegate?.mixer(self, recorderFinishWriting: writer)
     }
 
-    public func startEncoding(_ delegate: any AVCodecDelegate) {
+    public func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
         guard readyState == .standby else {
             return
         }

@@ -1,7 +1,7 @@
 import AVFoundation
 import SwiftPMSupport
 
-final class IOAudioUnit: NSObject, IOUnit {
+final class IOAudioUnit: NSObject {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
     private var generatorCount: UInt64 = 0
@@ -99,7 +99,7 @@ final class IOAudioUnit: NSObject, IOUnit {
         return Int(diff.value) - sampleBuffer.numSamples
     }
 
-    func startEncoding(_ delegate: any AVCodecDelegate) {
+    func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
     }

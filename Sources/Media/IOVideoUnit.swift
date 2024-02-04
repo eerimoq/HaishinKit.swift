@@ -76,7 +76,7 @@ class ReplaceVideo {
     }
 }
 
-final class IOVideoUnit: NSObject, IOUnit {
+final class IOVideoUnit: NSObject {
     enum Error: Swift.Error {
         case multiCamNotSupported
     }
@@ -417,7 +417,7 @@ final class IOVideoUnit: NSObject, IOUnit {
         )
     }
 
-    func startEncoding(_ delegate: any AVCodecDelegate) {
+    func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
         codec.delegate = delegate
         codec.startRunning()
     }
