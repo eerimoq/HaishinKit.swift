@@ -1,7 +1,6 @@
 import AVFoundation
 import Foundation
 
-/// The SoundTransform class
 public struct SoundTransform {
     public static let defaultVolume: Float = 1.0
     public static let defaultPan: Float = 0
@@ -18,8 +17,6 @@ public struct SoundTransform {
 }
 
 extension SoundTransform: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     public var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
