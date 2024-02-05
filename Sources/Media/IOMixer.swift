@@ -37,45 +37,6 @@ public class IOMixer {
         case decoding
     }
 
-    public var hasVideo: Bool {
-        get {
-            mediaLink.hasVideo
-        }
-        set {
-            mediaLink.hasVideo = newValue
-        }
-    }
-
-    public var isPaused: Bool {
-        get {
-            mediaLink.isPaused
-        }
-        set {
-            mediaLink.isPaused = newValue
-        }
-    }
-
-    var audioFormat: AVAudioFormat? {
-        didSet {
-            guard let audioEngine else {
-                return
-            }
-            nstry({
-                if let audioFormat = self.audioFormat {
-                    audioEngine.connect(
-                        self.mediaLink.playerNode,
-                        to: audioEngine.mainMixerNode,
-                        format: audioFormat
-                    )
-                } else {
-                    audioEngine.disconnectNodeInput(self.mediaLink.playerNode)
-                }
-            }, { exeption in
-                logger.warn(exeption)
-            })
-        }
-    }
-
     private var readyState: ReadyState = .standby
     private(set) lazy var audioEngine: AVAudioEngine? = IOMixer.audioEngineHolder.retain()
 
@@ -141,12 +102,6 @@ public class IOMixer {
         var videoIO = IOVideoUnit()
         videoIO.mixer = self
         return videoIO
-    }()
-
-    lazy var mediaLink: MediaLink = {
-        var mediaLink = MediaLink()
-        mediaLink.delegate = self
-        return mediaLink
     }()
 
     lazy var recorder: IORecorder = {
@@ -216,16 +171,6 @@ public class IOMixer {
     }
 }
 
-extension IOMixer: MediaLinkDelegate {
-    func mediaLink(_: MediaLink, dequeue sampleBuffer: CMSampleBuffer) {
-        drawable?.enqueue(sampleBuffer, isFirstAfterAttach: false)
-    }
-
-    func mediaLink(_: MediaLink, didBufferingChanged: Bool) {
-        logger.info(didBufferingChanged)
-    }
-}
-
 extension IOMixer: IORecorderDelegate {
     public func recorder(_: IORecorder, errorOccured error: IORecorder.Error) {
         delegate?.mixer(self, recorderErrorOccured: error)
@@ -252,26 +197,6 @@ extension IOMixer: IORecorderDelegate {
         audioTimeStamp = CMTime.zero
         videoIO.stopEncoding()
         audioIO.stopEncoding()
-        readyState = .standby
-    }
-
-    public func startDecoding() {
-        guard readyState == .standby else {
-            return
-        }
-        audioIO.startDecoding()
-        videoIO.startDecoding()
-        mediaLink.startRunning()
-        readyState = .decoding
-    }
-
-    public func stopDecoding() {
-        guard readyState == .decoding else {
-            return
-        }
-        mediaLink.stopRunning()
-        audioIO.stopDecoding()
-        videoIO.stopDecoding()
         readyState = .standby
     }
 

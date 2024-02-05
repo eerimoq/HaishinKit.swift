@@ -170,15 +170,6 @@ open class RTMPStream: NetStream {
     public private(set) var objectEncoding: RTMPObjectEncoding = RTMPConnection.defaultObjectEncoding
     /// The number of frames per second being displayed.
     @objc public private(set) dynamic var currentFPS: UInt16 = 0
-    /// Specifies the controls sound.
-    public var soundTransform: SoundTransform {
-        get {
-            mixer.audioIO.soundTransform
-        }
-        set {
-            mixer.audioIO.soundTransform = newValue
-        }
-    }
 
     /// Incoming audio plays on the stream or not.
     open var receiveAudio = true {
@@ -483,7 +474,7 @@ open class RTMPStream: NetStream {
 
         switch oldValue {
         case .playing:
-            mixer.stopDecoding()
+            logger.info("Playing not implemented")
         case .publishing:
             FCUnpublish()
             mixer.stopEncoding()
@@ -513,13 +504,7 @@ open class RTMPStream: NetStream {
             }
             messages.removeAll()
         case .play:
-            startedAt = .init()
-            videoTimestamp = 0
-            videoTimestampZero = -1.0
-            audioTimestamp = 0
-            audioTimestampZero = -1.0
-            mixer.delegate = self
-            mixer.startDecoding()
+            logger.info("Play not implemented")
         case .publish:
             startedAt = .init()
             muxer.dispose()

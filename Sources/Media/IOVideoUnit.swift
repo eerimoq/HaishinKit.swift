@@ -426,16 +426,6 @@ final class IOVideoUnit: NSObject {
         codec.stopRunning()
         codec.delegate = nil
     }
-
-    func startDecoding() {
-        codec.delegate = self
-        codec.startRunning()
-    }
-
-    func stopDecoding() {
-        codec.stopRunning()
-        drawable?.enqueue(nil, isFirstAfterAttach: false)
-    }
 }
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -471,22 +461,6 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
             appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false)
             isFirstAfterAttach = false
         }
-    }
-}
-
-extension IOVideoUnit: VideoCodecDelegate {
-    func videoCodec(_: VideoCodec, didOutput _: CMFormatDescription?) {}
-
-    func videoCodec(_: VideoCodec, didOutput sampleBuffer: CMSampleBuffer) {
-        mixer?.mediaLink.enqueueVideo(sampleBuffer)
-    }
-
-    func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
-        logger.trace(error)
-    }
-
-    func videoCodecWillDropFame(_: VideoCodec) -> Bool {
-        return false
     }
 }
 

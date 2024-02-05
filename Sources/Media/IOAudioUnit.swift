@@ -12,12 +12,6 @@ final class IOAudioUnit: NSObject {
     }()
 
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
-    var soundTransform: SoundTransform = .init() {
-        didSet {
-            soundTransform.apply(mixer?.mediaLink.playerNode)
-        }
-    }
-
     var muted = false
     weak var mixer: IOMixer?
     private(set) var capture: IOAudioCaptureUnit = .init()
@@ -108,23 +102,6 @@ final class IOAudioUnit: NSObject {
         codec.delegate = nil
         inSourceFormat = nil
     }
-
-    func startDecoding() {
-        if let playerNode = mixer?.mediaLink.playerNode {
-            mixer?.audioEngine?.attach(playerNode)
-        }
-        codec.delegate = self
-        codec.startRunning()
-    }
-
-    func stopDecoding() {
-        if let playerNode = mixer?.mediaLink.playerNode {
-            mixer?.audioEngine?.detach(playerNode)
-        }
-        codec.stopRunning()
-        codec.delegate = nil
-        inSourceFormat = nil
-    }
 }
 
 extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
@@ -152,29 +129,5 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             )
         }
         appendSampleBuffer(sampleBuffer, isFirstAfterAttach: false, skipEffects: false)
-    }
-}
-
-extension IOAudioUnit: AudioCodecDelegate {
-    func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
-        logger.info("Failed to convert audio with error: \(error)")
-    }
-
-    func audioCodec(_: AudioCodec, didOutput audioFormat: AVAudioFormat) {
-        do {
-            mixer?.audioFormat = audioFormat
-            if let audioEngine = mixer?.audioEngine, audioEngine.isRunning == false {
-                try audioEngine.start()
-            }
-        } catch {
-            logger.error(error)
-        }
-    }
-
-    func audioCodec(_: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp _: CMTime) {
-        guard let audioBuffer = audioBuffer as? AVAudioPCMBuffer else {
-            return
-        }
-        mixer?.mediaLink.enqueueAudio(audioBuffer)
     }
 }

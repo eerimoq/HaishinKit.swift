@@ -5,7 +5,6 @@ import Logboard
 
 protocol SRTSocketDelegate: AnyObject {
     func socket(_ socket: SRTSocket, status: SRT_SOCKSTATUS)
-    func socket(_ socket: SRTSocket, incomingDataAvailable data: Data, bytes: Int32)
     func socket(_ socket: SRTSocket, didAcceptSocket client: SRTSocket)
     func socket(_ socket: SRTSocket, sendHook data: Data) -> Bool
 }
@@ -147,17 +146,6 @@ final class SRTSocket {
 
     func doOutputPointer(pointer: UnsafeRawBufferPointer, count: Int) {
         _ = sendmsg2pointer(pointer, count)
-    }
-
-    func doInput() {
-        incomingQueue.async {
-            repeat {
-                let result = self.recvmsg()
-                if result > 0 {
-                    self.delegate?.socket(self, incomingDataAvailable: self.incomingBuffer, bytes: result)
-                }
-            } while self.isRunning.value
-        }
     }
 
     func close() {

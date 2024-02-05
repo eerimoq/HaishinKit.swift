@@ -372,8 +372,6 @@ public final class RTMPCommandMessage: RTMPMessage {
     }
 }
 
-// MARK: -
-
 /**
  7.1.2. Data Message (18, 15)
  */
@@ -799,13 +797,10 @@ final class RTMPVideoMessage: RTMPMessage {
             status = config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
         }
         if status == noErr {
-            stream.mixer.mediaLink.hasVideo = true
             stream.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.videoDimensionChange.data(""))
         }
     }
 }
-
-// MARK: -
 
 /**
  7.1.6. Aggregate Message (22)

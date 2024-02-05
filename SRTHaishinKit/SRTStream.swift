@@ -27,12 +27,6 @@ public class SRTStream: NetStream {
         return writer
     }()
 
-    private lazy var reader: TSReader = {
-        var reader = TSReader()
-        reader.delegate = self
-        return reader
-    }()
-
     private var readyState: ReadyState = .initialized {
         didSet {
             guard oldValue != readyState else {
@@ -44,17 +38,14 @@ public class SRTStream: NetStream {
                 writer.stopRunning()
                 mixer.stopEncoding()
             case .playing:
-                mixer.stopDecoding()
+                logger.info("Playing not implemented")
             default:
                 break
             }
 
             switch readyState {
             case .play:
-                connection?.socket?.doInput()
-                mixer.isPaused = false
-                mixer.startDecoding()
-                readyState = .playing
+                logger.info("Play not implemented")
             case .publish:
                 mixer.startEncoding(writer)
                 mixer.startRunning()
@@ -198,10 +189,6 @@ public class SRTStream: NetStream {
             self.readyState = .closed
         }
     }
-
-    func doInput(_ data: Data) {
-        _ = reader.read(data)
-    }
 }
 
 extension SRTStream: TSWriterDelegate {
@@ -219,26 +206,5 @@ extension SRTStream: TSWriterDelegate {
             return
         }
         connection?.socket?.doOutputPointer(pointer: pointer, count: count)
-    }
-}
-
-extension SRTStream: TSReaderDelegate {
-    public func reader(_: TSReader, id _: UInt16, didRead formatDescription: CMFormatDescription) {
-        guard readyState == .playing else {
-            return
-        }
-        switch CMFormatDescriptionGetMediaType(formatDescription) {
-        case kCMMediaType_Video:
-            mixer.hasVideo = true
-        default:
-            break
-        }
-    }
-
-    public func reader(_: TSReader, id _: UInt16, didRead sampleBuffer: CMSampleBuffer) {
-        guard readyState == .playing else {
-            return
-        }
-        mixer.appendSampleBuffer(sampleBuffer)
     }
 }

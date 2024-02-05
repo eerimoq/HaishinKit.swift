@@ -112,10 +112,6 @@ extension SRTConnection: SRTSocketDelegate {
         connected = socket.status == SRTS_CONNECTED
     }
 
-    func socket(_: SRTSocket, incomingDataAvailable data: Data, bytes: Int32) {
-        stream?.doInput(data.subdata(in: 0 ..< Data.Index(bytes)))
-    }
-
     func socket(_: SRTSocket, didAcceptSocket client: SRTSocket) {
         clients.append(client)
     }
