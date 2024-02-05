@@ -50,10 +50,10 @@ open class NetStream: NSObject {
     /// Specifies the context object.
     public var context: CIContext {
         get {
-            mixer.videoIO.context
+            mixer.video.context
         }
         set {
-            mixer.videoIO.context = newValue
+            mixer.video.context = newValue
         }
     }
 
@@ -62,13 +62,13 @@ open class NetStream: NSObject {
         get {
             var torch: Bool = false
             lockQueue.sync {
-                torch = self.mixer.videoIO.torch
+                torch = self.mixer.video.torch
             }
             return torch
         }
         set {
             lockQueue.async {
-                self.mixer.videoIO.torch = newValue
+                self.mixer.video.torch = newValue
             }
         }
     }
@@ -78,13 +78,13 @@ open class NetStream: NSObject {
         get {
             var frameRate: Float64 = IOMixer.defaultFrameRate
             lockQueue.sync {
-                frameRate = self.mixer.videoIO.frameRate
+                frameRate = self.mixer.video.frameRate
             }
             return frameRate
         }
         set {
             lockQueue.async {
-                self.mixer.videoIO.frameRate = newValue
+                self.mixer.video.frameRate = newValue
             }
         }
     }
@@ -92,7 +92,7 @@ open class NetStream: NSObject {
     /// Specifies if appleLog should be used.
     public func setColorSpace(colorSpace: AVCaptureColorSpace, onComplete: @escaping () -> Void) {
         lockQueue.async {
-            self.mixer.videoIO.colorSpace = colorSpace
+            self.mixer.video.colorSpace = colorSpace
             onComplete()
         }
     }
@@ -116,50 +116,50 @@ open class NetStream: NSObject {
     /// Specifies the video orientation for stream.
     public var videoOrientation: AVCaptureVideoOrientation {
         get {
-            mixer.videoIO.videoOrientation
+            mixer.video.videoOrientation
         }
         set {
-            mixer.videoIO.videoOrientation = newValue
+            mixer.video.videoOrientation = newValue
         }
     }
 
     /// Specifies the hasAudio indicies whether no signal audio or not.
     public var hasAudio: Bool {
         get {
-            !mixer.audioIO.muted
+            !mixer.audio.muted
         }
         set {
-            mixer.audioIO.muted = !newValue
+            mixer.audio.muted = !newValue
         }
     }
 
     /// Specifies the hasVideo indicies whether freeze video signal or not.
     public var hasVideo: Bool {
         get {
-            !mixer.videoIO.muted
+            !mixer.video.muted
         }
         set {
-            mixer.videoIO.muted = !newValue
+            mixer.video.muted = !newValue
         }
     }
 
     /// Specifies the audio compression properties.
     public var audioSettings: AudioCodecSettings {
         get {
-            mixer.audioIO.codec.settings
+            mixer.audio.codec.settings
         }
         set {
-            mixer.audioIO.codec.settings = newValue
+            mixer.audio.codec.settings = newValue
         }
     }
 
     /// Specifies the video compression properties.
     public var videoSettings: VideoCodecSettings {
         get {
-            mixer.videoIO.codec.settings
+            mixer.video.codec.settings
         }
         set {
-            mixer.videoIO.codec.settings = newValue
+            mixer.video.codec.settings = newValue
         }
     }
 
@@ -178,7 +178,7 @@ open class NetStream: NSObject {
     ) {
         lockQueue.async {
             do {
-                try self.mixer.videoIO.attachCamera(device, replaceVideoCameraId)
+                try self.mixer.video.attachCamera(device, replaceVideoCameraId)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -195,7 +195,7 @@ open class NetStream: NSObject {
     ) {
         lockQueue.sync {
             do {
-                try self.mixer.audioIO.attachAudio(
+                try self.mixer.audio.attachAudio(
                     device,
                     automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession
                 )
@@ -208,41 +208,41 @@ open class NetStream: NSObject {
     /// Append a video sample buffer.
     /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
     open func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
-        mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.addReplaceVideoSampleBuffer(id: id, sampleBuffer)
+        mixer.video.lockQueue.async {
+            self.mixer.video.addReplaceVideoSampleBuffer(id: id, sampleBuffer)
         }
     }
 
     open func addReplaceVideo(cameraId: UUID, latency: Double) {
-        mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.addReplaceVideo(cameraId: cameraId, latency: latency)
+        mixer.video.lockQueue.async {
+            self.mixer.video.addReplaceVideo(cameraId: cameraId, latency: latency)
         }
     }
 
     open func removeReplaceVideo(cameraId: UUID) {
-        mixer.videoIO.lockQueue.async {
-            self.mixer.videoIO.removeReplaceVideo(cameraId: cameraId)
+        mixer.video.lockQueue.async {
+            self.mixer.video.removeReplaceVideo(cameraId: cameraId)
         }
     }
 
     /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture() -> IOVideoCaptureUnit? {
-        return mixer.videoIO.lockQueue.sync {
-            self.mixer.videoIO.capture
+        return mixer.video.lockQueue.sync {
+            self.mixer.video.capture
         }
     }
 
     /// Register a video effect.
     public func registerVideoEffect(_ effect: VideoEffect) -> Bool {
-        mixer.videoIO.lockQueue.sync {
-            self.mixer.videoIO.registerEffect(effect)
+        mixer.video.lockQueue.sync {
+            self.mixer.video.registerEffect(effect)
         }
     }
 
     /// Unregister a video effect.
     public func unregisterVideoEffect(_ effect: VideoEffect) -> Bool {
-        mixer.videoIO.lockQueue.sync {
-            self.mixer.videoIO.unregisterEffect(effect)
+        mixer.video.lockQueue.sync {
+            self.mixer.video.unregisterEffect(effect)
         }
     }
 

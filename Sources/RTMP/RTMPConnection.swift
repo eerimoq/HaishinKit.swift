@@ -322,7 +322,7 @@ open class RTMPConnection: EventDispatcher {
         for stream in streams {
             // in bytes.
             outputBufferSize +=
-                (Int(stream.mixer.videoIO.codec.settings.bitRate) + stream.mixer.audioIO.codec.settings
+                (Int(stream.mixer.video.codec.settings.bitRate) + stream.mixer.audio.codec.settings
                     .bitRate) / 8
         }
         if socket.outputBufferSize < outputBufferSize {

@@ -626,15 +626,15 @@ final class RTMPAudioMessage: RTMPMessage {
         switch payload[1] {
         case FLVAACPacketType.seq.rawValue:
             let config = AudioSpecificConfig(bytes: [UInt8](payload[codec.headerSize ..< payload.count]))
-            stream.mixer.audioIO.codec.settings.format = .pcm
-            stream.mixer.audioIO.codec.inSourceFormat = config?.audioStreamBasicDescription()
+            stream.mixer.audio.codec.settings.format = .pcm
+            stream.mixer.audio.codec.inSourceFormat = config?.audioStreamBasicDescription()
         case FLVAACPacketType.raw.rawValue:
-            if stream.mixer.audioIO.codec.inSourceFormat == nil {
-                stream.mixer.audioIO.codec.settings.format = .pcm
-                stream.mixer.audioIO.codec.inSourceFormat = makeAudioStreamBasicDescription()
+            if stream.mixer.audio.codec.inSourceFormat == nil {
+                stream.mixer.audio.codec.settings.format = .pcm
+                stream.mixer.audio.codec.inSourceFormat = makeAudioStreamBasicDescription()
             }
             if let audioBuffer = makeAudioBuffer(stream) {
-                stream.mixer.audioIO.codec.appendAudioBuffer(
+                stream.mixer.audio.codec.appendAudioBuffer(
                     audioBuffer,
                     presentationTimeStamp: CMTime(
                         seconds: stream.audioTimestamp / 1000,
@@ -650,7 +650,7 @@ final class RTMPAudioMessage: RTMPMessage {
     private func makeAudioBuffer(_ stream: RTMPStream) -> AVAudioBuffer? {
         return payload.withUnsafeMutableBytes { (buffer: UnsafeMutableRawBufferPointer) -> AVAudioBuffer? in
             guard let baseAddress = buffer.baseAddress,
-                  let buffer = stream.mixer.audioIO.codec.makeInputBuffer() as? AVAudioCompressedBuffer
+                  let buffer = stream.mixer.audio.codec.makeInputBuffer() as? AVAudioCompressedBuffer
             else {
                 return nil
             }
@@ -706,7 +706,7 @@ final class RTMPVideoMessage: RTMPMessage {
                 makeFormatDescription(stream, format: .h264)
             case FLVAVCPacketType.nal.rawValue:
                 if let sampleBuffer = makeSampleBuffer(stream, type: type, offset: 0) {
-                    stream.mixer.videoIO.codec.appendSampleBuffer(sampleBuffer)
+                    stream.mixer.video.codec.appendSampleBuffer(sampleBuffer)
                 }
             default:
                 break
@@ -721,7 +721,7 @@ final class RTMPVideoMessage: RTMPMessage {
                 makeFormatDescription(stream, format: .hevc)
             case FLVVideoPacketType.codedFrames.rawValue:
                 if let sampleBuffer = makeSampleBuffer(stream, type: type, offset: 3) {
-                    stream.mixer.videoIO.codec.appendSampleBuffer(sampleBuffer)
+                    stream.mixer.video.codec.appendSampleBuffer(sampleBuffer)
                 }
             default:
                 break
@@ -770,7 +770,7 @@ final class RTMPVideoMessage: RTMPMessage {
             dataReady: true,
             makeDataReadyCallback: nil,
             refcon: nil,
-            formatDescription: stream.mixer.videoIO.formatDescription,
+            formatDescription: stream.mixer.video.formatDescription,
             sampleCount: 1,
             sampleTimingEntryCount: 1,
             sampleTimingArray: &timing,
@@ -790,11 +790,11 @@ final class RTMPVideoMessage: RTMPMessage {
         case .h264:
             var config = AVCDecoderConfigurationRecord()
             config.data = payload.subdata(in: FLVTagType.video.headerSize ..< payload.count)
-            status = config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
+            status = config.makeFormatDescription(&stream.mixer.video.formatDescription)
         case .hevc:
             var config = HEVCDecoderConfigurationRecord()
             config.data = payload.subdata(in: FLVTagType.video.headerSize ..< payload.count)
-            status = config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
+            status = config.makeFormatDescription(&stream.mixer.video.formatDescription)
         }
         if status == noErr {
             stream.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.videoDimensionChange.data(""))

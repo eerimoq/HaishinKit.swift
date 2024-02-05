@@ -22,9 +22,6 @@ protocol IOMixerDelegate: AnyObject {
 /// An object that mixies audio and video for streaming.
 public class IOMixer {
     public static let defaultFrameRate: Float64 = 30
-    public static let audioEngineHolder: InstanceHolder<AVAudioEngine> = .init {
-        AVAudioEngine()
-    }
 
     enum MediaSync {
         case video
@@ -34,11 +31,9 @@ public class IOMixer {
     enum ReadyState {
         case standby
         case encoding
-        case decoding
     }
 
     private var readyState: ReadyState = .standby
-    private(set) lazy var audioEngine: AVAudioEngine? = IOMixer.audioEngineHolder.retain()
 
     var sessionPreset: AVCaptureSession.Preset = .default {
         didSet {
@@ -57,11 +52,11 @@ public class IOMixer {
                 removeSessionObservers(oldValue)
                 oldValue.stopRunning()
             }
-            videoIO.capture.detachSession(oldValue)
+            video.capture.detachSession(oldValue)
             if videoSession.canSetSessionPreset(sessionPreset) {
                 videoSession.sessionPreset = sessionPreset
             }
-            videoIO.capture.attachSession(videoSession)
+            video.capture.attachSession(videoSession)
         }
     }
 
@@ -71,8 +66,8 @@ public class IOMixer {
                 removeSessionObservers(oldValue)
                 oldValue.stopRunning()
             }
-            audioIO.capture.detachSession(oldValue)
-            audioIO.capture.attachSession(audioSession)
+            audio.capture.detachSession(oldValue)
+            audio.capture.attachSession(audioSession)
         }
     }
 
@@ -81,27 +76,26 @@ public class IOMixer {
     /// Specifies the drawable object.
     public weak var drawable: (any NetStreamDrawable)? {
         get {
-            videoIO.drawable
+            video.drawable
         }
         set {
-            videoIO.drawable = newValue
+            video.drawable = newValue
         }
     }
 
     var mediaSync = MediaSync.passthrough
-
     weak var delegate: (any IOMixerDelegate)?
 
-    lazy var audioIO: IOAudioUnit = {
-        var audioIO = IOAudioUnit()
-        audioIO.mixer = self
-        return audioIO
+    lazy var audio: IOAudioUnit = {
+        var audio = IOAudioUnit()
+        audio.mixer = self
+        return audio
     }()
 
-    lazy var videoIO: IOVideoUnit = {
-        var videoIO = IOVideoUnit()
-        videoIO.mixer = self
-        return videoIO
+    lazy var video: IOVideoUnit = {
+        var video = IOVideoUnit()
+        video.mixer = self
+        return video
     }()
 
     lazy var recorder: IORecorder = {
@@ -117,31 +111,9 @@ public class IOMixer {
         if audioSession.isRunning {
             audioSession.stopRunning()
         }
-        IOMixer.audioEngineHolder.release(audioEngine)
     }
 
-    private var audioTimeStamp = CMTime.zero
     private var videoTimeStamp = CMTime.zero
-
-    /// Append a CMSampleBuffer with media type.
-    public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        switch readyState {
-        case .encoding:
-            break
-        case .decoding:
-            switch sampleBuffer.formatDescription?._mediaType {
-            case kCMMediaType_Audio:
-                audioIO.codec.appendSampleBuffer(sampleBuffer)
-            case kCMMediaType_Video:
-                videoIO.codec.formatDescription = sampleBuffer.formatDescription
-                videoIO.codec.appendSampleBuffer(sampleBuffer)
-            default:
-                break
-            }
-        case .standby:
-            break
-        }
-    }
 
     func useSampleBuffer(sampleBuffer: CMSampleBuffer, mediaType: AVMediaType) -> Bool {
         switch mediaSync {
@@ -185,8 +157,8 @@ extension IOMixer: IORecorderDelegate {
             return
         }
         readyState = .encoding
-        videoIO.startEncoding(delegate)
-        audioIO.startEncoding(delegate)
+        video.startEncoding(delegate)
+        audio.startEncoding(delegate)
     }
 
     public func stopEncoding() {
@@ -194,9 +166,8 @@ extension IOMixer: IORecorderDelegate {
             return
         }
         videoTimeStamp = CMTime.zero
-        audioTimeStamp = CMTime.zero
-        videoIO.stopEncoding()
-        audioIO.stopEncoding()
+        video.stopEncoding()
+        audio.stopEncoding()
         readyState = .standby
     }
 
@@ -282,9 +253,9 @@ extension IOMixer: IORecorderDelegate {
         switch error.code {
         case .unsupportedDeviceActiveFormat:
             guard let device = error.device, let format = device.findVideoFormat(
-                width: sessionPreset.width ?? videoIO.codec.settings.videoSize.width,
-                height: sessionPreset.height ?? videoIO.codec.settings.videoSize.height,
-                frameRate: videoIO.frameRate,
+                width: sessionPreset.width ?? video.codec.settings.videoSize.width,
+                height: sessionPreset.height ?? video.codec.settings.videoSize.height,
+                frameRate: video.frameRate,
                 colorSpace: .sRGB
             ), device.activeFormat != format else {
                 return
@@ -292,14 +263,14 @@ extension IOMixer: IORecorderDelegate {
             do {
                 try device.lockForConfiguration()
                 device.activeFormat = format
-                if format.isFrameRateSupported(videoIO.frameRate) {
+                if format.isFrameRateSupported(video.frameRate) {
                     device.activeVideoMinFrameDuration = CMTime(
                         value: 100,
-                        timescale: CMTimeScale(100 * videoIO.frameRate)
+                        timescale: CMTimeScale(100 * video.frameRate)
                     )
                     device.activeVideoMaxFrameDuration = CMTime(
                         value: 100,
-                        timescale: CMTimeScale(100 * videoIO.frameRate)
+                        timescale: CMTimeScale(100 * video.frameRate)
                     )
                 }
                 device.unlockForConfiguration()

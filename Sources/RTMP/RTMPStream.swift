@@ -413,22 +413,22 @@ open class RTMPStream: NetStream {
     open func createMetaData() -> ASObject {
         var metadata: [String: Any] = [:]
         #if os(iOS) || os(macOS)
-            if mixer.videoIO.capture.device != nil {
-                metadata["width"] = mixer.videoIO.codec.settings.videoSize.width
-                metadata["height"] = mixer.videoIO.codec.settings.videoSize.height
-                metadata["framerate"] = mixer.videoIO.frameRate
-                switch mixer.videoIO.codec.settings.format {
+            if mixer.video.capture.device != nil {
+                metadata["width"] = mixer.video.codec.settings.videoSize.width
+                metadata["height"] = mixer.video.codec.settings.videoSize.height
+                metadata["framerate"] = mixer.video.frameRate
+                switch mixer.video.codec.settings.format {
                 case .h264:
                     metadata["videocodecid"] = FLVVideoCodec.avc.rawValue
                 case .hevc:
                     metadata["videocodecid"] = FLVVideoFourCC.hevc.rawValue
                 }
-                metadata["videodatarate"] = mixer.videoIO.codec.settings.bitRate / 1000
+                metadata["videodatarate"] = mixer.video.codec.settings.bitRate / 1000
             }
-            if mixer.audioIO.capture.device != nil {
+            if mixer.audio.capture.device != nil {
                 metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
-                metadata["audiodatarate"] = mixer.audioIO.codec.settings.bitRate / 1000
-                if let sampleRate = mixer.audioIO.codec.inSourceFormat?.mSampleRate {
+                metadata["audiodatarate"] = mixer.audio.codec.settings.bitRate / 1000
+                if let sampleRate = mixer.audio.codec.inSourceFormat?.mSampleRate {
                     metadata["audiosamplerate"] = sampleRate
                 }
             }

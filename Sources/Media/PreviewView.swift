@@ -2,12 +2,9 @@ import AVFoundation
 import Foundation
 import UIKit
 
-/// A view that displays a video content of a NetStream object which uses AVSampleBufferDisplayLayer api.
-public class PiPHKView: UIView {
+public class PreviewView: UIView {
     /// The view’s background color.
     public static var defaultBackgroundColor: UIColor = .black
-
-    private var streamChange = true
 
     /// Returns the class used to create the layer for instances of this class.
     override public class var layerClass: AnyClass {
@@ -34,12 +31,12 @@ public class PiPHKView: UIView {
 
     /// A value that displays a video format.
     public var videoFormatDescription: CMVideoFormatDescription? {
-        return currentStream?.mixer.videoIO.formatDescription
+        return currentStream?.mixer.video.formatDescription
     }
 
     public var videoOrientation: AVCaptureVideoOrientation = .portrait {
         didSet {
-            currentStream?.mixer.videoIO.videoOrientation = videoOrientation
+            currentStream?.mixer.video.videoOrientation = videoOrientation
         }
     }
 
@@ -52,7 +49,7 @@ public class PiPHKView: UIView {
 
     private weak var currentStream: NetStream? {
         didSet {
-            oldValue?.mixer.videoIO.drawable = nil
+            oldValue?.mixer.video.drawable = nil
         }
     }
 
@@ -77,15 +74,14 @@ public class PiPHKView: UIView {
     }
 }
 
-extension PiPHKView: NetStreamDrawable {
+extension PreviewView: NetStreamDrawable {
     public func attachStream(_ stream: NetStream?) {
-        streamChange = true
         guard let stream else {
             currentStream = nil
             return
         }
         stream.lockQueue.async {
-            stream.mixer.videoIO.drawable = self
+            stream.mixer.video.drawable = self
             self.currentStream = stream
             stream.mixer.startRunning()
         }
