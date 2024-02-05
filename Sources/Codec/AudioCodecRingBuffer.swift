@@ -2,7 +2,7 @@ import Accelerate
 import AVFoundation
 import Foundation
 
-public var numberOfAudioRingBuffers = 6
+public var numberOfAudioRingBuffers = 25
 
 final class AudioCodecRingBuffer {
     static let numSamples: UInt32 = 1024
