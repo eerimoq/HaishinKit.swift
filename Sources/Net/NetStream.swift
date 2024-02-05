@@ -1,9 +1,6 @@
 import AVFoundation
 import CoreImage
 import CoreMedia
-#if canImport(ScreenCaptureKit)
-    import ScreenCaptureKit
-#endif
 import UIKit
 
 /// The interface a NetStream uses to inform its delegate.
