@@ -1,5 +1,4 @@
 import Foundation
-import HaishinKit
 import libsrt
 import Logboard
 
@@ -56,7 +55,7 @@ final class SRTSocket {
     private var windowSizeC: Int32 = 1024 * 4
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
     private let incomingQueue: DispatchQueue = .init(
-        label: "com.haishinkit.SRTHaishinKit.SRTSocket.incoming",
+        label: "com.haishinkit.HaishinKit.SRTSocket.incoming",
         qos: .userInitiated
     )
 
@@ -221,7 +220,7 @@ final class SRTSocket {
             return
         }
         isRunning.mutate { $0 = true }
-        DispatchQueue(label: "com.haishkinkit.SRTHaishinKit.SRTSocket.runloop").async {
+        DispatchQueue(label: "com.haishkinkit.HaishinKit.SRTSocket.runloop").async {
             repeat {
                 self.status = srt_getsockstate(self.socket)
                 switch self.mode {

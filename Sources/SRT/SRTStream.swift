@@ -1,6 +1,5 @@
 import AVFoundation
 import Foundation
-import HaishinKit
 import libsrt
 
 /// An object that provides the interface to control a one-way channel over a SRTConnection.

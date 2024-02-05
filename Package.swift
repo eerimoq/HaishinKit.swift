@@ -9,7 +9,6 @@ let package = Package(
     ],
     products: [
         .library(name: "HaishinKit", targets: ["HaishinKit"]),
-        .library(name: "SRTHaishinKit", targets: ["SRTHaishinKit"])
     ],
     dependencies: [
         .package(url: "https://github.com/shogo4405/Logboard.git", "2.3.1"..<"2.4.0")
@@ -21,7 +20,7 @@ let package = Package(
         ),
         .target(name: "SwiftPMSupport"),
         .target(name: "HaishinKit",
-                dependencies: ["Logboard", "SwiftPMSupport"],
+                dependencies: ["Logboard", "SwiftPMSupport", "libsrt"],
                 path: "Sources",
                 sources: [
                     "Codec",
@@ -32,13 +31,7 @@ let package = Package(
                     "Net",
                     "RTMP",
                     "Util",
-                ]),
-        .target(name: "SRTHaishinKit",
-                dependencies: [
-                    "libsrt",
-                    "HaishinKit"
-                ],
-                path: "SRTHaishinKit"
-        )
+                    "SRT",
+                ])
     ]
 )
