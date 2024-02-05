@@ -69,16 +69,6 @@ open class Event {
     }
 }
 
-extension Event: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
-// MARK: -
-
 /**
  * The EventDispatcher interface is in implementation which supports the DOM Event Model.
  */

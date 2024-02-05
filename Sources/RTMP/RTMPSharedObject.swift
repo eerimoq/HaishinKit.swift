@@ -72,16 +72,6 @@ struct RTMPSharedObjectEvent {
     }
 }
 
-extension RTMPSharedObjectEvent: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
-// MARK: -
-
 /// The RTMPSharedObject class is used to read and write data on a server.
 public class RTMPSharedObject: EventDispatcher {
     private static var remoteSharedObjects: [String: RTMPSharedObject] = [:]

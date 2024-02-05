@@ -62,11 +62,3 @@ struct ESSpecificData {
         }
     }
 }
-
-extension ESSpecificData: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

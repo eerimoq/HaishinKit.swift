@@ -100,12 +100,6 @@ struct TSPacket {
     }
 }
 
-extension TSPacket: CustomDebugStringConvertible {
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
 enum TSTimestamp {
     static let resolution: Double = 90 * 1000 // 90kHz
     static let dataSize: Int = 5

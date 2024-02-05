@@ -347,23 +347,23 @@ public enum SRTSocketOption: String {
         case .rcvtimeo:
             return .int
         case .reuseaddr:
-            return .bool // WIP
+            return .bool
         case .state:
-            return .int // WIP
+            return .int
         case .event:
-            return .int // WIP
+            return .int
         case .snddata:
-            return .int // WIP
+            return .int
         case .rcvdata:
-            return .int // WIP
+            return .int
         case .sender:
-            return .int // WIP
+            return .int
         case .kmstate:
-            return .int // WIP
+            return .int
         case .snddropdelay:
-            return .int // WIP
+            return .int
         case .sndkmstate:
-            return .int // WIP
+            return .int
         }
     }
 

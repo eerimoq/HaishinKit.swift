@@ -127,11 +127,3 @@ struct HEVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         }
     }
 }
-
-extension HEVCDecoderConfigurationRecord: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

@@ -18,7 +18,6 @@ public class SRTStream: NetStream {
     private var action: (() -> Void)?
     private var keyValueObservations: [NSKeyValueObservation] = []
     private weak var connection: SRTConnection?
-    private lazy var audioEngine: AVAudioEngine = .init()
 
     private lazy var writer: TSWriter = {
         var writer = TSWriter()
@@ -81,28 +80,6 @@ public class SRTStream: NetStream {
         keyValueObservations.removeAll()
     }
 
-    /**
-     Prepare the stream to process media of the given type
-
-     - parameters:
-     - type: An AVMediaType you will be sending via an appendSampleBuffer call
-
-     As with appendSampleBuffer only video and audio types are supported
-     */
-    public func attachRawMedia(_ type: AVMediaType) {
-        writer.expectedMedias.insert(type)
-    }
-
-    /**
-     Remove a media type that was added via attachRawMedia
-
-     - parameters:
-     - type: An AVMediaType that was added via an attachRawMedia call
-     */
-    public func detachRawMedia(_ type: AVMediaType) {
-        writer.expectedMedias.remove(type)
-    }
-
     override public func attachCamera(
         _ camera: AVCaptureDevice?,
         onError: ((Error) -> Void)? = nil,
@@ -159,26 +136,6 @@ public class SRTStream: NetStream {
         }
     }
 
-    /// Playback streaming audio and video message from server.
-    public func play(_ name: String? = "") {
-        lockQueue.async {
-            guard let name else {
-                switch self.readyState {
-                case .play, .playing:
-                    self.readyState = .open
-                default:
-                    break
-                }
-                return
-            }
-            if self.connection?.connected == true {
-                self.readyState = .play
-            } else {
-                self.action = { [weak self] in self?.play(name) }
-            }
-        }
-    }
-
     /// Stops playing or publishing and makes available other uses.
     public func close() {
         lockQueue.async {
@@ -193,7 +150,6 @@ public class SRTStream: NetStream {
 extension SRTStream: TSWriterDelegate {
     public func writer(_: TSWriter, doOutput data: Data) {
         guard readyState == .publishing else {
-            logger.info("not publishing")
             return
         }
         connection?.socket?.doOutput(data: data)
@@ -201,7 +157,6 @@ extension SRTStream: TSWriterDelegate {
 
     public func writer(_: TSWriter, doOutputPointer pointer: UnsafeRawBufferPointer, count: Int) {
         guard readyState == .publishing else {
-            logger.info("not publishing")
             return
         }
         connection?.socket?.doOutputPointer(pointer: pointer, count: count)

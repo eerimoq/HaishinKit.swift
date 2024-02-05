@@ -67,16 +67,6 @@ public class RTMPMessage {
     func execute(_: RTMPConnection, type _: RTMPChunkType) {}
 }
 
-extension RTMPMessage: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
-// MARK: -
-
 /**
  5.4.1. Set Chunk Size (1)
  */

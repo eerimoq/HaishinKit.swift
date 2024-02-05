@@ -112,16 +112,6 @@ class TSProgram: TSPSIPointer, TSPSITableHeader, TSPSITableSyntax {
     }
 }
 
-extension TSProgram: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
-// MARK: -
-
 final class TSProgramAssociation: TSProgram {
     static let tableID: UInt8 = 0
 

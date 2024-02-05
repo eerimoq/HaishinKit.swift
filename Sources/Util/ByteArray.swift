@@ -394,11 +394,3 @@ open class ByteArray: ByteArrayConvertible {
         return result
     }
 }
-
-extension ByteArray: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

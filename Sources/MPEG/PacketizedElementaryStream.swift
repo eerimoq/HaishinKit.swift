@@ -132,12 +132,6 @@ struct PESOptionalHeader {
     }
 }
 
-extension PESOptionalHeader: CustomDebugStringConvertible {
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}
-
 struct PacketizedElementaryStream: PESPacketHeader {
     static let untilPacketLengthSize: Int = 6
     static let startCode = Data([0x00, 0x00, 0x01])
@@ -386,11 +380,5 @@ struct PacketizedElementaryStream: PESPacketHeader {
             return nil
         }
         return sampleBuffer
-    }
-}
-
-extension PacketizedElementaryStream: CustomDebugStringConvertible {
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
     }
 }

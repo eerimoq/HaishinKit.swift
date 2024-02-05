@@ -88,9 +88,3 @@ final class DataBuffer {
         return append(data)
     }
 }
-
-extension DataBuffer: CustomDebugStringConvertible {
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

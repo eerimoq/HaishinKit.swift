@@ -132,11 +132,3 @@ public struct AVCDecoderConfigurationRecord: DecoderConfigurationRecord {
         }
     }
 }
-
-extension AVCDecoderConfigurationRecord: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

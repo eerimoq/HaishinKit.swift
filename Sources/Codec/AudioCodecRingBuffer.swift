@@ -159,11 +159,3 @@ final class AudioCodecRingBuffer {
         }
     }
 }
-
-extension AudioCodecRingBuffer: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

@@ -204,11 +204,3 @@ public struct AudioSpecificConfig: Equatable {
         )
     }
 }
-
-extension AudioSpecificConfig: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

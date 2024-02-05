@@ -22,11 +22,3 @@ public struct RTMPStreamInfo {
         previousByteCount = 0
     }
 }
-
-extension RTMPStreamInfo: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
-    public var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
-    }
-}

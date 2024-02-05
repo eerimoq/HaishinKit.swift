@@ -53,11 +53,6 @@ final class SRTSocket {
     }
 
     private var windowSizeC: Int32 = 1024 * 4
-    private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
-    private let incomingQueue: DispatchQueue = .init(
-        label: "com.haishinkit.HaishinKit.SRTSocket.incoming",
-        qos: .userInitiated
-    )
 
     init() {}
 
@@ -65,9 +60,6 @@ final class SRTSocket {
         self.socket = socket
         guard configure(.post) else {
             throw makeSocketError()
-        }
-        if incomingBuffer.count < windowSizeC {
-            incomingBuffer = .init(count: Int(windowSizeC))
         }
         startRunning()
     }
@@ -124,9 +116,6 @@ final class SRTSocket {
         case .caller:
             guard configure(.post) else {
                 throw makeSocketError()
-            }
-            if incomingBuffer.count < windowSizeC {
-                incomingBuffer = .init(count: Int(windowSizeC))
             }
         case .listener:
             // only supporting a single connection
@@ -203,16 +192,6 @@ final class SRTSocket {
             return SRT_ERROR
         }
         return srt_sendmsg2(socket, buffer, Int32(count), nil)
-    }
-
-    @inline(__always)
-    private func recvmsg() -> Int32 {
-        return incomingBuffer.withUnsafeMutableBytes { pointer in
-            guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
-                return SRT_ERROR
-            }
-            return srt_recvmsg(socket, buffer, windowSizeC)
-        }
     }
 
     func startRunning() {
