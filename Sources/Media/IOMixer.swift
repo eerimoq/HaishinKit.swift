@@ -132,12 +132,16 @@ public class IOMixer {
     }
 
     private func makeSession() -> AVCaptureSession {
-        let session: AVCaptureSession
-        session = AVCaptureSession()
+        let session = AVCaptureSession()
         if session.canSetSessionPreset(sessionPreset) {
             session.sessionPreset = sessionPreset
         } else {
             logger.info("Cannot set preset \(sessionPreset)")
+        }
+        if #available(iOS 16.0, *) {
+            if session.isMultitaskingCameraAccessSupported {
+                session.isMultitaskingCameraAccessEnabled = true
+            }
         }
         return session
     }
