@@ -399,11 +399,9 @@ final class IOVideoUnit: NSObject {
         if !effects.isEmpty && !skipEffects {
             let image = effect(imageBuffer, info: sampleBuffer)
             extent = image.extent
-            if imageBuffer.width != Int(extent.width) || imageBuffer.height != Int(extent.height) {
-                logger.info("effect image wrong size \(extent)")
-                return
+            if imageBuffer.width == Int(extent.width) && imageBuffer.height == Int(extent.height) {
+                context.render(image, to: imageBuffer)
             }
-            context.render(image, to: imageBuffer)
         }
         drawable?.enqueue(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
         codec.appendImageBuffer(

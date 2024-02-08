@@ -1,8 +1,5 @@
 import AVFoundation
 
-/**
- * The interface a AudioCodec uses to inform its delegate.
- */
 public protocol AudioCodecDelegate: AnyObject {
     /// Tells the receiver to output an AVAudioFormat.
     func audioCodec(_ codec: AudioCodec, didOutput audioFormat: AVAudioFormat)
@@ -11,8 +8,6 @@ public protocol AudioCodecDelegate: AnyObject {
     /// Tells the receiver to occured an error.
     func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error)
 }
-
-// MARK: -
 
 /**
  * The AudioCodec translate audio data to another format.
