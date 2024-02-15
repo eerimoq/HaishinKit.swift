@@ -441,17 +441,16 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
                 sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
                     .getSampleBuffer(sampleBuffer) ?? makeBlackSampleBuffer(realSampleBuffer: sampleBuffer)
             }
-            latestSampleBuffer = sampleBuffer
-            latestSampleBufferDate = Date()
+            let now = Date()
             if firstFrameDate == nil {
-                firstFrameDate = latestSampleBufferDate
-                return
+                firstFrameDate = now
             }
-            guard latestSampleBufferDate!
-                .timeIntervalSince(firstFrameDate!) > ioVideoUnitIgnoreFramesAfterAttachSeconds
+            guard now.timeIntervalSince(firstFrameDate!) > ioVideoUnitIgnoreFramesAfterAttachSeconds
             else {
                 return
             }
+            latestSampleBuffer = sampleBuffer
+            latestSampleBufferDate = now
             guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
             else {
                 return

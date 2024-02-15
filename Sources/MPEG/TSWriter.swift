@@ -40,7 +40,7 @@ public class TSWriter {
 
     var audioContinuityCounter: UInt8 = 0
     var videoContinuityCounter: UInt8 = 0
-    var PCRPID: UInt16 = TSWriter.defaultVideoPID
+    let PCRPID: UInt16 = TSWriter.defaultVideoPID
     var rotatedTimestamp = CMTime.zero
     var segmentDuration: Double = TSWriter.defaultSegmentDuration
     private let outputLock: DispatchQueue = .init(
@@ -70,8 +70,8 @@ public class TSWriter {
         }
     }
 
-    private var videoTimestamp: CMTime = .invalid
-    private var audioTimestamp: CMTime = .invalid
+    private var baseVideoTimestamp: CMTime = .invalid
+    private var baseAudioTimestamp: CMTime = .invalid
     private var PCRTimestamp = CMTime.zero
     private var canWriteFor: Bool {
         return (expectedMedias.contains(.audio) == (audioConfig != nil))
@@ -95,14 +95,13 @@ public class TSWriter {
         }
         audioContinuityCounter = 0
         videoContinuityCounter = 0
-        PCRPID = TSWriter.defaultVideoPID
         PAT.programs.removeAll()
         PAT.programs = [1: TSWriter.defaultPMTPID]
         PMT = TSProgramMap()
         audioConfig = nil
         videoConfig = nil
-        videoTimestamp = .invalid
-        audioTimestamp = .invalid
+        baseVideoTimestamp = .invalid
+        baseAudioTimestamp = .invalid
         PCRTimestamp = .invalid
         isRunning.mutate { $0 = false }
     }
@@ -269,7 +268,7 @@ public class TSWriter {
         if PCRPID == PID, duration >= 0.02 {
             PCR =
                 UInt64((timestamp
-                        .seconds - (PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp)
+                        .seconds - (PID == TSWriter.defaultVideoPID ? baseVideoTimestamp : baseAudioTimestamp)
                         .seconds) *
                     TSTimestamp.resolution)
             PCRTimestamp = timestamp
@@ -306,10 +305,10 @@ extension TSWriter: AudioCodecDelegate {
             logger.info("Cannot write audio buffer")
             return
         }
-        if audioTimestamp == .invalid {
-            audioTimestamp = presentationTimeStamp
+        if baseAudioTimestamp == .invalid {
+            baseAudioTimestamp = presentationTimeStamp
             if PCRPID == TSWriter.defaultAudioPID {
-                PCRTimestamp = audioTimestamp
+                PCRTimestamp = baseAudioTimestamp
             }
         }
 
@@ -322,7 +321,7 @@ extension TSWriter: AudioCodecDelegate {
             count: audioBuffer.byteLength,
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid,
-            timestamp: audioTimestamp,
+            timestamp: baseAudioTimestamp,
             config: config,
             streamID: TSWriter.audioStreamId
         ) else {
@@ -382,10 +381,10 @@ extension TSWriter: VideoCodecDelegate {
             logger.info("Cannot write video buffer")
             return
         }
-        if videoTimestamp == .invalid {
-            videoTimestamp = sampleBuffer.presentationTimeStamp
+        if baseVideoTimestamp == .invalid {
+            baseVideoTimestamp = sampleBuffer.presentationTimeStamp
             if PCRPID == TSWriter.defaultVideoPID {
-                PCRTimestamp = videoTimestamp
+                PCRTimestamp = baseVideoTimestamp
             }
         }
 
@@ -403,7 +402,7 @@ extension TSWriter: VideoCodecDelegate {
                 count: UInt32(length),
                 presentationTimeStamp: sampleBuffer.presentationTimeStamp,
                 decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-                timestamp: videoTimestamp,
+                timestamp: baseVideoTimestamp,
                 config: randomAccessIndicator ? config : nil,
                 streamID: TSWriter.videoStreamId
             )
@@ -413,7 +412,7 @@ extension TSWriter: VideoCodecDelegate {
                 count: UInt32(length),
                 presentationTimeStamp: sampleBuffer.presentationTimeStamp,
                 decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-                timestamp: videoTimestamp,
+                timestamp: baseVideoTimestamp,
                 config: randomAccessIndicator ? config : nil,
                 streamID: TSWriter.videoStreamId
             )
