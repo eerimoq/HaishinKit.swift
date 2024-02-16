@@ -119,9 +119,6 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         guard let device else {
             return
         }
-        for format in device.formats {
-            logger.info("Format: \(format)")
-        }
         guard let format = device.findVideoFormat(
             width: device.activeFormat.formatDescription.dimensions.width,
             height: device.activeFormat.formatDescription.dimensions.height,

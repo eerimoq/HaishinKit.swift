@@ -161,6 +161,28 @@ public class AudioCodec {
                     offset += sampleSize
                 }
             }
+        case .opus:
+            guard let audioConverter, let ringBuffer else {
+                logger.info("audioConverter or ringBuffer missing")
+                return
+            }
+            let numSamples = ringBuffer.appendSampleBuffer(sampleBuffer, offset: offset)
+            if ringBuffer.isReady {
+                guard let buffer = getOutputBuffer() else {
+                    logger.info("no output buffer")
+                    return
+                }
+                convertBuffer(
+                    audioConverter: audioConverter,
+                    inputBuffer: ringBuffer.current,
+                    outputBuffer: buffer,
+                    presentationTimeStamp: ringBuffer.presentationTimeStamp
+                )
+                ringBuffer.next()
+            }
+            if offset + numSamples < sampleBuffer.numSamples {
+                appendSampleBuffer(sampleBuffer, offset: offset + numSamples)
+            }
         }
     }
 
@@ -232,20 +254,20 @@ public class AudioCodec {
         }
         logger.info("inputFormat: \(inputFormat)")
         logger.info("outputFormat: \(outputFormat)")
-        let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
+        guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
+            logger.info("Failed to create converter")
+            delegate?.audioCodec(self, errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
+            return nil
+        }
         let channelMap = Self.makeChannelMap(
             inChannels: Int(inputFormat.channelCount),
             outChannels: Int(outputFormat.channelCount),
             outputChannelsMap: settings.outputChannelsMap
         )
         logger.info("channelMap: \(channelMap)")
-        converter?.channelMap = channelMap
+        converter.channelMap = channelMap
         settings.apply(converter, oldValue: nil)
-        if converter == nil {
-            delegate?.audioCodec(self, errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
-        } else {
-            delegate?.audioCodec(self, didOutput: outputFormat)
-        }
+        delegate?.audioCodec(self, didOutput: outputFormat)
         return converter
     }
 
