@@ -4,9 +4,9 @@ import Foundation
 protocol IOCaptureUnit {
     associatedtype Output: AVCaptureOutput
 
-    var input: AVCaptureInput? { get set }
-    var output: Output? { get set }
-    var connection: AVCaptureConnection? { get set }
+    var input: AVCaptureInput? { get }
+    var output: Output? { get }
+    var connection: AVCaptureConnection? { get }
 }
 
 extension IOCaptureUnit {
@@ -67,23 +67,12 @@ extension IOCaptureUnit {
 
 /// An object that provides the interface to control the AVCaptureDevice's transport behavior.
 public class IOVideoCaptureUnit: IOCaptureUnit {
-    /// The default videoSettings for a device.
-    public static let defaultVideoSettings: [NSString: AnyObject] = [
-        kCVPixelBufferPixelFormatTypeKey: NSNumber(value: kCVPixelFormatType_32BGRA),
-    ]
-
     typealias Output = AVCaptureVideoDataOutput
 
     /// The current video device object.
     public private(set) var device: AVCaptureDevice?
     var input: AVCaptureInput?
-    var output: Output? {
-        didSet {
-            output?.alwaysDiscardsLateVideoFrames = true
-            output?.videoSettings = IOVideoCaptureUnit.defaultVideoSettings as [String: Any]
-        }
-    }
-
+    var output: Output?
     var connection: AVCaptureConnection?
 
     /// Specifies the videoOrientation indicates whether to rotate the video flowing through the
@@ -161,6 +150,7 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureVideoDataOutput()
+        output?.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
         if let output, let port = input?.ports
             .first(where: {
                 $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0

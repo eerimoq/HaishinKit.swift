@@ -81,11 +81,6 @@ final class IOVideoUnit: NSObject {
         case multiCamNotSupported
     }
 
-    static let defaultAttributes: [NSString: NSObject] = [
-        kCVPixelBufferPixelFormatTypeKey: NSNumber(value: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
-        kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
-    ]
-
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
 
     var context: CIContext = .init() {
@@ -127,13 +122,6 @@ final class IOVideoUnit: NSObject {
                 return
             }
         }
-    }
-
-    private var attributes: [NSString: NSObject] {
-        var attributes: [NSString: NSObject] = Self.defaultAttributes
-        attributes[kCVPixelBufferWidthKey] = NSNumber(value: Int(extent.width))
-        attributes[kCVPixelBufferHeightKey] = NSNumber(value: Int(extent.height))
-        return attributes
     }
 
     var frameRate = IOMixer.defaultFrameRate {
