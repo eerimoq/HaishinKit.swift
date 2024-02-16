@@ -96,9 +96,11 @@ extension PreviewView: NetStreamDrawable {
                 self.layer.flush()
             }
             if isFirstAfterAttach {
+                self.layer.flushAndRemoveImage()
                 self.applyIsMirrored()
+            } else {
+                self.layer.enqueue(sampleBuffer)
             }
-            self.layer.enqueue(sampleBuffer)
         }
     }
 }
