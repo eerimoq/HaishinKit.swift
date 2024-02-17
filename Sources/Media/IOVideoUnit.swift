@@ -91,12 +91,7 @@ final class IOVideoUnit: NSObject {
         }
     }
 
-    weak var drawable: (any NetStreamDrawable)? {
-        didSet {
-            // print("drawable", drawable)
-            // drawable?.videoOrientation = videoOrientation
-        }
-    }
+    weak var drawable: (any NetStreamDrawable)?
 
     var formatDescription: CMVideoFormatDescription? {
         didSet {
@@ -177,9 +172,12 @@ final class IOVideoUnit: NSObject {
     private var firstFrameDate: Date?
     private var isFirstAfterAttach = false
 
-    override init() {
+    deinit {
+        stopGapFillerTimer()
+    }
+
+    private func startGapFillerTimer() {
         gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
-        super.init()
         gapFillerTimer!.schedule(deadline: .now() + 0.1, repeating: 0.1)
         gapFillerTimer!.setEventHandler { [weak self] in
             self?.handleGapFillerTimer()
@@ -187,7 +185,7 @@ final class IOVideoUnit: NSObject {
         gapFillerTimer!.activate()
     }
 
-    deinit {
+    private func stopGapFillerTimer() {
         gapFillerTimer?.cancel()
         gapFillerTimer = nil
     }
@@ -227,6 +225,7 @@ final class IOVideoUnit: NSObject {
     }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
+        startGapFillerTimer()
         let isOtherReplaceVideo = lockQueue.sync {
             let oldReplaceVideo = self.selectedReplaceVideoCameraId
             self.selectedReplaceVideoCameraId = replaceVideo
@@ -252,6 +251,7 @@ final class IOVideoUnit: NSObject {
             }
             capture.detachSession(mixer.videoSession)
             try capture.attachDevice(nil, videoUnit: self)
+            stopGapFillerTimer()
             return
         }
         mixer.mediaSync = .video
@@ -445,6 +445,7 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
             }
             appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false)
             isFirstAfterAttach = false
+            stopGapFillerTimer()
         }
     }
 }
