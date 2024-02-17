@@ -223,7 +223,7 @@ final class IOVideoUnit: NSObject {
         else {
             return
         }
-        appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false, skipEffects: true)
+        _ = appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false, skipEffects: true)
     }
 
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
@@ -377,9 +377,11 @@ final class IOVideoUnit: NSObject {
         return sampleBuffer
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool, skipEffects: Bool) {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool,
+                            skipEffects: Bool) -> Bool
+    {
         guard let imageBuffer = sampleBuffer.imageBuffer else {
-            return
+            return false
         }
         if sampleBuffer.presentationTimeStamp < latestSampleBufferAppendTime {
             logger.info(
@@ -388,7 +390,7 @@ final class IOVideoUnit: NSObject {
                 \(latestSampleBufferAppendTime.seconds)
                 """
             )
-            return
+            return false
         }
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
         sampleBuffer.setAttachmentDisplayImmediately()
@@ -413,6 +415,7 @@ final class IOVideoUnit: NSObject {
             imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
+        return true
     }
 
     func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
@@ -455,8 +458,9 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
             else {
                 return
             }
-            appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false)
-            isFirstAfterAttach = false
+            if appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false) {
+                isFirstAfterAttach = false
+            }
             stopGapFillerTimer()
         }
     }
