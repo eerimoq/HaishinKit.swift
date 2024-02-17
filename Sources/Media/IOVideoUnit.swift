@@ -171,14 +171,16 @@ final class IOVideoUnit: NSObject {
     private var gapFillerTimer: DispatchSourceTimer?
     private var firstFrameDate: Date?
     private var isFirstAfterAttach = false
-
+    private var latestSampleBufferAppendTime = CMTime.zero
+    
     deinit {
         stopGapFillerTimer()
     }
 
     private func startGapFillerTimer() {
         gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
-        gapFillerTimer!.schedule(deadline: .now() + 0.1, repeating: 0.1)
+        let frameInterval = 1 / frameRate
+        gapFillerTimer!.schedule(deadline: .now() + frameInterval, repeating: frameInterval)
         gapFillerTimer!.setEventHandler { [weak self] in
             self?.handleGapFillerTimer()
         }
@@ -195,7 +197,7 @@ final class IOVideoUnit: NSObject {
             return
         }
         let delta = Date().timeIntervalSince(latestSampleBufferDate)
-        guard delta > 0.1 else {
+        guard delta > 0.05 else {
             return
         }
         guard let latestSampleBuffer else {
@@ -379,6 +381,11 @@ final class IOVideoUnit: NSObject {
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return
         }
+        if sampleBuffer.presentationTimeStamp < latestSampleBufferAppendTime {
+            logger.info("Discarding frame: \(sampleBuffer.presentationTimeStamp.seconds) \(latestSampleBufferAppendTime.seconds)")
+            return
+        }
+        latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
         sampleBuffer.setAttachmentDisplayImmediately()
         imageBuffer.lockBaseAddress()
         defer {

@@ -156,7 +156,7 @@ public class TSWriter {
     }
 
     func rotateFileHandle(_ timestamp: CMTime) {
-        let duration: Double = timestamp.seconds - rotatedTimestamp.seconds
+        let duration = timestamp.seconds - rotatedTimestamp.seconds
         if duration <= segmentDuration {
             return
         }
@@ -264,8 +264,8 @@ public class TSWriter {
 
     private func split(_ PID: UInt16, PES: PacketizedElementaryStream, timestamp: CMTime) -> [TSPacket] {
         var PCR: UInt64?
-        let duration = timestamp.seconds - PCRTimestamp.seconds
-        if PCRPID == PID, duration >= 0.02 {
+        let timeSinceLatestPcr = timestamp.seconds - PCRTimestamp.seconds
+        if PCRPID == PID, timeSinceLatestPcr >= 0.08 {
             PCR =
                 UInt64((timestamp
                         .seconds - (PID == TSWriter.defaultVideoPID ? baseVideoTimestamp : baseAudioTimestamp)
@@ -311,11 +311,9 @@ extension TSWriter: AudioCodecDelegate {
                 PCRTimestamp = baseAudioTimestamp
             }
         }
-
         guard let config = audioConfig else {
             return
         }
-
         guard let PES = PacketizedElementaryStream(
             bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
             count: audioBuffer.byteLength,
