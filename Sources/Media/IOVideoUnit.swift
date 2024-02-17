@@ -172,7 +172,7 @@ final class IOVideoUnit: NSObject {
     private var firstFrameDate: Date?
     private var isFirstAfterAttach = false
     private var latestSampleBufferAppendTime = CMTime.zero
-    
+
     deinit {
         stopGapFillerTimer()
     }
@@ -382,7 +382,12 @@ final class IOVideoUnit: NSObject {
             return
         }
         if sampleBuffer.presentationTimeStamp < latestSampleBufferAppendTime {
-            logger.info("Discarding frame: \(sampleBuffer.presentationTimeStamp.seconds) \(latestSampleBufferAppendTime.seconds)")
+            logger.info(
+                """
+                Discarding frame: \(sampleBuffer.presentationTimeStamp.seconds) \
+                \(latestSampleBufferAppendTime.seconds)
+                """
+            )
             return
         }
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
