@@ -198,8 +198,6 @@ open class RTMPConnection: EventDispatcher {
     public private(set) var uri: URL?
     /// Specifies the instance connected to server(true) or not(false).
     public private(set) var connected = false
-    /// Specifies the instance requires Network.framework if possible.
-    public var requireNetworkFramework = true
     /// Specifies the socket optional parameters.
     public var parameters: Any?
     /// Specifies the object encoding for this RTMPConnection instance.
@@ -311,11 +309,7 @@ open class RTMPConnection: EventDispatcher {
         case "rtmpt", "rtmpts":
             socket = socket is RTMPTSocket ? socket : RTMPTSocket()
         default:
-            if requireNetworkFramework {
-                socket = socket is RTMPNWSocket ? socket : RTMPNWSocket()
-            } else {
-                socket = socket is RTMPSocket ? socket : RTMPSocket()
-            }
+            socket = socket is RTMPNWSocket ? socket : RTMPNWSocket()
         }
         socket.delegate = self
         var outputBufferSize = 0
