@@ -1,8 +1,5 @@
 import Foundation
 
-/**
- flash.net.NetStreamInfo for Swift
- */
 public struct RTMPStreamInfo {
     public internal(set) var byteCount: Atomic<Int64> = .init(0)
     public internal(set) var resourceName: String?

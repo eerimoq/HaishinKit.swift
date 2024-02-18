@@ -168,8 +168,6 @@ open class RTMPStream: NetStream {
     public internal(set) var info = RTMPStreamInfo()
     /// The object encoding (AMF). Framework supports AMF0 only.
     public private(set) var objectEncoding: RTMPObjectEncoding = RTMPConnection.defaultObjectEncoding
-    /// The number of frames per second being displayed.
-    @objc public private(set) dynamic var currentFPS: UInt16 = 0
 
     /// Incoming audio plays on the stream or not.
     open var receiveAudio = true {
@@ -256,7 +254,6 @@ open class RTMPStream: NetStream {
     private let muxer = RTMPMuxer()
     private var messages: [RTMPCommandMessage] = []
     private var startedAt = Date()
-    private var frameCount: UInt16 = 0
     private var dispatcher: (any EventDispatcherConvertible)!
     private var audioWasSent = false
     private var videoWasSent = false
@@ -412,27 +409,25 @@ open class RTMPStream: NetStream {
     /// Creates flv metadata for a stream.
     open func createMetaData() -> ASObject {
         var metadata: [String: Any] = [:]
-        #if os(iOS) || os(macOS)
-            if mixer.video.capture.device != nil {
-                metadata["width"] = mixer.video.codec.settings.videoSize.width
-                metadata["height"] = mixer.video.codec.settings.videoSize.height
-                metadata["framerate"] = mixer.video.frameRate
-                switch mixer.video.codec.settings.format {
-                case .h264:
-                    metadata["videocodecid"] = FLVVideoCodec.avc.rawValue
-                case .hevc:
-                    metadata["videocodecid"] = FLVVideoFourCC.hevc.rawValue
-                }
-                metadata["videodatarate"] = mixer.video.codec.settings.bitRate / 1000
+        if mixer.video.capture.device != nil {
+            metadata["width"] = mixer.video.codec.settings.videoSize.width
+            metadata["height"] = mixer.video.codec.settings.videoSize.height
+            metadata["framerate"] = mixer.video.frameRate
+            switch mixer.video.codec.settings.format {
+            case .h264:
+                metadata["videocodecid"] = FLVVideoCodec.avc.rawValue
+            case .hevc:
+                metadata["videocodecid"] = FLVVideoFourCC.hevc.rawValue
             }
-            if mixer.audio.capture.device != nil {
-                metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
-                metadata["audiodatarate"] = mixer.audio.codec.settings.bitRate / 1000
-                if let sampleRate = mixer.audio.codec.inSourceFormat?.mSampleRate {
-                    metadata["audiosamplerate"] = sampleRate
-                }
+            metadata["videodatarate"] = mixer.video.codec.settings.bitRate / 1000
+        }
+        if mixer.audio.capture.device != nil {
+            metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
+            metadata["audiodatarate"] = mixer.audio.codec.settings.bitRate / 1000
+            if let sampleRate = mixer.audio.codec.inSourceFormat?.mSampleRate {
+                metadata["audiosamplerate"] = sampleRate
             }
-        #endif
+        }
         return metadata
     }
 
@@ -462,8 +457,6 @@ open class RTMPStream: NetStream {
     }
 
     func on(timer: Timer) {
-        currentFPS = frameCount
-        frameCount = 0
         info.on(timer: timer)
     }
 
@@ -484,8 +477,6 @@ open class RTMPStream: NetStream {
 
         switch readyState {
         case .open:
-            currentFPS = 0
-            frameCount = 0
             info.clear()
             delegate?.streamDidOpen(self)
             for message in messages {
@@ -568,8 +559,6 @@ extension RTMPStream {
 }
 
 extension RTMPStream: EventDispatcherConvertible {
-    // MARK: IEventDispatcher
-
     public func addEventListener(
         _ type: Event.Name,
         selector: Selector,
@@ -598,8 +587,6 @@ extension RTMPStream: EventDispatcherConvertible {
 }
 
 extension RTMPStream: RTMPMuxerDelegate {
-    // MARK: RTMPMuxerDelegate
-
     func muxer(_: RTMPMuxer, didOutputAudio buffer: Data, withTimestamp: Double) {
         guard let rtmpConnection, readyState == .publishing else {
             return
@@ -631,7 +618,6 @@ extension RTMPStream: RTMPMuxerDelegate {
         videoWasSent = true
         info.byteCount.mutate { $0 += Int64(length) }
         videoTimestamp = withTimestamp + (videoTimestamp - floor(videoTimestamp))
-        frameCount += 1
     }
 
     func muxer(_: RTMPMuxer, videoCodecErrorOccurred error: VideoCodec.Error) {

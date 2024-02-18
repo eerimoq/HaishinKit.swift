@@ -25,18 +25,6 @@ open class RTMPResponder {
     }
 }
 
-/// The interface a RTMPConnectionDelegate uses to inform its delegate.
-public protocol RTMPConnectionDelegate: AnyObject {
-    /// Tells the receiver to publish insufficient bandwidth occured.
-    func connection(_ connection: RTMPConnection, publishInsufficientBWOccured stream: RTMPStream)
-    /// Tells the receiver to publish sufficient bandwidth occured.
-    func connection(_ connection: RTMPConnection, publishSufficientBWOccured stream: RTMPStream)
-    /// Tells the receiver to update statistics.
-    func connection(_ connection: RTMPConnection, updateStats stream: RTMPStream)
-}
-
-// MARK: -
-
 /// The RTMPConneciton class create a two-way RTMP connection.
 open class RTMPConnection: EventDispatcher {
     /// The default network's window size for RTMPConnection.
@@ -217,15 +205,6 @@ open class RTMPConnection: EventDispatcher {
         streams.count
     }
 
-    /// Specifies the delegate of the NetStream.
-    public weak var delegate: (any RTMPConnectionDelegate)?
-    /// The statistics of outgoing queue bytes per second.
-    @objc open private(set) dynamic var previousQueueBytesOut: [Int64] = []
-    /// The statistics of incoming bytes per second.
-    @objc open private(set) dynamic var currentBytesInPerSecond: Int32 = 0
-    /// The statistics of outgoing bytes per second.
-    @objc open private(set) dynamic var currentBytesOutPerSecond: Int32 = 0
-
     var socket: (any RTMPSocketCompatible)!
     var streams: [RTMPStream] = []
     var sequence: Int64 = 0
@@ -261,8 +240,6 @@ open class RTMPConnection: EventDispatcher {
     private var currentChunk: RTMPChunk?
     private var measureInterval: Int = 3
     private var fragmentedChunks: [UInt16: RTMPChunk] = [:]
-    private var previousTotalBytesIn: Int64 = 0
-    private var previousTotalBytesOut: Int64 = 0
 
     /// Creates a new connection.
     override public init() {
@@ -460,36 +437,8 @@ open class RTMPConnection: EventDispatcher {
 
     @objc
     private func on(timer: Timer) {
-        let totalBytesIn = self.totalBytesIn
-        let totalBytesOut = self.totalBytesOut
-        currentBytesInPerSecond = Int32(totalBytesIn - previousTotalBytesIn)
-        currentBytesOutPerSecond = Int32(totalBytesOut - previousTotalBytesOut)
-        previousTotalBytesIn = totalBytesIn
-        previousTotalBytesOut = totalBytesOut
-        previousQueueBytesOut.append(socket.queueBytesOut.value)
         for stream in streams {
             stream.on(timer: timer)
-        }
-        if measureInterval <= previousQueueBytesOut.count {
-            var total = 0
-            for i in 0 ..< previousQueueBytesOut.count - 1
-                where previousQueueBytesOut[i] < previousQueueBytesOut[i + 1]
-            {
-                total += 1
-            }
-            if total == measureInterval - 1 {
-                for stream in streams {
-                    delegate?.connection(self, publishInsufficientBWOccured: stream)
-                }
-            } else if total == 0 {
-                for stream in streams {
-                    delegate?.connection(self, publishSufficientBWOccured: stream)
-                }
-            }
-            previousQueueBytesOut.removeFirst()
-        }
-        for stream in streams {
-            delegate?.connection(self, updateStats: stream)
         }
     }
 }
@@ -520,8 +469,6 @@ extension RTMPConnection: RTMPSocketDelegate {
             sequence = 0
             currentChunk = nil
             currentTransactionId = 0
-            previousTotalBytesIn = 0
-            previousTotalBytesOut = 0
             messages.removeAll()
             operations.removeAll()
             fragmentedChunks.removeAll()

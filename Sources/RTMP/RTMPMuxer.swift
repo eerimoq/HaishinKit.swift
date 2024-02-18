@@ -8,8 +8,6 @@ protocol RTMPMuxerDelegate: AnyObject {
     func muxerWillDropFrame(_ muxer: RTMPMuxer) -> Bool
 }
 
-// MARK: -
-
 final class RTMPMuxer {
     static let aac: UInt8 = FLVAudioCodec.aac.rawValue << 4 | FLVSoundRate.kHz44.rawValue << 2 | FLVSoundSize
         .snd16bit.rawValue << 1 | FLVSoundType.stereo.rawValue
@@ -26,8 +24,6 @@ final class RTMPMuxer {
 }
 
 extension RTMPMuxer: AudioCodecDelegate {
-    // MARK: AudioCodecDelegate
-
     func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
         delegate?.muxer(self, audioCodecErrorOccurred: error)
     }
@@ -58,8 +54,6 @@ extension RTMPMuxer: AudioCodecDelegate {
 }
 
 extension RTMPMuxer: VideoCodecDelegate {
-    // MARK: VideoCodecDelegate
-
     func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
         delegate?.muxer(self, videoCodecErrorOccurred: error)
     }

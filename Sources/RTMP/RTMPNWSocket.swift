@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(Network)
-    import Network
-#endif
+import Network
 
 final class RTMPNWSocket: RTMPSocketCompatible {
     static let defaultWindowSizeC = Int(UInt8.max)

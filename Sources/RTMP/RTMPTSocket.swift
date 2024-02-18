@@ -68,10 +68,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     private var lastRequestData: Data?
     private var isRetryingRequest = true
 
-    override init() {
-        super.init()
-    }
-
     func connect(withName: String, port: Int) {
         let config = URLSessionConfiguration.default
         config.httpShouldUsePipelining = true
