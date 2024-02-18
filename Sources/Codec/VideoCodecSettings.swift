@@ -143,10 +143,7 @@ public struct VideoCodecSettings {
         return [byteLimit, secLimit] as CFArray
     }
 
-    func apply(_ codec: VideoCodec, rhs: VideoCodecSettings) {
-        guard bitRate != rhs.bitRate else {
-            return
-        }
+    func apply(_ codec: VideoCodec, rhs _: VideoCodecSettings) {
         let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
         if let status = codec.session?.setOption(option), status != noErr {
             codec.delegate?.videoCodec(

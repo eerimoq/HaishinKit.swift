@@ -134,13 +134,10 @@ final class RTMPSocket: RTMPSocketCompatible {
             doOutput(data: chunks[i])
         }
         doOutput(data: chunks.last!)
-        if logger.isEnabledFor(level: .trace) {
-            logger.trace(chunk)
-        }
         return chunk.message!.length
     }
 
-    func doOutput(data: Data) {
+    private func doOutput(data: Data) {
         connection?.send(content: data, completion: .contentProcessed { error in
             guard self.connected else {
                 return
@@ -150,6 +147,7 @@ final class RTMPSocket: RTMPSocketCompatible {
                 return
             }
             self.totalBytesOut.mutate { $0 += Int64(data.count) }
+            self.delegate?.socket(self, totalBytesOut: self.totalBytesOut.value)
         })
     }
 

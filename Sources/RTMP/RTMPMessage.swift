@@ -169,18 +169,7 @@ final class RTMPAcknowledgementMessage: RTMPMessage {
         guard let stream = connection.streams.first else {
             return
         }
-        print("xxx Ack \(sequence)")
-        let now = Date()
-        while let sendTiming = stream.sendTimings.first {
-            if sequence < sendTiming.sequence {
-                break
-            }
-            stream.sendTimings.remove(at: 0)
-        }
-        stream.info.stats.mutate {
-            $0.rttMs = 0
-            $0.packetsInFlight = 0
-        }
+        //stream.info.onAck(sequence: sequence)
     }
 }
 

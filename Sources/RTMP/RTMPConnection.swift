@@ -421,16 +421,14 @@ open class RTMPConnection: EventDispatcher {
     }
 
     @objc
-    private func on(timer: Timer) {
+    private func on(timer _: Timer) {
         for stream in streams {
-            stream.on(timer: timer)
+            stream.onTimeout()
         }
     }
 }
 
 extension RTMPConnection: RTMPSocketDelegate {
-    // MARK: RTMPSocketDelegate
-
     func socket(_ socket: any RTMPSocketCompatible, readyState: RTMPSocketReadyState) {
         if logger.isEnabledFor(level: .debug) {
             logger.debug(readyState)
@@ -472,6 +470,13 @@ extension RTMPConnection: RTMPSocketDelegate {
             message: RTMPAcknowledgementMessage(UInt32(totalBytesIn))
         ))
         sequence += 1
+    }
+
+    func socket(_: any RTMPSocketCompatible, totalBytesOut: Int64) {
+        guard let stream = streams.first else {
+            return
+        }
+        //stream.info.onWritten(sequence: UInt32(totalBytesOut))
     }
 
     func socket(_ socket: any RTMPSocketCompatible, data: Data) {

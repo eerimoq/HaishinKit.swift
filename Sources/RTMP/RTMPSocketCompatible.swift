@@ -46,4 +46,5 @@ protocol RTMPSocketDelegate: EventDispatcherConvertible {
     func socket(_ socket: any RTMPSocketCompatible, data: Data)
     func socket(_ socket: any RTMPSocketCompatible, readyState: RTMPSocketReadyState)
     func socket(_ socket: any RTMPSocketCompatible, totalBytesIn: Int64)
+    func socket(_ socket: any RTMPSocketCompatible, totalBytesOut: Int64)
 }
