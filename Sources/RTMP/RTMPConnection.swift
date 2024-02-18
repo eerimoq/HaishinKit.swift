@@ -195,11 +195,6 @@ open class RTMPConnection: EventDispatcher {
         socket.totalBytesIn.value
     }
 
-    /// The statistics of total outgoing bytes.
-    public var totalBytesOut: Int64 {
-        socket.totalBytesOut.value
-    }
-
     /// The statistics of total RTMPStream counts.
     public var totalStreamsCount: Int {
         streams.count

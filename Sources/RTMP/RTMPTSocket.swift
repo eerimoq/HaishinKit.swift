@@ -291,8 +291,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     }
 }
 
-// MARK: -
-
 extension RTMPTSocket: URLSessionTaskDelegate {
     func urlSession(
         _: URLSession,

@@ -8,7 +8,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     var chunkSizeC: Int = RTMPChunk.defaultSize
     var chunkSizeS: Int = RTMPChunk.defaultSize
     var windowSizeC = RTMPNWSocket.defaultWindowSizeC
-    var timeout: Int = NetSocket.defaultTimeout
+    var timeout: Int = 15
     var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
             delegate?.socket(self, readyState: readyState)
