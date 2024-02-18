@@ -281,7 +281,7 @@ open class RTMPConnection: EventDispatcher {
         case "rtmpt", "rtmpts":
             socket = socket is RTMPTSocket ? socket : RTMPTSocket()
         default:
-            socket = socket is RTMPNWSocket ? socket : RTMPNWSocket()
+            socket = socket is RTMPSocket ? socket : RTMPSocket()
         }
         socket.delegate = self
         var outputBufferSize = 0

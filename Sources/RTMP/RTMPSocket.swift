@@ -1,13 +1,13 @@
 import Foundation
 import Network
 
-final class RTMPNWSocket: RTMPSocketCompatible {
+final class RTMPSocket: RTMPSocketCompatible {
     static let defaultWindowSizeC = Int(UInt8.max)
 
     var timestamp: TimeInterval = 0.0
     var chunkSizeC: Int = RTMPChunk.defaultSize
     var chunkSizeS: Int = RTMPChunk.defaultSize
-    var windowSizeC = RTMPNWSocket.defaultWindowSizeC
+    var windowSizeC = RTMPSocket.defaultWindowSizeC
     var timeout: Int = 15
     var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
@@ -15,7 +15,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         }
     }
 
-    var outputBufferSize: Int = RTMPNWSocket.defaultWindowSizeC
+    var outputBufferSize: Int = RTMPSocket.defaultWindowSizeC
     var securityLevel: StreamSocketSecurityLevel = .none {
         didSet {
             switch securityLevel {
@@ -63,7 +63,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
 
     private var parameters: NWParameters = .tcp
     private lazy var networkQueue = DispatchQueue(
-        label: "com.haishinkit.HaishinKit.RTMPNWSocket.network",
+        label: "com.haishinkit.HaishinKit.RTMPSocket.network",
         qos: qualityOfService
     )
     private var timeoutHandler: DispatchWorkItem?
@@ -85,7 +85,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         connection?.viabilityUpdateHandler = viabilityDidChange(to:)
         connection?.stateUpdateHandler = stateDidChange(to:)
         connection?.start(queue: networkQueue)
-        if let connection = connection {
+        if let connection {
             receive(on: connection)
         }
         if timeout > 0 {
@@ -141,8 +141,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         return chunk.message!.length
     }
 
-    @discardableResult
-    func doOutput(data: Data) -> Int {
+    func doOutput(data: Data) {
         connection?.send(content: data, completion: .contentProcessed { error in
             guard self.connected else {
                 return
@@ -153,7 +152,6 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             }
             self.totalBytesOut.mutate { $0 += Int64(data.count) }
         })
-        return data.count
     }
 
     func setProperty(_ value: Any?, forKey: String) {
