@@ -1,9 +1,15 @@
 import Foundation
 
+public struct RTMPStreamStats {
+    var rttMs: Double = 0
+    var packetsInFlight: Int = 0
+}
+
 public struct RTMPStreamInfo {
     public internal(set) var byteCount: Atomic<Int64> = .init(0)
     public internal(set) var resourceName: String?
     public internal(set) var currentBytesPerSecond: Int32 = 0
+    public internal(set) var stats: Atomic<RTMPStreamStats> = .init(RTMPStreamStats())
 
     private var previousByteCount: Int64 = 0
 
