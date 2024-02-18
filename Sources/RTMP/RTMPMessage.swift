@@ -163,9 +163,26 @@ final class RTMPAcknowledgementMessage: RTMPMessage {
         super.init(type: .ack)
         self.sequence = sequence
     }
-}
 
-// MARK: -
+    override func execute(_ connection: RTMPConnection, type _: RTMPChunkType) {
+        // We only have one stream
+        guard let stream = connection.streams.first else {
+            return
+        }
+        print("xxx Ack \(sequence)")
+        let now = Date()
+        while let sendTiming = stream.sendTimings.first {
+            if sequence < sendTiming.sequence {
+                break
+            }
+            stream.sendTimings.remove(at: 0)
+        }
+        stream.info.stats.mutate {
+            $0.rttMs = 0
+            $0.packetsInFlight = 0
+        }
+    }
+}
 
 /**
  5.4.4. Window Acknowledgement Size (5)
