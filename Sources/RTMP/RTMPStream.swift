@@ -1,5 +1,10 @@
 import AVFoundation
 
+struct RTMPSendTiming {
+    var timestamp: Date
+    var sequence: Int
+}
+
 /// An object that provides the interface to control a one-way channel over a RtmpConnection.
 open class RTMPStream: NetStream {
     /// NetStatusEvent#info.code for NetStream
@@ -261,6 +266,7 @@ open class RTMPStream: NetStream {
     private var howToPublish: RTMPStream.HowToPublish = .live
     private var dataTimeStamps: [String: Date] = .init()
     private weak var rtmpConnection: RTMPConnection?
+    var sendTimings: [RTMPSendTiming] = []
 
     /// Creates a new stream.
     public init(connection: RTMPConnection) {

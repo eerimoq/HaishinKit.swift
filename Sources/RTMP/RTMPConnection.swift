@@ -229,7 +229,7 @@ open class RTMPConnection: EventDispatcher {
     private var timer: Timer? {
         didSet {
             oldValue?.invalidate()
-            if let timer = timer {
+            if let timer {
                 RunLoop.main.add(timer, forMode: .common)
             }
         }

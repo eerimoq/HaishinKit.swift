@@ -104,8 +104,6 @@ public final class RTMPSetChunkSizeMessage: RTMPMessage {
     }
 }
 
-// MARK: -
-
 /**
  5.4.2. Abort Message (2)
  */
@@ -133,8 +131,6 @@ final class RTMPAbortMessge: RTMPMessage {
         super.init(type: .abort)
     }
 }
-
-// MARK: -
 
 /**
  5.4.3. Acknowledgement (3)
@@ -209,8 +205,6 @@ public final class RTMPWindowAcknowledgementSizeMessage: RTMPMessage {
     }
 }
 
-// MARK: -
-
 /**
  5.4.5. Set Peer Bandwidth (6)
  */
@@ -260,8 +254,6 @@ public final class RTMPSetPeerBandwidthMessage: RTMPMessage {
         connection.bandWidth = size
     }
 }
-
-// MARK: -
 
 /**
  7.1.1. Command Message (20, 17)
@@ -444,8 +436,6 @@ final class RTMPDataMessage: RTMPMessage {
     }
 }
 
-// MARK: -
-
 /**
  7.1.3. Shared Object Message (19, 16)
  */
@@ -544,8 +534,6 @@ final class RTMPSharedObjectMessage: RTMPMessage {
         ).on(message: self)
     }
 }
-
-// MARK: -
 
 /**
  7.1.5. Audio Message (9)
@@ -661,8 +649,6 @@ final class RTMPAudioMessage: RTMPMessage {
         return codec.audioStreamBasicDescription(soundRate, size: soundSize, type: soundType)
     }
 }
-
-// MARK: -
 
 /**
  7.1.5. Video Message (9)
@@ -800,8 +786,6 @@ final class RTMPAggregateMessage: RTMPMessage {
         super.init(type: .aggregate)
     }
 }
-
-// MARK: -
 
 /**
  7.1.7. User Control Message Events
