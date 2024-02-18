@@ -1,8 +1,8 @@
 import Foundation
 
 public struct RTMPStreamStats {
-    var rttMs: Double = 0
-    var packetsInFlight: Int = 0
+    public var rttMs: Double = 0
+    public var packetsInFlight: Int = 0
 }
 
 public struct RTMPStreamInfo {
