@@ -169,7 +169,7 @@ final class RTMPAcknowledgementMessage: RTMPMessage {
         guard let stream = connection.streams.first else {
             return
         }
-        //stream.info.onAck(sequence: sequence)
+        stream.info.onAck(sequence: sequence)
     }
 }
 

@@ -38,6 +38,7 @@ public class RTMPStreamInfo {
     }
 
     func onWritten(sequence: UInt32) {
+        return
         let now = Date()
         stats.mutate { stats in
             latestWrittenSequence = sequence
@@ -47,6 +48,7 @@ public class RTMPStreamInfo {
     }
 
     func onAck(sequence: UInt32) {
+        return
         let now = Date()
         stats.mutate { stats in
             latestAckedSequence = sequence
