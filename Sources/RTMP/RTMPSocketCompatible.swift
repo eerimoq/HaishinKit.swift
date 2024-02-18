@@ -21,7 +21,6 @@ protocol RTMPSocketCompatible: AnyObject {
     var outputBufferSize: Int { get set }
     var totalBytesIn: Atomic<Int64> { get }
     var totalBytesOut: Atomic<Int64> { get }
-    var queueBytesOut: Atomic<Int64> { get }
     var securityLevel: StreamSocketSecurityLevel { get set }
     var qualityOfService: DispatchQoS { get set }
 

@@ -41,7 +41,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
 
     private(set) var totalBytesIn: Atomic<Int64> = .init(0)
     private(set) var totalBytesOut: Atomic<Int64> = .init(0)
-    private(set) var queueBytesOut: Atomic<Int64> = .init(0)
     private var timer: Timer? {
         didSet {
             oldValue?.invalidate()

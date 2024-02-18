@@ -25,8 +25,6 @@ open class NetSocket: NSObject {
     public var outputBufferSize: Int = NetSocket.defaultWindowSizeC
     /// Specifies  statistics of total outgoing bytes.
     public private(set) var totalBytesOut: Atomic<Int64> = .init(0)
-    /// Specifies  statistics of total outgoing queued bytes.
-    public private(set) var queueBytesOut: Atomic<Int64> = .init(0)
 
     var inputStream: InputStream? {
         didSet {
@@ -89,7 +87,6 @@ open class NetSocket: NSObject {
     /// Does output data buffer to the server.
     @discardableResult
     public func doOutput(data: Data, locked _: UnsafeMutablePointer<UInt32>? = nil) -> Int {
-        queueBytesOut.mutate { $0 += Int64(data.count) }
         outputQueue.async { [weak self] in
             guard let self = self else {
                 return
@@ -122,7 +119,6 @@ open class NetSocket: NSObject {
         }
         totalBytesIn.mutate { $0 = 0 }
         totalBytesOut.mutate { $0 = 0 }
-        queueBytesOut.mutate { $0 = 0 }
         inputBuffer.removeAll(keepingCapacity: false)
         if outputBuffer.capacity < outputBufferSize {
             outputBuffer = .init(capacity: outputBufferSize)
@@ -177,7 +173,6 @@ open class NetSocket: NSObject {
         let length = outputStream.write(bytes, maxLength: min(windowSizeC, outputBuffer.maxLength))
         if length > 0 {
             totalBytesOut.mutate { $0 += Int64(length) }
-            queueBytesOut.mutate { $0 -= Int64(length) }
             outputBuffer.skip(length)
         }
     }

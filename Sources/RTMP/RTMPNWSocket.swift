@@ -31,7 +31,6 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     var inputBuffer = Data()
     weak var delegate: (any RTMPSocketDelegate)?
 
-    private(set) var queueBytesOut: Atomic<Int64> = .init(0)
     private(set) var totalBytesIn: Atomic<Int64> = .init(0)
     private(set) var totalBytesOut: Atomic<Int64> = .init(0)
     private(set) var connected = false {
@@ -76,7 +75,6 @@ final class RTMPNWSocket: RTMPSocketCompatible {
         chunkSizeC = RTMPChunk.defaultSize
         totalBytesIn.mutate { $0 = 0 }
         totalBytesOut.mutate { $0 = 0 }
-        queueBytesOut.mutate { $0 = 0 }
         inputBuffer.removeAll(keepingCapacity: false)
         connection = NWConnection(
             to: NWEndpoint
@@ -145,7 +143,6 @@ final class RTMPNWSocket: RTMPSocketCompatible {
 
     @discardableResult
     func doOutput(data: Data) -> Int {
-        queueBytesOut.mutate { $0 += Int64(data.count) }
         connection?.send(content: data, completion: .contentProcessed { error in
             guard self.connected else {
                 return
@@ -155,7 +152,6 @@ final class RTMPNWSocket: RTMPSocketCompatible {
                 return
             }
             self.totalBytesOut.mutate { $0 += Int64(data.count) }
-            self.queueBytesOut.mutate { $0 -= Int64(data.count) }
         })
         return data.count
     }
