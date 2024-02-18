@@ -5,11 +5,7 @@ final class IOAudioUnit: NSObject {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
 
-    lazy var codec: AudioCodec = {
-        var codec = AudioCodec()
-        codec.lockQueue = lockQueue
-        return codec
-    }()
+    lazy var codec: AudioCodec = .init(lockQueue: lockQueue)
 
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false

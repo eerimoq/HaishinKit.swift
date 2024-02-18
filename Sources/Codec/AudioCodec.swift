@@ -20,6 +20,10 @@ public class AudioCodec {
         case failedToConvert(error: NSError)
     }
 
+    init(lockQueue: DispatchQueue) {
+        self.lockQueue = lockQueue
+    }
+
     static func makeAudioFormat(_ inSourceFormat: inout AudioStreamBasicDescription) -> AVAudioFormat? {
         if inSourceFormat.mFormatID == kAudioFormatLinearPCM,
            kLinearPCMFormatFlagIsBigEndian ==
@@ -84,7 +88,7 @@ public class AudioCodec {
         }
     }
 
-    var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioCodec.lock")
+    private var lockQueue: DispatchQueue
     var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard var inSourceFormat, inSourceFormat != oldValue else {

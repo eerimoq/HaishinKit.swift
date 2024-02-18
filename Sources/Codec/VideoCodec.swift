@@ -28,7 +28,9 @@ public class VideoCodec {
         case failedToSetOption(status: OSStatus, option: VTSessionOption)
     }
 
-    public init() {}
+    public init(lockQueue: DispatchQueue) {
+        self.lockQueue = lockQueue
+    }
 
     /// The videoCodec's attributes value.
     public static var defaultAttributes: [NSString: AnyObject]? = [
@@ -51,7 +53,7 @@ public class VideoCodec {
     /// The running value indicating whether the VideoCodec is running.
     public private(set) var isRunning: Atomic<Bool> = .init(false)
 
-    var lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoCodec.lock")
+    private var lockQueue: DispatchQueue
     var expectedFrameRate = IOMixer.defaultFrameRate
     public var formatDescription: CMFormatDescription? {
         didSet {

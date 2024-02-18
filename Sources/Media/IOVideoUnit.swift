@@ -99,11 +99,7 @@ final class IOVideoUnit: NSObject {
         }
     }
 
-    lazy var codec: VideoCodec = {
-        var codec = VideoCodec()
-        codec.lockQueue = lockQueue
-        return codec
-    }()
+    lazy var codec: VideoCodec = .init(lockQueue: lockQueue)
 
     weak var mixer: IOMixer?
 
