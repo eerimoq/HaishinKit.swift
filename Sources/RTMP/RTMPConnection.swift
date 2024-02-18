@@ -284,16 +284,6 @@ open class RTMPConnection: EventDispatcher {
             socket = socket is RTMPSocket ? socket : RTMPSocket()
         }
         socket.delegate = self
-        var outputBufferSize = 0
-        for stream in streams {
-            // in bytes.
-            outputBufferSize +=
-                (Int(stream.mixer.video.codec.settings.bitRate) + stream.mixer.audio.codec.settings
-                    .bitRate) / 8
-        }
-        if socket.outputBufferSize < outputBufferSize {
-            socket.outputBufferSize = outputBufferSize
-        }
         socket.setProperty(parameters, forKey: "parameters")
         let secure = uri.scheme == "rtmps" || uri.scheme == "rtmpts"
         socket.securityLevel = secure ? .negotiatedSSL : .none

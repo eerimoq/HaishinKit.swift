@@ -10,7 +10,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     var inputBuffer = Data()
     var qualityOfService: DispatchQoS = .userInitiated
     var securityLevel: StreamSocketSecurityLevel = .none
-    var outputBufferSize: Int = RTMPTSocket.defaultWindowSizeC
     weak var delegate: (any RTMPSocketDelegate)?
     var connected = false {
         didSet {

@@ -15,7 +15,6 @@ final class RTMPSocket: RTMPSocketCompatible {
         }
     }
 
-    var outputBufferSize: Int = RTMPSocket.defaultWindowSizeC
     var securityLevel: StreamSocketSecurityLevel = .none {
         didSet {
             switch securityLevel {

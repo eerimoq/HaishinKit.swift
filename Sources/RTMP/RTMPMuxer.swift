@@ -15,7 +15,7 @@ final class RTMPMuxer {
     weak var delegate: (any RTMPMuxerDelegate)?
     private var audioTimeStamp: CMTime = .zero
     private var videoTimeStamp: CMTime = .zero
-    private let compositiionTimeOffset: CMTime = .init(value: 3, timescale: 30)
+    private let compositionTimeOffset: CMTime = .init(value: 3, timescale: 30)
 
     func dispose() {
         audioTimeStamp = .zero
@@ -137,7 +137,7 @@ extension RTMPMuxer: VideoCodecDelegate {
         else {
             return 0
         }
-        return Int32((sampleBuffer.presentationTimeStamp - videoTimeStamp + compositiionTimeOffset)
+        return Int32((sampleBuffer.presentationTimeStamp - videoTimeStamp + compositionTimeOffset)
             .seconds * 1000)
     }
 }
