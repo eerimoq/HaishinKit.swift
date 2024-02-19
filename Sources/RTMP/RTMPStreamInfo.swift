@@ -2,7 +2,7 @@ import Foundation
 
 private struct SendTiming {
     var timestamp: Date
-    var sequence: UInt32
+    var sequence: Int64
 }
 
 public struct RTMPStreamStats {
@@ -18,8 +18,9 @@ public class RTMPStreamInfo {
 
     private var previousByteCount: Int64 = 0
     private var sendTimings: [SendTiming] = []
-    private var latestWrittenSequence: UInt32 = 0
+    private var latestWrittenSequence: Int64 = 0
     private var latestAckedSequence: UInt32 = 0
+    private var latestAckedSequenceRollover: Int64 = 0
 
     func onTimeout() {
         let byteCount = self.byteCount.value
@@ -35,22 +36,27 @@ public class RTMPStreamInfo {
         sendTimings.removeAll()
         latestWrittenSequence = 0
         latestAckedSequence = 0
+        latestAckedSequenceRollover = 0
     }
 
-    func onWritten(sequence: UInt32) {
-        return
-        let now = Date()
+    func onWritten(sequence: Int64) {
         stats.mutate { stats in
             latestWrittenSequence = sequence
-            sendTimings.append(SendTiming(timestamp: now, sequence: sequence))
-            stats.packetsInFlight = (latestWrittenSequence - latestAckedSequence) / 1400
+            sendTimings.append(SendTiming(timestamp: Date(), sequence: sequence))
+            stats.packetsInFlight = packetsInFlight()
         }
     }
 
     func onAck(sequence: UInt32) {
-        return
-        let now = Date()
         stats.mutate { stats in
+            if sequence < latestAckedSequence {
+                // Twitch rolls over at Int32.max. Bug?
+                if latestAckedSequence <= Int32.max {
+                    latestAckedSequenceRollover += Int64(Int32.max)
+                } else {
+                    latestAckedSequenceRollover = Int64(UInt32.max)
+                }
+            }
             latestAckedSequence = sequence
             var ackedSendTiming: SendTiming?
             while let sendTiming = sendTimings.first {
@@ -62,10 +68,14 @@ public class RTMPStreamInfo {
                 }
             }
             if let ackedSendTiming {
-                print("xxx ack \(sequence)")
-                stats.rttMs = now.timeIntervalSince(ackedSendTiming.timestamp) * 1000
-                stats.packetsInFlight = (latestWrittenSequence - latestAckedSequence) / 1400
+                stats.rttMs = Date().timeIntervalSince(ackedSendTiming.timestamp) * 1000
+                stats.packetsInFlight = packetsInFlight()
             }
         }
+    }
+
+    private func packetsInFlight() -> UInt32 {
+        let latestAckedSequence = latestAckedSequenceRollover + Int64(latestAckedSequence)
+        return UInt32((latestWrittenSequence - latestAckedSequence) / 1400)
     }
 }

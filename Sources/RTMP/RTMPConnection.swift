@@ -476,7 +476,7 @@ extension RTMPConnection: RTMPSocketDelegate {
         guard let stream = streams.first else {
             return
         }
-        stream.info.onWritten(sequence: UInt32(totalBytesOut))
+        stream.info.onWritten(sequence: totalBytesOut)
     }
 
     func socket(_ socket: any RTMPSocketCompatible, data: Data) {
