@@ -165,18 +165,13 @@ public struct VideoCodecSettings {
         var options: [VTSessionOption] = [
             .init(key: .realTime, value: kCFBooleanTrue),
             .init(key: .profileLevel, value: profileLevel as NSObject),
-            .init(key: bitRateMode.key, value: NSNumber(value: bitRate)),
+            .init(key: bitRateMode.key, value: bitRate as CFNumber),
             .init(key: .dataRateLimits, value: createDataRateLimits(bitRate: bitRate)),
-            // It seemes that VT supports the range 0 to 30.
-            .init(
-                key: .expectedFrameRate,
-                value: NSNumber(value: (codec.expectedFrameRate <= 30) ? codec.expectedFrameRate : 0)
-            ),
-            .init(key: .maxKeyFrameIntervalDuration, value: NSNumber(value: maxKeyFrameIntervalDuration)),
+            // It seemes that VT supports the range 0 to 30?
+            .init(key: .expectedFrameRate, value: codec.expectedFrameRate as CFNumber),
+            .init(key: .maxKeyFrameIntervalDuration, value: maxKeyFrameIntervalDuration as CFNumber),
             .init(key: .allowFrameReordering, value: (allowFrameReordering ?? !isBaseline) as NSObject),
-            .init(key: .pixelTransferProperties, value: [
-                "ScalingMode": scalingMode.rawValue,
-            ] as NSObject),
+            .init(key: .pixelTransferProperties, value: ["ScalingMode": scalingMode.rawValue] as NSObject),
         ]
         if !isBaseline, profileLevel.contains("H264") {
             options.append(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
