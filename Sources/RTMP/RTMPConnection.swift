@@ -214,7 +214,7 @@ open class RTMPConnection: EventDispatcher {
             socket.doOutput(chunk: RTMPChunk(
                 type: .zero,
                 streamId: RTMPChunk.StreamID.control.rawValue,
-                message: RTMPWindowAcknowledgementSizeMessage(UInt32(windowSizeC))
+                message: RTMPWindowAcknowledgementSizeMessage(100_000)
             ))
         }
     }
