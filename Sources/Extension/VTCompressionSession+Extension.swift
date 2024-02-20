@@ -16,14 +16,13 @@ extension VTCompressionSession: VTSessionConvertible {
         duration: CMTime,
         outputHandler: @escaping VTCompressionOutputHandler
     ) -> OSStatus {
-        var flags: VTEncodeInfoFlags = []
         return VTCompressionSessionEncodeFrame(
             self,
             imageBuffer: imageBuffer,
             presentationTimeStamp: presentationTimeStamp,
-            duration: duration,
+            duration: .invalid,
             frameProperties: nil,
-            infoFlagsOut: &flags,
+            infoFlagsOut: nil,
             outputHandler: outputHandler
         )
     }

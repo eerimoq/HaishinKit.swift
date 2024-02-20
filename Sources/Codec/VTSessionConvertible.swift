@@ -18,14 +18,17 @@ protocol VTSessionConvertible {
 
 extension VTSessionConvertible where Self: VTSession {
     func setOption(_ option: VTSessionOption) -> OSStatus {
+        logger.info("setting option: \(option.key.CFString) \(option.value)")
         return VTSessionSetProperty(self, key: option.key.CFString, value: option.value)
     }
 
     func setOptions(_ options: [VTSessionOption]) -> OSStatus {
-        var properties: [AnyHashable: AnyObject] = [:]
         for option in options {
-            properties[option.key.CFString] = option.value
+            let err = setOption(option)
+            if err != noErr {
+                return err
+            }
         }
-        return VTSessionSetProperties(self, propertyDictionary: properties as CFDictionary)
+        return noErr
     }
 }

@@ -388,6 +388,12 @@ final class IOVideoUnit: NSObject {
             )
             return false
         }
+        if let mixer {
+            mixer.delegate?.mixerVideo(
+                mixer,
+                presentationTimestamp: sampleBuffer.presentationTimeStamp.seconds
+            )
+        }
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
         sampleBuffer.setAttachmentDisplayImmediately()
         imageBuffer.lockBaseAddress()
