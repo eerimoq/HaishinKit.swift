@@ -13,7 +13,7 @@ extension VTCompressionSession: VTSessionConvertible {
     func encodeFrame(
         _ imageBuffer: CVImageBuffer,
         presentationTimeStamp: CMTime,
-        duration: CMTime,
+        duration _: CMTime,
         outputHandler: @escaping VTCompressionOutputHandler
     ) -> OSStatus {
         return VTCompressionSessionEncodeFrame(

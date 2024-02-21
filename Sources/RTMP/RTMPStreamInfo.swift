@@ -19,8 +19,8 @@ public class RTMPStreamInfo {
     private var previousByteCount: Int64 = 0
     private var sendTimings: [SendTiming] = []
     private var latestWrittenSequence: Int64 = 0
-    private var latestAckedSequence: UInt32 = 0
-    private var latestAckedSequenceRollover: Int64 = 0
+    private var latestAckedSequenceLow: UInt32 = 0
+    private var latestAckedSequenceHigh: Int64 = 0
 
     func onTimeout() {
         let byteCount = self.byteCount.value
@@ -35,32 +35,35 @@ public class RTMPStreamInfo {
         previousByteCount = 0
         sendTimings.removeAll()
         latestWrittenSequence = 0
-        latestAckedSequence = 0
-        latestAckedSequenceRollover = 0
+        latestAckedSequenceLow = 0
+        latestAckedSequenceHigh = 0
     }
 
     func onWritten(sequence: Int64) {
         stats.mutate { stats in
             latestWrittenSequence = sequence
-            sendTimings.append(SendTiming(timestamp: Date(), sequence: sequence))
+            // Just for safety
+            if sendTimings.count < 1000 {
+                sendTimings.append(SendTiming(timestamp: Date(), sequence: sequence))
+            }
             stats.packetsInFlight = packetsInFlight()
         }
     }
 
     func onAck(sequence: UInt32) {
         stats.mutate { stats in
-            if sequence < latestAckedSequence {
+            if sequence < latestAckedSequenceLow {
                 // Twitch rolls over at Int32.max. Bug?
-                if latestAckedSequence <= Int32.max {
-                    latestAckedSequenceRollover += Int64(Int32.max)
+                if latestAckedSequenceLow <= Int32.max {
+                    latestAckedSequenceHigh += Int64(Int32.max)
                 } else {
-                    latestAckedSequenceRollover = Int64(UInt32.max)
+                    latestAckedSequenceHigh += Int64(UInt32.max)
                 }
             }
-            latestAckedSequence = sequence
+            latestAckedSequenceLow = sequence
             var ackedSendTiming: SendTiming?
             while let sendTiming = sendTimings.first {
-                if sequence > sendTiming.sequence {
+                if latestAckedSequence() > sendTiming.sequence {
                     ackedSendTiming = sendTiming
                     sendTimings.remove(at: 0)
                 } else {
@@ -74,8 +77,11 @@ public class RTMPStreamInfo {
         }
     }
 
+    private func latestAckedSequence() -> Int64 {
+        return latestAckedSequenceHigh + Int64(latestAckedSequenceLow)
+    }
+
     private func packetsInFlight() -> UInt32 {
-        let latestAckedSequence = latestAckedSequenceRollover + Int64(latestAckedSequence)
-        return UInt32((latestWrittenSequence - latestAckedSequence) / 1400)
+        return UInt32((latestWrittenSequence - latestAckedSequence()) / 1400)
     }
 }
