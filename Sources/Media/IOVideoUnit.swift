@@ -78,10 +78,9 @@ class ReplaceVideo {
 
 public final class IOVideoUnit: NSObject {
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
-
     public private(set) var device: AVCaptureDevice?
     private var input: AVCaptureInput?
-    var output: AVCaptureVideoDataOutput?
+    private var output: AVCaptureVideoDataOutput?
     private var connection: AVCaptureConnection?
 
     var context: CIContext = .init() {
@@ -103,7 +102,7 @@ public final class IOVideoUnit: NSObject {
     lazy var codec: VideoCodec = .init(lockQueue: lockQueue)
     weak var mixer: IOMixer?
     var muted = false
-    private(set) var effects: [VideoEffect] = []
+    private var effects: [VideoEffect] = []
 
     private var extent = CGRect.zero {
         didSet {
@@ -267,7 +266,6 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    @inline(__always)
     func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
         var image = CIImage(cvPixelBuffer: buffer)
         for effect in effects {
@@ -368,8 +366,8 @@ public final class IOVideoUnit: NSObject {
         return sampleBuffer
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool,
-                            skipEffects: Bool) -> Bool
+    private func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool,
+                                    skipEffects: Bool) -> Bool
     {
         guard let imageBuffer = sampleBuffer.imageBuffer else {
             return false
@@ -441,7 +439,7 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
+    private func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
         guard let device else {
             return
         }
@@ -475,7 +473,7 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
+    private func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
         setSampleBufferDelegate(nil)
         detachSession(videoUnit.mixer?.videoSession)
         self.device = device
@@ -513,7 +511,7 @@ public final class IOVideoUnit: NSObject {
         setSampleBufferDelegate(videoUnit)
     }
 
-    func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
+    private func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
         guard let device, device.isTorchModeSupported(torchMode) else {
             return
         }
@@ -534,7 +532,7 @@ public final class IOVideoUnit: NSObject {
         output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
     }
 
-    func attachSession(_ session: AVCaptureSession?) {
+    private func attachSession(_ session: AVCaptureSession?) {
         guard let session, let connection, let input, let output else {
             return
         }
@@ -550,7 +548,7 @@ public final class IOVideoUnit: NSObject {
         session.automaticallyConfiguresCaptureDeviceForWideColor = false
     }
 
-    func detachSession(_ session: AVCaptureSession?) {
+    private func detachSession(_ session: AVCaptureSession?) {
         guard let session, let connection, let input, let output else {
             return
         }

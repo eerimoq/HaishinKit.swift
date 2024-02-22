@@ -4,16 +4,15 @@ import SwiftPMSupport
 final class IOAudioUnit: NSObject {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
-
     lazy var codec: AudioCodec = .init(lockQueue: lockQueue)
-    
     private(set) var device: AVCaptureDevice?
     private var input: AVCaptureInput?
     private var output: AVCaptureAudioDataOutput?
-
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false
     weak var mixer: IOMixer?
+    private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
+
     private var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard inSourceFormat != oldValue else {
@@ -23,8 +22,6 @@ final class IOAudioUnit: NSObject {
             codec.inSourceFormat = inSourceFormat
         }
     }
-
-    private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
     func attachAudio(_ device: AVCaptureDevice?,
                      automaticallyConfiguresApplicationAudioSession: Bool) throws
@@ -101,8 +98,8 @@ final class IOAudioUnit: NSObject {
         codec.delegate = nil
         inSourceFormat = nil
     }
-    
-    func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
+
+    private func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
         setSampleBufferDelegate(nil)
         detachSession(audioUnit.mixer?.audioSession)
         self.device = device
@@ -121,7 +118,7 @@ final class IOAudioUnit: NSObject {
         output?.setSampleBufferDelegate(audioUnit, queue: audioUnit?.lockQueue)
     }
 
-    func attachSession(_ session: AVCaptureSession?) {
+    private func attachSession(_ session: AVCaptureSession?) {
         guard let session, let input, let output else {
             return
         }
@@ -152,25 +149,26 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) == true else {
+        guard let mixer else {
             return
         }
-        if let mixer {
-            var audioLevel: Float
-            if muted {
-                audioLevel = .nan
-            } else if let channel = connection.audioChannels.first {
-                audioLevel = channel.averagePowerLevel
-            } else {
-                audioLevel = 0.0
-            }
-            mixer.delegate?.mixer(
-                mixer,
-                audioLevel: audioLevel,
-                numberOfAudioChannels: connection.audioChannels.count,
-                presentationTimestamp: sampleBuffer.presentationTimeStamp.seconds
-            )
+        guard mixer.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) else {
+            return
         }
+        var audioLevel: Float
+        if muted {
+            audioLevel = .nan
+        } else if let channel = connection.audioChannels.first {
+            audioLevel = channel.averagePowerLevel
+        } else {
+            audioLevel = 0.0
+        }
+        mixer.delegate?.mixer(
+            mixer,
+            audioLevel: audioLevel,
+            numberOfAudioChannels: connection.audioChannels.count,
+            presentationTimestamp: sampleBuffer.presentationTimeStamp.seconds
+        )
         appendSampleBuffer(sampleBuffer, isFirstAfterAttach: false, skipEffects: false)
     }
 }
