@@ -57,21 +57,8 @@ public class IOMixer {
         }
     }
 
-    public lazy var videoSession: AVCaptureSession = makeSession() {
-        didSet {
-            if videoSession.canSetSessionPreset(sessionPreset) {
-                videoSession.sessionPreset = sessionPreset
-            }
-            video.capture.attachSession(videoSession)
-        }
-    }
-
-    public lazy var audioSession: AVCaptureSession = makeSession() {
-        didSet {
-            audio.capture.attachSession(audioSession)
-        }
-    }
-
+    public let videoSession = makeSession()
+    public let audioSession = makeSession()
     public private(set) var isRunning: Atomic<Bool> = .init(false)
 
     /// Specifies the drawable object.

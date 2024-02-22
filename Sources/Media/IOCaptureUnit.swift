@@ -178,7 +178,7 @@ class IOAudioCaptureUnit {
         setSampleBufferDelegate(audioUnit)
     }
 
-    func setSampleBufferDelegate(_ audioUnit: IOAudioUnit?) {
+    private func setSampleBufferDelegate(_ audioUnit: IOAudioUnit?) {
         output?.setSampleBufferDelegate(audioUnit, queue: audioUnit?.lockQueue)
     }
 
@@ -194,7 +194,7 @@ class IOAudioCaptureUnit {
         }
     }
 
-    func detachSession(_ session: AVCaptureSession?) {
+    private func detachSession(_ session: AVCaptureSession?) {
         guard let session, let input, let output else {
             return
         }
