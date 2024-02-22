@@ -77,10 +77,6 @@ class ReplaceVideo {
 }
 
 final class IOVideoUnit: NSObject {
-    enum Error: Swift.Error {
-        case multiCamNotSupported
-    }
-
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
 
     var context: CIContext = .init() {
@@ -100,11 +96,8 @@ final class IOVideoUnit: NSObject {
     }
 
     lazy var codec: VideoCodec = .init(lockQueue: lockQueue)
-
     weak var mixer: IOMixer?
-
     var muted = false
-
     private(set) var effects: [VideoEffect] = []
 
     private var extent = CGRect.zero {
@@ -156,7 +149,7 @@ final class IOVideoUnit: NSObject {
         }
     }
 
-    private(set) var capture: IOVideoCaptureUnit = .init()
+    let capture: IOVideoCaptureUnit = .init()
     private var selectedReplaceVideoCameraId: UUID?
     private var replaceVideos: [UUID: ReplaceVideo] = [:]
     private var blackImageBuffer: CVPixelBuffer?

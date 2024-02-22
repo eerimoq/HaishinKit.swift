@@ -3,6 +3,16 @@ import SwiftPMSupport
 
 import UIKit
 
+private func makeSession() -> AVCaptureSession {
+    let session = AVCaptureSession()
+    if #available(iOS 16.0, *) {
+        if session.isMultitaskingCameraAccessSupported {
+            session.isMultitaskingCameraAccessEnabled = true
+        }
+    }
+    return session
+}
+
 extension AVCaptureSession.Preset {
     static let `default`: AVCaptureSession.Preset = .hd1280x720
 }
@@ -47,13 +57,8 @@ public class IOMixer {
         }
     }
 
-    public internal(set) lazy var videoSession: AVCaptureSession = makeSession() {
+    public lazy var videoSession: AVCaptureSession = makeSession() {
         didSet {
-            if oldValue.isRunning {
-                removeSessionObservers(oldValue)
-                oldValue.stopRunning()
-            }
-            video.capture.detachSession(oldValue)
             if videoSession.canSetSessionPreset(sessionPreset) {
                 videoSession.sessionPreset = sessionPreset
             }
@@ -61,13 +66,8 @@ public class IOMixer {
         }
     }
 
-    public internal(set) lazy var audioSession: AVCaptureSession = makeSession() {
+    public lazy var audioSession: AVCaptureSession = makeSession() {
         didSet {
-            if oldValue.isRunning {
-                removeSessionObservers(oldValue)
-                oldValue.stopRunning()
-            }
-            audio.capture.detachSession(oldValue)
             audio.capture.attachSession(audioSession)
         }
     }
@@ -130,31 +130,6 @@ public class IOMixer {
         default:
             return true
         }
-    }
-
-    private func makeSession() -> AVCaptureSession {
-        let session = AVCaptureSession()
-        if session.canSetSessionPreset(sessionPreset) {
-            session.sessionPreset = sessionPreset
-        } else {
-            logger.info("Cannot set preset \(sessionPreset)")
-        }
-        if #available(iOS 16.0, *) {
-            if session.isMultitaskingCameraAccessSupported {
-                session.isMultitaskingCameraAccessEnabled = true
-            }
-        }
-        return session
-    }
-}
-
-extension IOMixer: IORecorderDelegate {
-    public func recorder(_: IORecorder, errorOccured error: IORecorder.Error) {
-        delegate?.mixer(self, recorderErrorOccured: error)
-    }
-
-    public func recorder(_: IORecorder, finishWriting writer: AVAssetWriter) {
-        delegate?.mixer(self, recorderFinishWriting: writer)
     }
 
     public func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
@@ -308,5 +283,15 @@ extension IOMixer: IORecorderDelegate {
     @objc
     private func sessionInterruptionEnded(_: Notification) {
         delegate?.mixer(self, sessionInterruptionEnded: videoSession)
+    }
+}
+
+extension IOMixer: IORecorderDelegate {
+    public func recorder(_: IORecorder, errorOccured error: IORecorder.Error) {
+        delegate?.mixer(self, recorderErrorOccured: error)
+    }
+
+    public func recorder(_: IORecorder, finishWriting writer: AVAssetWriter) {
+        delegate?.mixer(self, recorderFinishWriting: writer)
     }
 }

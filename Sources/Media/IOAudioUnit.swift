@@ -10,7 +10,7 @@ final class IOAudioUnit: NSObject {
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false
     weak var mixer: IOMixer?
-    private(set) var capture: IOAudioCaptureUnit = .init()
+    let capture: IOAudioCaptureUnit = .init()
     private var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard inSourceFormat != oldValue else {
