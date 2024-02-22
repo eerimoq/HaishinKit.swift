@@ -245,8 +245,8 @@ public final class IOVideoUnit: NSObject {
             defer {
                 mixer.videoSession.commitConfiguration()
             }
-            detachSession(mixer.videoSession)
-            try attachDevice(nil, videoUnit: self)
+            detachSession()
+            try attachDevice(nil)
             stopGapFillerTimer()
             return
         }
@@ -258,7 +258,7 @@ public final class IOVideoUnit: NSObject {
                 setTorchMode(.on)
             }
         }
-        try attachDevice(device, videoUnit: self)
+        try attachDevice(device)
         // Not perfect. Should be set before registering the capture callback
         lockQueue.sync {
             firstFrameDate = nil
@@ -473,9 +473,9 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    private func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
-        setSampleBufferDelegate(nil)
-        detachSession(videoUnit.mixer?.videoSession)
+    private func attachDevice(_ device: AVCaptureDevice?) throws {
+        output?.setSampleBufferDelegate(nil, queue: lockQueue)
+        detachSession()
         self.device = device
         guard let device else {
             input = nil
@@ -496,7 +496,7 @@ public final class IOVideoUnit: NSObject {
         } else {
             connection = nil
         }
-        attachSession(videoUnit.mixer?.videoSession)
+        attachSession()
         output?.connections.forEach {
             if $0.isVideoMirroringSupported {
                 $0.isVideoMirrored = isVideoMirrored
@@ -508,7 +508,8 @@ public final class IOVideoUnit: NSObject {
                 $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
             }
         }
-        setSampleBufferDelegate(videoUnit)
+        setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
+        output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
     private func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
@@ -524,42 +525,34 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    private func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
-        if let videoUnit {
-            videoOrientation = videoUnit.videoOrientation
-            setFrameRate(frameRate: videoUnit.frameRate, colorSpace: videoUnit.colorSpace)
-        }
-        output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
-    }
-
-    private func attachSession(_ session: AVCaptureSession?) {
-        guard let session, let connection, let input, let output else {
+    private func attachSession() {
+        guard let mixer, let connection, let input, let output else {
             return
         }
-        if session.canAddInput(input) {
-            session.addInputWithNoConnections(input)
+        if mixer.videoSession.canAddInput(input) {
+            mixer.videoSession.addInputWithNoConnections(input)
         }
-        if session.canAddOutput(output) {
-            session.addOutputWithNoConnections(output)
+        if mixer.videoSession.canAddOutput(output) {
+            mixer.videoSession.addOutputWithNoConnections(output)
         }
-        if session.canAddConnection(connection) {
-            session.addConnection(connection)
+        if mixer.videoSession.canAddConnection(connection) {
+            mixer.videoSession.addConnection(connection)
         }
-        session.automaticallyConfiguresCaptureDeviceForWideColor = false
+        mixer.videoSession.automaticallyConfiguresCaptureDeviceForWideColor = false
     }
 
-    private func detachSession(_ session: AVCaptureSession?) {
-        guard let session, let connection, let input, let output else {
+    private func detachSession() {
+        guard let mixer, let connection, let input, let output else {
             return
         }
-        if session.connections.contains(connection) {
-            session.removeConnection(connection)
+        if mixer.videoSession.connections.contains(connection) {
+            mixer.videoSession.removeConnection(connection)
         }
-        if session.inputs.contains(input) {
-            session.removeInput(input)
+        if mixer.videoSession.inputs.contains(input) {
+            mixer.videoSession.removeInput(input)
         }
-        if session.outputs.contains(output) {
-            session.removeOutput(output)
+        if mixer.videoSession.outputs.contains(output) {
+            mixer.videoSession.removeOutput(output)
         }
     }
 }

@@ -8,7 +8,7 @@ final class IOAudioUnit: NSObject {
     private(set) var device: AVCaptureDevice?
     private var input: AVCaptureInput?
     private var output: AVCaptureAudioDataOutput?
-    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
+    private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false
     weak var mixer: IOMixer?
     private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
@@ -33,7 +33,7 @@ final class IOAudioUnit: NSObject {
         defer {
             mixer.audioSession.commitConfiguration()
         }
-        try attachDevice(device, audioUnit: self)
+        try attachDevice(device)
         mixer.audioSession
             .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
     }
@@ -99,9 +99,9 @@ final class IOAudioUnit: NSObject {
         inSourceFormat = nil
     }
 
-    private func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
-        setSampleBufferDelegate(nil)
-        detachSession(audioUnit.mixer?.audioSession)
+    private func attachDevice(_ device: AVCaptureDevice?) throws {
+        output?.setSampleBufferDelegate(nil, queue: lockQueue)
+        detachSession()
         self.device = device
         guard let device else {
             input = nil
@@ -110,35 +110,31 @@ final class IOAudioUnit: NSObject {
         }
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureAudioDataOutput()
-        attachSession(audioUnit.mixer?.audioSession)
-        setSampleBufferDelegate(audioUnit)
+        attachSession()
+        output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
-    private func setSampleBufferDelegate(_ audioUnit: IOAudioUnit?) {
-        output?.setSampleBufferDelegate(audioUnit, queue: audioUnit?.lockQueue)
-    }
-
-    private func attachSession(_ session: AVCaptureSession?) {
-        guard let session, let input, let output else {
+    private func attachSession() {
+        guard let mixer, let input, let output else {
             return
         }
-        if session.canAddInput(input) {
-            session.addInput(input)
+        if mixer.audioSession.canAddInput(input) {
+            mixer.audioSession.addInput(input)
         }
-        if session.canAddOutput(output) {
-            session.addOutput(output)
+        if mixer.audioSession.canAddOutput(output) {
+            mixer.audioSession.addOutput(output)
         }
     }
 
-    private func detachSession(_ session: AVCaptureSession?) {
-        guard let session, let input, let output else {
+    private func detachSession() {
+        guard let mixer, let input, let output else {
             return
         }
-        if session.inputs.contains(input) {
-            session.removeInput(input)
+        if mixer.audioSession.inputs.contains(input) {
+            mixer.audioSession.removeInput(input)
         }
-        if session.outputs.contains(output) {
-            session.removeOutput(output)
+        if mixer.audioSession.outputs.contains(output) {
+            mixer.audioSession.removeOutput(output)
         }
     }
 }
