@@ -151,9 +151,15 @@ public class IOVideoCaptureUnit {
         guard let session, let connection, let input, let output else {
             return
         }
-        session.removeConnection(connection)
-        session.removeInput(input)
-        session.removeOutput(output)
+        if session.connections.contains(connection) {
+            session.removeConnection(connection)
+        }
+        if session.inputs.contains(input) {
+            session.removeInput(input)
+        }
+        if session.outputs.contains(output) {
+            session.removeOutput(output)
+        }
     }
 }
 
@@ -198,7 +204,11 @@ class IOAudioCaptureUnit {
         guard let session, let input, let output else {
             return
         }
-        session.removeInput(input)
-        session.removeOutput(output)
+        if session.inputs.contains(input) {
+            session.removeInput(input)
+        }
+        if session.outputs.contains(output) {
+            session.removeOutput(output)
+        }
     }
 }
