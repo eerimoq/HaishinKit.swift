@@ -5,9 +5,9 @@ import Foundation
 public class IOVideoCaptureUnit {
     /// The current video device object.
     public private(set) var device: AVCaptureDevice?
-    var input: AVCaptureInput?
+    private var input: AVCaptureInput?
     var output: AVCaptureVideoDataOutput?
-    var connection: AVCaptureConnection?
+    private var connection: AVCaptureConnection?
 
     /// Specifies the videoOrientation indicates whether to rotate the video flowing through the
     /// connection to a given orientation.
@@ -159,8 +159,8 @@ public class IOVideoCaptureUnit {
 
 class IOAudioCaptureUnit {
     private(set) var device: AVCaptureDevice?
-    var input: AVCaptureInput?
-    var output: AVCaptureAudioDataOutput?
+    private var input: AVCaptureInput?
+    private var output: AVCaptureAudioDataOutput?
 
     func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
         setSampleBufferDelegate(nil)
