@@ -123,7 +123,7 @@ public class IOVideoCaptureUnit {
         }
     }
 
-    func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
+    private func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
         if let videoUnit {
             videoOrientation = videoUnit.videoOrientation
             setFrameRate(frameRate: videoUnit.frameRate, colorSpace: videoUnit.colorSpace)
@@ -171,13 +171,12 @@ class IOAudioCaptureUnit {
     func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
         setSampleBufferDelegate(nil)
         detachSession(audioUnit.mixer?.audioSession)
+        self.device = device
         guard let device else {
-            self.device = nil
             input = nil
             output = nil
             return
         }
-        self.device = device
         input = try AVCaptureDeviceInput(device: device)
         output = AVCaptureAudioDataOutput()
         attachSession(audioUnit.mixer?.audioSession)
