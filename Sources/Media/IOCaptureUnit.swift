@@ -1,78 +1,12 @@
 import AVFoundation
 import Foundation
 
-protocol IOCaptureUnit {
-    associatedtype Output: AVCaptureOutput
-
-    var input: AVCaptureInput? { get }
-    var output: Output? { get }
-    var connection: AVCaptureConnection? { get }
-}
-
-extension IOCaptureUnit {
-    func attachSession(_ session: AVCaptureSession?) {
-        guard let session else {
-            logger.error("No session to attach to")
-            return
-        }
-        if let connection {
-            if let input, session.canAddInput(input) {
-                session.addInputWithNoConnections(input)
-            } else {
-                logger.error("Cannot add input with no connections")
-            }
-            if let output, session.canAddOutput(output) {
-                session.addOutputWithNoConnections(output)
-            } else {
-                logger.error("Cannot add output with no connections")
-            }
-            if session.canAddConnection(connection) {
-                session.addConnection(connection)
-            } else {
-                logger.error("Cannot add connection")
-            }
-        } else {
-            if let input, session.canAddInput(input) {
-                session.addInput(input)
-            } else {
-                logger.error("Cannot add input")
-            }
-            if let output, session.canAddOutput(output) {
-                session.addOutput(output)
-            } else {
-                logger.error("Cannot add output")
-            }
-        }
-        session.automaticallyConfiguresCaptureDeviceForWideColor = false
-    }
-
-    func detachSession(_ session: AVCaptureSession?) {
-        guard let session else {
-            logger.error("No session to detach from")
-            return
-        }
-        if let connection {
-            if output?.connections.contains(connection) == true {
-                session.removeConnection(connection)
-            }
-        }
-        if let input, session.inputs.contains(input) {
-            session.removeInput(input)
-        }
-        if let output, session.outputs.contains(output) {
-            session.removeOutput(output)
-        }
-    }
-}
-
 /// An object that provides the interface to control the AVCaptureDevice's transport behavior.
-public class IOVideoCaptureUnit: IOCaptureUnit {
-    typealias Output = AVCaptureVideoDataOutput
-
+public class IOVideoCaptureUnit {
     /// The current video device object.
     public private(set) var device: AVCaptureDevice?
     var input: AVCaptureInput?
-    var output: Output?
+    var output: AVCaptureVideoDataOutput?
     var connection: AVCaptureConnection?
 
     /// Specifies the videoOrientation indicates whether to rotate the video flowing through the
@@ -196,15 +130,37 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
         }
         output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
     }
+
+    func attachSession(_ session: AVCaptureSession?) {
+        guard let session, let connection, let input, let output else {
+            return
+        }
+        if session.canAddInput(input) {
+            session.addInputWithNoConnections(input)
+        }
+        if session.canAddOutput(output) {
+            session.addOutputWithNoConnections(output)
+        }
+        if session.canAddConnection(connection) {
+            session.addConnection(connection)
+        }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = false
+    }
+
+    func detachSession(_ session: AVCaptureSession?) {
+        guard let session, let connection, let input, let output else {
+            return
+        }
+        session.removeConnection(connection)
+        session.removeInput(input)
+        session.removeOutput(output)
+    }
 }
 
-class IOAudioCaptureUnit: IOCaptureUnit {
-    typealias Output = AVCaptureAudioDataOutput
-
+class IOAudioCaptureUnit {
     private(set) var device: AVCaptureDevice?
     var input: AVCaptureInput?
-    var output: Output?
-    var connection: AVCaptureConnection?
+    var output: AVCaptureAudioDataOutput?
 
     func attachDevice(_ device: AVCaptureDevice?, audioUnit: IOAudioUnit) throws {
         setSampleBufferDelegate(nil)
@@ -224,5 +180,25 @@ class IOAudioCaptureUnit: IOCaptureUnit {
 
     func setSampleBufferDelegate(_ audioUnit: IOAudioUnit?) {
         output?.setSampleBufferDelegate(audioUnit, queue: audioUnit?.lockQueue)
+    }
+
+    func attachSession(_ session: AVCaptureSession?) {
+        guard let session, let input, let output else {
+            return
+        }
+        if session.canAddInput(input) {
+            session.addInput(input)
+        }
+        if session.canAddOutput(output) {
+            session.addOutput(output)
+        }
+    }
+
+    func detachSession(_ session: AVCaptureSession?) {
+        guard let session, let input, let output else {
+            return
+        }
+        session.removeInput(input)
+        session.removeOutput(output)
     }
 }
