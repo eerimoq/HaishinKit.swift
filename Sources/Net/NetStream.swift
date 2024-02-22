@@ -232,9 +232,9 @@ open class NetStream: NSObject {
     }
 
     /// Returns the IOVideoCaptureUnit by index.
-    public func videoCapture() -> IOVideoCaptureUnit? {
+    public func videoCapture() -> IOVideoUnit? {
         return mixer.video.lockQueue.sync {
-            self.mixer.video.capture
+            self.mixer.video
         }
     }
 

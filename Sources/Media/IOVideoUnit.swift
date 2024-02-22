@@ -76,8 +76,13 @@ class ReplaceVideo {
     }
 }
 
-final class IOVideoUnit: NSObject {
+public final class IOVideoUnit: NSObject {
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.VideoIOComponent.lock")
+
+    public private(set) var device: AVCaptureDevice?
+    private var input: AVCaptureInput?
+    var output: AVCaptureVideoDataOutput?
+    private var connection: AVCaptureConnection?
 
     var context: CIContext = .init() {
         didSet {
@@ -110,13 +115,13 @@ final class IOVideoUnit: NSObject {
 
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
-            capture.setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
+            setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
         }
     }
 
     var colorSpace = AVCaptureColorSpace.sRGB {
         didSet {
-            capture.setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
+            setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
         }
     }
 
@@ -136,7 +141,9 @@ final class IOVideoUnit: NSObject {
                 }
             }
             drawable?.videoOrientation = videoOrientation
-            capture.videoOrientation = videoOrientation
+            output?.connections.filter { $0.isVideoOrientationSupported }.forEach {
+                $0.videoOrientation = videoOrientation
+            }
         }
     }
 
@@ -149,7 +156,6 @@ final class IOVideoUnit: NSObject {
         }
     }
 
-    let capture: IOVideoCaptureUnit = .init()
     private var selectedReplaceVideoCameraId: UUID?
     private var replaceVideos: [UUID: ReplaceVideo] = [:]
     private var blackImageBuffer: CVPixelBuffer?
@@ -225,7 +231,7 @@ final class IOVideoUnit: NSObject {
         guard let mixer else {
             return
         }
-        if capture.device == device {
+        if self.device == device {
             if isOtherReplaceVideo {
                 lockQueue.sync {
                     firstFrameDate = nil
@@ -240,8 +246,8 @@ final class IOVideoUnit: NSObject {
             defer {
                 mixer.videoSession.commitConfiguration()
             }
-            capture.detachSession(mixer.videoSession)
-            try capture.attachDevice(nil, videoUnit: self)
+            detachSession(mixer.videoSession)
+            try attachDevice(nil, videoUnit: self)
             stopGapFillerTimer()
             return
         }
@@ -253,16 +259,12 @@ final class IOVideoUnit: NSObject {
                 setTorchMode(.on)
             }
         }
-        try capture.attachDevice(device, videoUnit: self)
+        try attachDevice(device, videoUnit: self)
         // Not perfect. Should be set before registering the capture callback
         lockQueue.sync {
             firstFrameDate = nil
             isFirstAfterAttach = true
         }
-    }
-
-    func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
-        capture.setTorchMode(torchMode)
     }
 
     @inline(__always)
@@ -422,15 +424,155 @@ final class IOVideoUnit: NSObject {
         codec.stopRunning()
         codec.delegate = nil
     }
+
+    public var isVideoMirrored = false {
+        didSet {
+            output?.connections.filter { $0.isVideoMirroringSupported }.forEach {
+                $0.isVideoMirrored = isVideoMirrored
+            }
+        }
+    }
+
+    public var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .off {
+        didSet {
+            output?.connections.filter { $0.isVideoStabilizationSupported }.forEach {
+                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+            }
+        }
+    }
+
+    func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
+        guard let device else {
+            return
+        }
+        guard let format = device.findVideoFormat(
+            width: device.activeFormat.formatDescription.dimensions.width,
+            height: device.activeFormat.formatDescription.dimensions.height,
+            frameRate: frameRate,
+            colorSpace: colorSpace
+        ) else {
+            logger.info("No matching video format found")
+            return
+        }
+        logger.info("Selected video format: \(format)")
+        do {
+            try device.lockForConfiguration()
+            if device.activeFormat != format {
+                device.activeFormat = format
+            }
+            device.activeColorSpace = colorSpace
+            device.activeVideoMinFrameDuration = CMTime(
+                value: 100,
+                timescale: CMTimeScale(100 * frameRate)
+            )
+            device.activeVideoMaxFrameDuration = CMTime(
+                value: 100,
+                timescale: CMTimeScale(100 * frameRate)
+            )
+            device.unlockForConfiguration()
+        } catch {
+            logger.error("while locking device for fps:", error)
+        }
+    }
+
+    func attachDevice(_ device: AVCaptureDevice?, videoUnit: IOVideoUnit) throws {
+        setSampleBufferDelegate(nil)
+        detachSession(videoUnit.mixer?.videoSession)
+        self.device = device
+        guard let device else {
+            input = nil
+            output = nil
+            connection = nil
+            return
+        }
+        input = try AVCaptureDeviceInput(device: device)
+        output = AVCaptureVideoDataOutput()
+        output?.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+        if let output, let port = input?.ports
+            .first(where: {
+                $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
+                    .sourceDevicePosition == device.position
+            })
+        {
+            connection = AVCaptureConnection(inputPorts: [port], output: output)
+        } else {
+            connection = nil
+        }
+        attachSession(videoUnit.mixer?.videoSession)
+        output?.connections.forEach {
+            if $0.isVideoMirroringSupported {
+                $0.isVideoMirrored = isVideoMirrored
+            }
+            if $0.isVideoOrientationSupported {
+                $0.videoOrientation = videoOrientation
+            }
+            if $0.isVideoStabilizationSupported {
+                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+            }
+        }
+        setSampleBufferDelegate(videoUnit)
+    }
+
+    func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
+        guard let device, device.isTorchModeSupported(torchMode) else {
+            return
+        }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = torchMode
+            device.unlockForConfiguration()
+        } catch {
+            logger.error("while setting torch:", error)
+        }
+    }
+
+    private func setSampleBufferDelegate(_ videoUnit: IOVideoUnit?) {
+        if let videoUnit {
+            videoOrientation = videoUnit.videoOrientation
+            setFrameRate(frameRate: videoUnit.frameRate, colorSpace: videoUnit.colorSpace)
+        }
+        output?.setSampleBufferDelegate(videoUnit, queue: videoUnit?.lockQueue)
+    }
+
+    func attachSession(_ session: AVCaptureSession?) {
+        guard let session, let connection, let input, let output else {
+            return
+        }
+        if session.canAddInput(input) {
+            session.addInputWithNoConnections(input)
+        }
+        if session.canAddOutput(output) {
+            session.addOutputWithNoConnections(output)
+        }
+        if session.canAddConnection(connection) {
+            session.addConnection(connection)
+        }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = false
+    }
+
+    func detachSession(_ session: AVCaptureSession?) {
+        guard let session, let connection, let input, let output else {
+            return
+        }
+        if session.connections.contains(connection) {
+            session.removeConnection(connection)
+        }
+        if session.inputs.contains(input) {
+            session.removeInput(input)
+        }
+        if session.outputs.contains(output) {
+            session.removeOutput(output)
+        }
+    }
 }
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(
+    public func captureOutput(
         _ captureOutput: AVCaptureOutput,
         didOutput sampleBuffer: CMSampleBuffer,
         from _: AVCaptureConnection
     ) {
-        if capture.output == captureOutput {
+        if output == captureOutput {
             for replaceVideo in replaceVideos.values {
                 replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
             }

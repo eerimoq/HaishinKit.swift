@@ -409,7 +409,7 @@ open class RTMPStream: NetStream {
     /// Creates flv metadata for a stream.
     open func createMetaData() -> ASObject {
         var metadata: [String: Any] = [:]
-        if mixer.video.capture.device != nil {
+        if mixer.video.device != nil {
             metadata["width"] = mixer.video.codec.settings.videoSize.width
             metadata["height"] = mixer.video.codec.settings.videoSize.height
             metadata["framerate"] = mixer.video.frameRate
@@ -421,7 +421,7 @@ open class RTMPStream: NetStream {
             }
             metadata["videodatarate"] = mixer.video.codec.settings.bitRate / 1000
         }
-        if mixer.audio.capture.device != nil {
+        if mixer.audio.device != nil {
             metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
             metadata["audiodatarate"] = mixer.audio.codec.settings.bitRate / 1000
             if let sampleRate = mixer.audio.codec.inSourceFormat?.mSampleRate {
