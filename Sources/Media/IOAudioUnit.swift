@@ -24,7 +24,7 @@ final class IOAudioUnit: NSObject {
     }
 
     func attachAudio(_ device: AVCaptureDevice?,
-                     automaticallyConfiguresApplicationAudioSession: Bool) throws
+                     _ automaticallyConfiguresApplicationAudioSession: Bool) throws
     {
         guard let mixer else {
             return

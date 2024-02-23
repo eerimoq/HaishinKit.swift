@@ -66,11 +66,9 @@ open class NetStream: NSObject {
     /// Specifiet the device torch indicating wheter the turn on(TRUE) or not(FALSE).
     public var torch: Bool {
         get {
-            var torch: Bool = false
             lockQueue.sync {
-                torch = self.mixer.video.torch
+                self.mixer.video.torch
             }
-            return torch
         }
         set {
             lockQueue.async {
@@ -82,11 +80,9 @@ open class NetStream: NSObject {
     /// Specifies the frame rate of a device capture.
     public var frameRate: Float64 {
         get {
-            var frameRate: Float64 = IOMixer.defaultFrameRate
             lockQueue.sync {
-                frameRate = self.mixer.video.frameRate
+                self.mixer.video.frameRate
             }
-            return frameRate
         }
         set {
             lockQueue.async {
@@ -106,11 +102,9 @@ open class NetStream: NSObject {
     /// Specifies the sessionPreset for the AVCaptureSession.
     public var sessionPreset: AVCaptureSession.Preset {
         get {
-            var sessionPreset: AVCaptureSession.Preset = .default
             lockQueue.sync {
-                sessionPreset = self.mixer.sessionPreset
+                self.mixer.sessionPreset
             }
-            return sessionPreset
         }
         set {
             lockQueue.async {
@@ -176,7 +170,7 @@ open class NetStream: NSObject {
 
     /// Attaches the primary camera object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachCamera(
+    public func attachCamera(
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil,
         onSuccess: (() -> Void)? = nil,
@@ -184,7 +178,7 @@ open class NetStream: NSObject {
     ) {
         lockQueue.async {
             do {
-                try self.mixer.video.attachCamera(device, replaceVideoCameraId)
+                try self.mixer.attachCamera(device, replaceVideoCameraId)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -194,44 +188,38 @@ open class NetStream: NSObject {
 
     /// Attaches the audio capture object.
     /// - Warning: This method can't use appendSampleBuffer at the same time.
-    open func attachAudio(
+    public func attachAudio(
         _ device: AVCaptureDevice?,
         automaticallyConfiguresApplicationAudioSession: Bool = false,
         onError: ((_ error: Error) -> Void)? = nil
     ) {
         lockQueue.sync {
             do {
-                try self.mixer.audio.attachAudio(
-                    device,
-                    automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession
-                )
+                try self.mixer.attachAudio(device, automaticallyConfiguresApplicationAudioSession)
             } catch {
                 onError?(error)
             }
         }
     }
 
-    /// Append a video sample buffer.
-    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    open func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
+    public func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
         mixer.video.lockQueue.async {
             self.mixer.video.addReplaceVideoSampleBuffer(id: id, sampleBuffer)
         }
     }
 
-    open func addReplaceVideo(cameraId: UUID, latency: Double) {
+    public func addReplaceVideo(cameraId: UUID, latency: Double) {
         mixer.video.lockQueue.async {
             self.mixer.video.addReplaceVideo(cameraId: cameraId, latency: latency)
         }
     }
 
-    open func removeReplaceVideo(cameraId: UUID) {
+    public func removeReplaceVideo(cameraId: UUID) {
         mixer.video.lockQueue.async {
             self.mixer.video.removeReplaceVideo(cameraId: cameraId)
         }
     }
 
-    /// Returns the IOVideoCaptureUnit by index.
     public func videoCapture() -> IOVideoUnit? {
         return mixer.video.lockQueue.sync {
             self.mixer.video

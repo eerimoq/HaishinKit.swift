@@ -1,8 +1,6 @@
 import AVFoundation
 import SwiftPMSupport
 
-import UIKit
-
 private func makeSession() -> AVCaptureSession {
     let session = AVCaptureSession()
     if #available(iOS 16.0, *) {
@@ -11,10 +9,6 @@ private func makeSession() -> AVCaptureSession {
         }
     }
     return session
-}
-
-extension AVCaptureSession.Preset {
-    static let `default`: AVCaptureSession.Preset = .hd1280x720
 }
 
 protocol IOMixerDelegate: AnyObject {
@@ -46,7 +40,7 @@ public class IOMixer {
 
     private var readyState: ReadyState = .standby
 
-    var sessionPreset: AVCaptureSession.Preset = .default {
+    var sessionPreset: AVCaptureSession.Preset = .hd1280x720 {
         didSet {
             guard sessionPreset != oldValue, videoSession.canSetSessionPreset(sessionPreset) else {
                 return
@@ -102,6 +96,16 @@ public class IOMixer {
     }
 
     private var videoTimeStamp = CMTime.zero
+
+    func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
+        try video.attachCamera(device, replaceVideo)
+    }
+
+    func attachAudio(_ device: AVCaptureDevice?,
+                     _ automaticallyConfiguresApplicationAudioSession: Bool) throws
+    {
+        try audio.attachAudio(device, automaticallyConfiguresApplicationAudioSession)
+    }
 
     func useSampleBuffer(sampleBuffer: CMSampleBuffer, mediaType: AVMediaType) -> Bool {
         switch mediaSync {

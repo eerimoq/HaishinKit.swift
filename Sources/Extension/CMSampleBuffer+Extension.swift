@@ -15,7 +15,7 @@ extension CMSampleBuffer {
         guard muted else {
             return self
         }
-        guard let dataBuffer = dataBuffer else {
+        guard let dataBuffer else {
             return nil
         }
         let status = CMBlockBufferFillDataBytes(
