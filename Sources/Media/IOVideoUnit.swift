@@ -104,14 +104,6 @@ public final class IOVideoUnit: NSObject {
     var muted = false
     private var effects: [VideoEffect] = []
 
-    private var extent = CGRect.zero {
-        didSet {
-            guard extent != oldValue else {
-                return
-            }
-        }
-    }
-
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
             setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
@@ -395,8 +387,9 @@ public final class IOVideoUnit: NSObject {
         }
         if !effects.isEmpty && !skipEffects {
             let image = effect(imageBuffer, info: sampleBuffer)
-            extent = image.extent
-            if imageBuffer.width == Int(extent.width) && imageBuffer.height == Int(extent.height) {
+            if imageBuffer.width == Int(image.extent.width) && imageBuffer
+                .height == Int(image.extent.height)
+            {
                 context.render(image, to: imageBuffer)
             }
         }

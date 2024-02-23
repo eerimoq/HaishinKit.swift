@@ -13,7 +13,7 @@ public struct RTMPStreamStats {
 public class RTMPStreamInfo {
     public internal(set) var byteCount: Atomic<Int64> = .init(0)
     public internal(set) var resourceName: String?
-    public internal(set) var currentBytesPerSecond: Int32 = 0
+    public internal(set) var currentBytesPerSecond: Int64 = 0
     public internal(set) var stats: Atomic<RTMPStreamStats> = .init(RTMPStreamStats())
 
     private var previousByteCount: Int64 = 0
@@ -24,7 +24,8 @@ public class RTMPStreamInfo {
 
     func onTimeout() {
         let byteCount = self.byteCount.value
-        currentBytesPerSecond = Int32(byteCount - previousByteCount)
+        let speed = byteCount - previousByteCount
+        currentBytesPerSecond = Int64(Double(currentBytesPerSecond) * 0.7 + Double(speed) * 0.3)
         previousByteCount = byteCount
     }
 
