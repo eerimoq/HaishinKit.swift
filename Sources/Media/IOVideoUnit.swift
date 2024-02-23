@@ -212,7 +212,7 @@ public final class IOVideoUnit: NSObject {
         _ = appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false, skipEffects: true)
     }
 
-    func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
+    func attach(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
         startGapFillerTimer()
         let isOtherReplaceVideo = lockQueue.sync {
             let oldReplaceVideo = self.selectedReplaceVideoCameraId

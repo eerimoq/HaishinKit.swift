@@ -190,12 +190,11 @@ open class NetStream: NSObject {
     /// - Warning: This method can't use appendSampleBuffer at the same time.
     public func attachAudio(
         _ device: AVCaptureDevice?,
-        automaticallyConfiguresApplicationAudioSession: Bool = false,
         onError: ((_ error: Error) -> Void)? = nil
     ) {
         lockQueue.sync {
             do {
-                try self.mixer.attachAudio(device, automaticallyConfiguresApplicationAudioSession)
+                try self.mixer.attachAudio(device)
             } catch {
                 onError?(error)
             }

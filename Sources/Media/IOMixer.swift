@@ -33,13 +33,6 @@ public class IOMixer {
         case passthrough
     }
 
-    enum ReadyState {
-        case standby
-        case encoding
-    }
-
-    private var readyState: ReadyState = .standby
-
     var sessionPreset: AVCaptureSession.Preset = .hd1280x720 {
         didSet {
             guard sessionPreset != oldValue, videoSession.canSetSessionPreset(sessionPreset) else {
@@ -54,6 +47,7 @@ public class IOMixer {
     public let videoSession = makeSession()
     public let audioSession = makeSession()
     public private(set) var isRunning: Atomic<Bool> = .init(false)
+    private var isEncoding = false
 
     /// Specifies the drawable object.
     public weak var drawable: (any NetStreamDrawable)? {
@@ -67,6 +61,7 @@ public class IOMixer {
 
     var mediaSync = MediaSync.passthrough
     weak var delegate: (any IOMixerDelegate)?
+    private var videoTimeStamp = CMTime.zero
 
     lazy var audio: IOAudioUnit = {
         var audio = IOAudioUnit()
@@ -95,16 +90,13 @@ public class IOMixer {
         }
     }
 
-    private var videoTimeStamp = CMTime.zero
-
     func attachCamera(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
-        try video.attachCamera(device, replaceVideo)
+        try video.attach(device, replaceVideo)
     }
 
-    func attachAudio(_ device: AVCaptureDevice?,
-                     _ automaticallyConfiguresApplicationAudioSession: Bool) throws
+    func attachAudio(_ device: AVCaptureDevice?) throws
     {
-        try audio.attachAudio(device, automaticallyConfiguresApplicationAudioSession)
+        try audio.attach(device)
     }
 
     func useSampleBuffer(sampleBuffer: CMSampleBuffer, mediaType: AVMediaType) -> Bool {
@@ -124,22 +116,22 @@ public class IOMixer {
     }
 
     public func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
-        guard readyState == .standby else {
+        guard !isEncoding else {
             return
         }
-        readyState = .encoding
+        isEncoding = true
         video.startEncoding(delegate)
         audio.startEncoding(delegate)
     }
 
     public func stopEncoding() {
-        guard readyState == .encoding else {
+        guard isEncoding else {
             return
         }
         videoTimeStamp = CMTime.zero
         video.stopEncoding()
         audio.stopEncoding()
-        readyState = .standby
+        isEncoding = false
     }
 
     public func startRunning() {

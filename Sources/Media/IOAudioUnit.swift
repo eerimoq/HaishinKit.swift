@@ -23,8 +23,7 @@ final class IOAudioUnit: NSObject {
         }
     }
 
-    func attachAudio(_ device: AVCaptureDevice?,
-                     _ automaticallyConfiguresApplicationAudioSession: Bool) throws
+    func attach(_ device: AVCaptureDevice?) throws
     {
         guard let mixer else {
             return
@@ -34,8 +33,7 @@ final class IOAudioUnit: NSObject {
             mixer.audioSession.commitConfiguration()
         }
         try attachDevice(device)
-        mixer.audioSession
-            .automaticallyConfiguresApplicationAudioSession = automaticallyConfiguresApplicationAudioSession
+        mixer.audioSession.automaticallyConfiguresApplicationAudioSession = false
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach _: Bool, skipEffects _: Bool) {
