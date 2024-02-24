@@ -534,38 +534,36 @@ public final class IOVideoUnit: NSObject {
 
 extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(
-        _ captureOutput: AVCaptureOutput,
+        _: AVCaptureOutput,
         didOutput sampleBuffer: CMSampleBuffer,
         from _: AVCaptureConnection
     ) {
-        if output == captureOutput {
-            for replaceVideo in replaceVideos.values {
-                replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
-            }
-            var sampleBuffer = sampleBuffer
-            if let selectedReplaceVideoCameraId {
-                sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
-                    .getSampleBuffer(sampleBuffer) ?? makeBlackSampleBuffer(realSampleBuffer: sampleBuffer)
-            }
-            let now = Date()
-            if firstFrameDate == nil {
-                firstFrameDate = now
-            }
-            guard now.timeIntervalSince(firstFrameDate!) > ioVideoUnitIgnoreFramesAfterAttachSeconds
-            else {
-                return
-            }
-            latestSampleBuffer = sampleBuffer
-            latestSampleBufferDate = now
-            guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
-            else {
-                return
-            }
-            if appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false) {
-                isFirstAfterAttach = false
-            }
-            stopGapFillerTimer()
+        for replaceVideo in replaceVideos.values {
+            replaceVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds)
         }
+        var sampleBuffer = sampleBuffer
+        if let selectedReplaceVideoCameraId {
+            sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
+                .getSampleBuffer(sampleBuffer) ?? makeBlackSampleBuffer(realSampleBuffer: sampleBuffer)
+        }
+        let now = Date()
+        if firstFrameDate == nil {
+            firstFrameDate = now
+        }
+        guard now.timeIntervalSince(firstFrameDate!) > ioVideoUnitIgnoreFramesAfterAttachSeconds
+        else {
+            return
+        }
+        latestSampleBuffer = sampleBuffer
+        latestSampleBufferDate = now
+        guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
+        else {
+            return
+        }
+        if appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false) {
+            isFirstAfterAttach = false
+        }
+        stopGapFillerTimer()
     }
 }
 
