@@ -260,8 +260,18 @@ public final class IOVideoUnit: NSObject {
 
     func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
         var image = CIImage(cvPixelBuffer: buffer)
+        let extent = image.extent
+        var failedEffect: String?
         for effect in effects {
-            image = effect.execute(image, info: info)
+            let effectOutputImage = effect.execute(image, info: info)
+            if effectOutputImage.extent == extent {
+                image = effectOutputImage
+            } else {
+                failedEffect = "\(effect.name) (wrong size)"
+            }
+        }
+        if let mixer {
+            mixer.delegate?.mixerVideo(mixer, failedEffect: failedEffect)
         }
         return image
     }

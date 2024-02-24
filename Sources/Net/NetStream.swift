@@ -28,6 +28,7 @@ public protocol NetStreamDelegate: AnyObject {
         presentationTimestamp: Double
     )
     func streamVideo(_ stream: NetStream, presentationTimestamp: Double)
+    func streamVideo(_ stream: NetStream, failedEffect: String?)
     func stream(_ stream: NetStream, recorderErrorOccured error: IORecorder.Error)
     func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
@@ -279,6 +280,10 @@ extension NetStream: IOMixerDelegate {
 
     func mixerVideo(_: IOMixer, presentationTimestamp: Double) {
         delegate?.streamVideo(self, presentationTimestamp: presentationTimestamp)
+    }
+
+    func mixerVideo(_: IOMixer, failedEffect: String?) {
+        delegate?.streamVideo(self, failedEffect: failedEffect)
     }
 
     func mixer(_: IOMixer, recorderErrorOccured error: IORecorder.Error) {

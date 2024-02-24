@@ -23,8 +23,7 @@ final class IOAudioUnit: NSObject {
         }
     }
 
-    func attach(_ device: AVCaptureDevice?) throws
-    {
+    func attach(_ device: AVCaptureDevice?) throws {
         guard let mixer else {
             return
         }

@@ -20,6 +20,7 @@ protocol IOMixerDelegate: AnyObject {
     func mixer(_ mixer: IOMixer, sessionInterruptionEnded session: AVCaptureSession)
     func mixer(_ mixer: IOMixer, audioLevel: Float, numberOfAudioChannels: Int, presentationTimestamp: Double)
     func mixerVideo(_ mixer: IOMixer, presentationTimestamp: Double)
+    func mixerVideo(_ mixer: IOMixer, failedEffect: String?)
     func mixer(_ mixer: IOMixer, recorderErrorOccured error: IORecorder.Error)
     func mixer(_ mixer: IOMixer, recorderFinishWriting writer: AVAssetWriter)
 }
@@ -94,8 +95,7 @@ public class IOMixer {
         try video.attach(device, replaceVideo)
     }
 
-    func attachAudio(_ device: AVCaptureDevice?) throws
-    {
+    func attachAudio(_ device: AVCaptureDevice?) throws {
         try audio.attach(device)
     }
 
