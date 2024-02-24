@@ -102,7 +102,7 @@ public struct VideoCodecSettings {
             .init(key: .pixelTransferProperties, value: ["ScalingMode": "Trim"] as NSObject),
         ]
         if !isBaseline, profileLevel.contains("H264") {
-            options.append(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
+            options.append(.init(key: .h264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }
         return options
     }

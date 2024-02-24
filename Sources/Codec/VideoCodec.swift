@@ -42,7 +42,7 @@ public class VideoCodec {
     public var settings: VideoCodecSettings = .init() {
         didSet {
             if settings.shouldInvalidateSession(oldValue) {
-                self.invalidateSession = true
+                invalidateSession = true
             } else {
                 settings.apply(self)
             }

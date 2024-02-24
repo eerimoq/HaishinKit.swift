@@ -99,13 +99,13 @@ public class SRTStream: NetStream {
         )
     }
 
-    override public func attachAudio(        _ audio: AVCaptureDevice?,        onError: ((Error) -> Void)? = nil    ) {
+    override public func attachAudio(_ audio: AVCaptureDevice?, onError: ((Error) -> Void)? = nil) {
         if audio == nil {
             writer.expectedMedias.remove(.audio)
         } else {
             writer.expectedMedias.insert(.audio)
         }
-        super.attachAudio(            audio,            onError: onError        )
+        super.attachAudio(audio, onError: onError)
     }
 
     /// Sends streaming audio, video and data message from client.
