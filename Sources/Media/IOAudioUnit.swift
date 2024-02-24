@@ -30,6 +30,7 @@ final class IOAudioUnit: NSObject {
         let captureSession = mixer.audioSession
         output?.setSampleBufferDelegate(nil, queue: lockQueue)
         try attachDevice(device, captureSession)
+        self.device = device
         output?.setSampleBufferDelegate(self, queue: lockQueue)
         captureSession.automaticallyConfiguresApplicationAudioSession = false
     }
@@ -119,7 +120,6 @@ final class IOAudioUnit: NSObject {
             input = nil
             output = nil
         }
-        self.device = device
     }
 }
 

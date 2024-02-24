@@ -1,7 +1,7 @@
 import AVFoundation
 import SwiftPMSupport
 
-private func makeSession() -> AVCaptureSession {
+private func makeCaptureSession() -> AVCaptureSession {
     let session = AVCaptureSession()
     if #available(iOS 16.0, *) {
         if session.isMultitaskingCameraAccessSupported {
@@ -34,19 +34,9 @@ public class IOMixer {
         case passthrough
     }
 
-    var sessionPreset: AVCaptureSession.Preset = .hd1280x720 {
-        didSet {
-            guard sessionPreset != oldValue, videoSession.canSetSessionPreset(sessionPreset) else {
-                return
-            }
-            videoSession.beginConfiguration()
-            videoSession.sessionPreset = sessionPreset
-            videoSession.commitConfiguration()
-        }
-    }
-
-    public let videoSession = makeSession()
-    public let audioSession = makeSession()
+    var sessionPreset: AVCaptureSession.Preset = .hd1280x720
+    public let videoSession = makeCaptureSession()
+    public let audioSession = makeCaptureSession()
     public private(set) var isRunning: Atomic<Bool> = .init(false)
     private var isEncoding = false
 

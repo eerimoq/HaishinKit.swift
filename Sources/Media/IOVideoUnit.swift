@@ -106,13 +106,13 @@ public final class IOVideoUnit: NSObject {
 
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
-            setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
+            setDeviceFormat(frameRate: frameRate, colorSpace: colorSpace)
         }
     }
 
     var colorSpace = AVCaptureColorSpace.sRGB {
         didSet {
-            setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
+            setDeviceFormat(frameRate: frameRate, colorSpace: colorSpace)
         }
     }
 
@@ -225,31 +225,34 @@ public final class IOVideoUnit: NSObject {
             }
             return
         }
-        guard let device else {
+        output?.setSampleBufferDelegate(nil, queue: lockQueue)
+        let captureSession = mixer.videoSession
+        if let device {
+            mixer.mediaSync = .video
+            try attachDevice(device, captureSession)
+            lockQueue.sync {
+                firstFrameDate = nil
+                isFirstAfterAttach = true
+            }
+        } else {
             mixer.mediaSync = .passthrough
-            mixer.videoSession.beginConfiguration()
-            defer {
-                mixer.videoSession.commitConfiguration()
-            }
-            detachSession()
-            try attachDevice(nil)
+            try attachDevice(nil, captureSession)
             stopGapFillerTimer()
-            return
         }
-        mixer.mediaSync = .video
-        mixer.videoSession.beginConfiguration()
-        defer {
-            mixer.videoSession.commitConfiguration()
-            if torch {
-                setTorchMode(.on)
+        self.device = device
+        output?.connections.forEach {
+            if $0.isVideoMirroringSupported {
+                $0.isVideoMirrored = isVideoMirrored
+            }
+            if $0.isVideoOrientationSupported {
+                $0.videoOrientation = videoOrientation
+            }
+            if $0.isVideoStabilizationSupported {
+                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
             }
         }
-        try attachDevice(device)
-        // Not perfect. Should be set before registering the capture callback
-        lockQueue.sync {
-            firstFrameDate = nil
-            isFirstAfterAttach = true
-        }
+        setDeviceFormat(frameRate: frameRate, colorSpace: colorSpace)
+        output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
     func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
@@ -436,7 +439,7 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    private func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
+    private func setDeviceFormat(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
         guard let device, let mixer else {
             return
         }
@@ -470,43 +473,49 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    private func attachDevice(_ device: AVCaptureDevice?) throws {
-        output?.setSampleBufferDelegate(nil, queue: lockQueue)
-        detachSession()
-        self.device = device
-        guard let device else {
+    private func attachDevice(_ device: AVCaptureDevice?, _ captureSession: AVCaptureSession) throws {
+        captureSession.beginConfiguration()
+        defer {
+            captureSession.commitConfiguration()
+            if torch {
+                setTorchMode(.on)
+            }
+        }
+        if let connection, captureSession.connections.contains(connection) {
+            captureSession.removeConnection(connection)
+        }
+        if let input, captureSession.inputs.contains(input) {
+            captureSession.removeInput(input)
+        }
+        if let output, captureSession.outputs.contains(output) {
+            captureSession.removeOutput(output)
+        }
+        if let device {
+            input = try AVCaptureDeviceInput(device: device)
+            output = AVCaptureVideoDataOutput()
+            output!.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+            ]
+            if let port = input?.ports.first(where: { $0.mediaType == .video }) {
+                connection = AVCaptureConnection(inputPorts: [port], output: output!)
+            } else {
+                connection = nil
+            }
+            if captureSession.canAddInput(input!) {
+                captureSession.addInputWithNoConnections(input!)
+            }
+            if captureSession.canAddOutput(output!) {
+                captureSession.addOutputWithNoConnections(output!)
+            }
+            if let connection, captureSession.canAddConnection(connection) {
+                captureSession.addConnection(connection)
+            }
+            captureSession.automaticallyConfiguresCaptureDeviceForWideColor = false
+        } else {
             input = nil
             output = nil
             connection = nil
-            return
         }
-        input = try AVCaptureDeviceInput(device: device)
-        output = AVCaptureVideoDataOutput()
-        output?.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-        if let output, let port = input?.ports
-            .first(where: {
-                $0.mediaType == .video && $0.sourceDeviceType == device.deviceType && $0
-                    .sourceDevicePosition == device.position
-            })
-        {
-            connection = AVCaptureConnection(inputPorts: [port], output: output)
-        } else {
-            connection = nil
-        }
-        attachSession()
-        output?.connections.forEach {
-            if $0.isVideoMirroringSupported {
-                $0.isVideoMirrored = isVideoMirrored
-            }
-            if $0.isVideoOrientationSupported {
-                $0.videoOrientation = videoOrientation
-            }
-            if $0.isVideoStabilizationSupported {
-                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
-            }
-        }
-        setFrameRate(frameRate: frameRate, colorSpace: colorSpace)
-        output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
     private func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
@@ -519,37 +528,6 @@ public final class IOVideoUnit: NSObject {
             device.unlockForConfiguration()
         } catch {
             logger.error("while setting torch:", error)
-        }
-    }
-
-    private func attachSession() {
-        guard let mixer, let connection, let input, let output else {
-            return
-        }
-        if mixer.videoSession.canAddInput(input) {
-            mixer.videoSession.addInputWithNoConnections(input)
-        }
-        if mixer.videoSession.canAddOutput(output) {
-            mixer.videoSession.addOutputWithNoConnections(output)
-        }
-        if mixer.videoSession.canAddConnection(connection) {
-            mixer.videoSession.addConnection(connection)
-        }
-        mixer.videoSession.automaticallyConfiguresCaptureDeviceForWideColor = false
-    }
-
-    private func detachSession() {
-        guard let mixer, let connection, let input, let output else {
-            return
-        }
-        if mixer.videoSession.connections.contains(connection) {
-            mixer.videoSession.removeConnection(connection)
-        }
-        if mixer.videoSession.inputs.contains(input) {
-            mixer.videoSession.removeInput(input)
-        }
-        if mixer.videoSession.outputs.contains(output) {
-            mixer.videoSession.removeOutput(output)
         }
     }
 }
