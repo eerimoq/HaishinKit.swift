@@ -126,7 +126,6 @@ public final class IOVideoUnit: NSObject {
                     self.setTorchMode(.on)
                 }
             }
-            drawable?.videoOrientation = videoOrientation
             output?.connections
                 .filter { $0.isVideoOrientationSupported }
                 .forEach { $0.videoOrientation = videoOrientation }
