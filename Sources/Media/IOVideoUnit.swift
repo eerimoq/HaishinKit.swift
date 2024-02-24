@@ -433,12 +433,12 @@ public final class IOVideoUnit: NSObject {
     }
 
     private func setFrameRate(frameRate: Float64, colorSpace: AVCaptureColorSpace) {
-        guard let device else {
+        guard let device, let mixer else {
             return
         }
         guard let format = device.findVideoFormat(
-            width: device.activeFormat.formatDescription.dimensions.width,
-            height: device.activeFormat.formatDescription.dimensions.height,
+            width: mixer.sessionPreset.width!,
+            height: mixer.sessionPreset.height!,
             frameRate: frameRate,
             colorSpace: colorSpace
         ) else {

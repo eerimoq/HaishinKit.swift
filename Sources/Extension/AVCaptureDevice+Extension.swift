@@ -10,8 +10,8 @@ extension AVCaptureDevice {
     ) -> AVCaptureDevice.Format? {
         return formats
             .filter { $0.isFrameRateSupported(frameRate) }
-            .filter { width <= $0.formatDescription.dimensions.width }
-            .filter { height <= $0.formatDescription.dimensions.height }
+            .filter { $0.formatDescription.dimensions.width >= width }
+            .filter { $0.formatDescription.dimensions.height >= height }
             .filter { $0.supportedColorSpaces.contains(colorSpace) }.first
     }
 }

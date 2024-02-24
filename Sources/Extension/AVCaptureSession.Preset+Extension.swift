@@ -4,6 +4,8 @@ import Foundation
 extension AVCaptureSession.Preset {
     var width: Int32? {
         switch self {
+        case .hd4K3840x2160:
+            return 3840
         case .hd1920x1080:
             return 1920
         case .hd1280x720:
@@ -19,6 +21,8 @@ extension AVCaptureSession.Preset {
 
     var height: Int32? {
         switch self {
+        case .hd4K3840x2160:
+            return 2160
         case .hd1920x1080:
             return 1080
         case .hd1280x720:
