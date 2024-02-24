@@ -39,13 +39,12 @@ public class VideoCodec {
     ]
 
     /// Specifies the settings for a VideoCodec.
-    public var settings: VideoCodecSettings = .default {
+    public var settings: VideoCodecSettings = .init() {
         didSet {
-            let invalidateSession = settings.invalidateSession(oldValue)
-            if invalidateSession {
-                self.invalidateSession = invalidateSession
+            if settings.shouldInvalidateSession(oldValue) {
+                self.invalidateSession = true
             } else {
-                settings.apply(self, rhs: oldValue)
+                settings.apply(self)
             }
         }
     }
