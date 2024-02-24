@@ -35,7 +35,7 @@ public class IOMixer {
     }
 
     var sessionPreset: AVCaptureSession.Preset = .hd1280x720
-    public let videoSession = makeCaptureSession()
+    public let captureSession = makeCaptureSession()
     public let audioSession = makeCaptureSession()
     public private(set) var isRunning: Atomic<Bool> = .init(false)
     private var isEncoding = false
@@ -73,8 +73,8 @@ public class IOMixer {
     }()
 
     deinit {
-        if videoSession.isRunning {
-            videoSession.stopRunning()
+        if captureSession.isRunning {
+            captureSession.stopRunning()
         }
         if audioSession.isRunning {
             audioSession.stopRunning()
@@ -128,8 +128,8 @@ public class IOMixer {
         guard !isRunning.value else {
             return
         }
-        addSessionObservers(videoSession)
-        videoSession.startRunning()
+        addSessionObservers(captureSession)
+        captureSession.startRunning()
         addSessionObservers(audioSession)
         audioSession.startRunning()
         isRunning.mutate { $0 = audioSession.isRunning }
@@ -139,8 +139,8 @@ public class IOMixer {
         guard isRunning.value else {
             return
         }
-        removeSessionObservers(videoSession)
-        videoSession.stopRunning()
+        removeSessionObservers(captureSession)
+        captureSession.stopRunning()
         removeSessionObservers(audioSession)
         audioSession.stopRunning()
         isRunning.mutate { $0 = audioSession.isRunning }
@@ -150,10 +150,10 @@ public class IOMixer {
         guard isRunning.value else {
             return
         }
-        if !videoSession.isRunning {
-            videoSession.startRunning()
+        if !captureSession.isRunning {
+            captureSession.startRunning()
         }
-        isRunning.mutate { $0 = videoSession.isRunning }
+        isRunning.mutate { $0 = captureSession.isRunning }
         if !audioSession.isRunning {
             audioSession.startRunning()
         }
@@ -227,7 +227,7 @@ public class IOMixer {
                     )
                 }
                 device.unlockForConfiguration()
-                videoSession.startRunning()
+                captureSession.startRunning()
             } catch {
                 logger.warn(error)
             }
@@ -255,7 +255,7 @@ public class IOMixer {
 
     @objc
     private func sessionInterruptionEnded(_: Notification) {
-        delegate?.mixer(self, sessionInterruptionEnded: videoSession)
+        delegate?.mixer(self, sessionInterruptionEnded: captureSession)
     }
 }
 

@@ -226,7 +226,7 @@ public final class IOVideoUnit: NSObject {
             return
         }
         output?.setSampleBufferDelegate(nil, queue: lockQueue)
-        let captureSession = mixer.videoSession
+        let captureSession = mixer.captureSession
         if let device {
             mixer.mediaSync = .video
             try attachDevice(device, captureSession)
