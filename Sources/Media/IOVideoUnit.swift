@@ -121,20 +121,15 @@ public final class IOVideoUnit: NSObject {
             guard videoOrientation != oldValue else {
                 return
             }
-            mixer?.videoSession.beginConfiguration()
-            defer {
-                mixer?.videoSession.commitConfiguration()
-                // https://github.com/shogo4405/HaishinKit.swift/issues/190
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    if self.torch {
-                        self.setTorchMode(.on)
-                    }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if self.torch {
+                    self.setTorchMode(.on)
                 }
             }
             drawable?.videoOrientation = videoOrientation
-            output?.connections.filter { $0.isVideoOrientationSupported }.forEach {
-                $0.videoOrientation = videoOrientation
-            }
+            output?.connections
+                .filter { $0.isVideoOrientationSupported }
+                .forEach { $0.videoOrientation = videoOrientation }
         }
     }
 
