@@ -89,15 +89,14 @@ public class IOMixer {
         try audio.attach(device)
     }
 
-    func useSampleBuffer(sampleBuffer: CMSampleBuffer, mediaType: AVMediaType) -> Bool {
+    func useSampleBuffer(_ presentationTimeStamp: CMTime, mediaType: AVMediaType) -> Bool {
         switch mediaSync {
         case .video:
             if mediaType == .audio {
-                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= sampleBuffer
-                    .presentationTimeStamp.seconds
+                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= presentationTimeStamp.seconds
             }
             if videoTimeStamp == CMTime.zero {
-                videoTimeStamp = sampleBuffer.presentationTimeStamp
+                videoTimeStamp = presentationTimeStamp
             }
             return true
         default:

@@ -11,14 +11,14 @@ final class IOAudioUnit: NSObject {
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false
     weak var mixer: IOMixer?
-    private var presentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
+    private var latestPresentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
     private var inSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard inSourceFormat != oldValue else {
                 return
             }
-            presentationTimeStamp = Self.defaultPresentationTimeStamp
+            latestPresentationTimeStamp = Self.defaultPresentationTimeStamp
             codec.inSourceFormat = inSourceFormat
         }
     }
@@ -44,7 +44,7 @@ final class IOAudioUnit: NSObject {
         let numGapSamples = numGapSamples(sampleBuffer)
         let numSampleBuffers = Int(numGapSamples / sampleBuffer.numSamples)
         if Self.sampleBuffersThreshold <= numSampleBuffers {
-            var gapPresentationTimeStamp = presentationTimeStamp
+            var gapPresentationTimeStamp = latestPresentationTimeStamp
             for i in 0 ... numSampleBuffers {
                 let numSamples = numSampleBuffers == i ? numGapSamples % sampleBuffer
                     .numSamples : sampleBuffer.numSamples
@@ -62,26 +62,26 @@ final class IOAudioUnit: NSObject {
         }
         codec.appendSampleBuffer(sampleBuffer)
         mixer?.recorder.appendSampleBuffer(sampleBuffer)
-        presentationTimeStamp = sampleBuffer.presentationTimeStamp
+        latestPresentationTimeStamp = sampleBuffer.presentationTimeStamp
     }
 
     private func numGapSamples(_ sampleBuffer: CMSampleBuffer) -> Int {
         guard let mSampleRate = inSourceFormat?.mSampleRate,
-              presentationTimeStamp != Self.defaultPresentationTimeStamp
+              latestPresentationTimeStamp != Self.defaultPresentationTimeStamp
         else {
             return 0
         }
         let sampleRate = Int32(mSampleRate)
         // Device audioMic or ReplayKit audioMic.
-        if presentationTimeStamp.timescale == sampleRate {
-            return Int(sampleBuffer.presentationTimeStamp.value - presentationTimeStamp.value) - sampleBuffer
+        if latestPresentationTimeStamp.timescale == sampleRate {
+            return Int(sampleBuffer.presentationTimeStamp.value - latestPresentationTimeStamp.value) - sampleBuffer
                 .numSamples
         }
         // ReplayKit audioApp. PTS = {69426976806125/1000000000 = 69426.977}
         let diff = CMTime(
             seconds: sampleBuffer.presentationTimeStamp.seconds,
             preferredTimescale: sampleRate
-        ) - CMTime(seconds: presentationTimeStamp.seconds, preferredTimescale: sampleRate)
+        ) - CMTime(seconds: latestPresentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
     }
 
@@ -132,7 +132,9 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         guard let mixer else {
             return
         }
-        guard mixer.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.audio) else {
+        // Workaround for audio drift on iPhone 15 Pro Max running iOS 17. Probably issue on more models.
+        let presentationTimeStamp = syncTimeToVideo(mixer: mixer, sampleBuffer: sampleBuffer)
+        guard mixer.useSampleBuffer(presentationTimeStamp, mediaType: AVMediaType.audio) else {
             return
         }
         var audioLevel: Float
@@ -147,8 +149,20 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             mixer,
             audioLevel: audioLevel,
             numberOfAudioChannels: connection.audioChannels.count,
-            presentationTimestamp: sampleBuffer.presentationTimeStamp.seconds
+            presentationTimestamp: presentationTimeStamp.seconds
         )
         appendSampleBuffer(sampleBuffer, isFirstAfterAttach: false, skipEffects: false)
     }
+}
+
+private func syncTimeToVideo(mixer: IOMixer, sampleBuffer: CMSampleBuffer) -> CMTime {
+    var presentationTimeStamp = sampleBuffer.presentationTimeStamp
+    if #available(iOS 16.0, *) {
+        if let audioClock = mixer.audioSession.synchronizationClock,
+           let videoClock = mixer.captureSession.synchronizationClock
+        {
+            presentationTimeStamp = audioClock.convertTime(presentationTimeStamp, to: videoClock)
+        }
+    }
+    return presentationTimeStamp
 }

@@ -199,7 +199,7 @@ public final class IOVideoUnit: NSObject {
         ) == noErr else {
             return
         }
-        guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer!, mediaType: AVMediaType.video) == true
+        guard mixer?.useSampleBuffer(sampleBuffer!.presentationTimeStamp, mediaType: AVMediaType.video) == true
         else {
             return
         }
@@ -556,7 +556,7 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         latestSampleBuffer = sampleBuffer
         latestSampleBufferDate = now
-        guard mixer?.useSampleBuffer(sampleBuffer: sampleBuffer, mediaType: AVMediaType.video) == true
+        guard mixer?.useSampleBuffer(sampleBuffer.presentationTimeStamp, mediaType: AVMediaType.video) == true
         else {
             return
         }

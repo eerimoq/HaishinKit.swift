@@ -124,7 +124,7 @@ public class AudioCodec {
                     audioConverter: audioConverter,
                     inputBuffer: ringBuffer.current,
                     outputBuffer: buffer,
-                    presentationTimeStamp: ringBuffer.presentationTimeStamp
+                    presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
                 )
                 ringBuffer.next()
             }
@@ -133,7 +133,7 @@ public class AudioCodec {
             }
         case .pcm:
             var offset = 0
-            var presentationTimeStamp = sampleBuffer.presentationTimeStamp
+            var newPresentationTimeStamp = sampleBuffer.presentationTimeStamp
             for i in 0 ..< sampleBuffer.numSamples {
                 guard let buffer = makeInputBuffer() as? AVAudioCompressedBuffer else {
                     continue
@@ -154,9 +154,9 @@ public class AudioCodec {
                         dataLength: byteCount,
                         destination: buffer.data
                     )
-                    appendAudioBuffer(buffer, presentationTimeStamp: presentationTimeStamp)
-                    presentationTimeStamp = CMTimeAdd(
-                        presentationTimeStamp,
+                    appendAudioBuffer(buffer, presentationTimeStamp: newPresentationTimeStamp)
+                    newPresentationTimeStamp = CMTimeAdd(
+                        newPresentationTimeStamp,
                         CMTime(
                             value: CMTimeValue(1024),
                             timescale: sampleBuffer.presentationTimeStamp.timescale
@@ -180,7 +180,7 @@ public class AudioCodec {
                     audioConverter: audioConverter,
                     inputBuffer: ringBuffer.current,
                     outputBuffer: buffer,
-                    presentationTimeStamp: ringBuffer.presentationTimeStamp
+                    presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
                 )
                 ringBuffer.next()
             }
