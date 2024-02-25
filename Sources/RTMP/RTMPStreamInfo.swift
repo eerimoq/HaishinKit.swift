@@ -44,7 +44,7 @@ public class RTMPStreamInfo {
         stats.mutate { stats in
             latestWrittenSequence = sequence
             // Just for safety
-            if sendTimings.count < 1000 {
+            if sendTimings.count < 500 {
                 sendTimings.append(SendTiming(timestamp: Date(), sequence: sequence))
             }
             stats.packetsInFlight = packetsInFlight()
@@ -83,6 +83,7 @@ public class RTMPStreamInfo {
     }
 
     private func packetsInFlight() -> UInt32 {
-        return UInt32((latestWrittenSequence - latestAckedSequence()) / 1400)
+        // Max just not to crash if server acks data that is not yet sent.
+        return UInt32(min(max(latestWrittenSequence - latestAckedSequence(), 0), Int64(UInt32.max)) / 1400)
     }
 }
