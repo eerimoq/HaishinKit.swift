@@ -35,13 +35,18 @@ final class IOAudioUnit: NSObject {
         captureSession.automaticallyConfiguresApplicationAudioSession = false
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach _: Bool, skipEffects _: Bool) {
+    func appendSampleBuffer(
+        _ sampleBuffer: CMSampleBuffer,
+        _ presentationTimeStamp: CMTime,
+        isFirstAfterAttach _: Bool,
+        skipEffects _: Bool
+    ) {
         guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
             return
         }
         inSourceFormat = sampleBuffer.formatDescription?.streamBasicDescription?.pointee
         // Synchronization between video and audio, need to synchronize the gaps.
-        let numGapSamples = numGapSamples(sampleBuffer)
+        let numGapSamples = numGapSamples(sampleBuffer, presentationTimeStamp)
         let numSampleBuffers = Int(numGapSamples / sampleBuffer.numSamples)
         if Self.sampleBuffersThreshold <= numSampleBuffers {
             var gapPresentationTimeStamp = latestPresentationTimeStamp
@@ -55,17 +60,17 @@ final class IOAudioUnit: NSObject {
                 ) else {
                     continue
                 }
-                codec.appendSampleBuffer(gapSampleBuffer)
+                codec.appendSampleBuffer(gapSampleBuffer, gapPresentationTimeStamp)
                 mixer?.recorder.appendSampleBuffer(gapSampleBuffer)
                 gapPresentationTimeStamp = CMTimeAdd(gapPresentationTimeStamp, gapSampleBuffer.duration)
             }
         }
-        codec.appendSampleBuffer(sampleBuffer)
+        codec.appendSampleBuffer(sampleBuffer, presentationTimeStamp)
         mixer?.recorder.appendSampleBuffer(sampleBuffer)
-        latestPresentationTimeStamp = sampleBuffer.presentationTimeStamp
+        latestPresentationTimeStamp = presentationTimeStamp
     }
 
-    private func numGapSamples(_ sampleBuffer: CMSampleBuffer) -> Int {
+    private func numGapSamples(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) -> Int {
         guard let mSampleRate = inSourceFormat?.mSampleRate,
               latestPresentationTimeStamp != Self.defaultPresentationTimeStamp
         else {
@@ -74,12 +79,12 @@ final class IOAudioUnit: NSObject {
         let sampleRate = Int32(mSampleRate)
         // Device audioMic or ReplayKit audioMic.
         if latestPresentationTimeStamp.timescale == sampleRate {
-            return Int(sampleBuffer.presentationTimeStamp.value - latestPresentationTimeStamp.value) - sampleBuffer
+            return Int(presentationTimeStamp.value - latestPresentationTimeStamp.value) - sampleBuffer
                 .numSamples
         }
         // ReplayKit audioApp. PTS = {69426976806125/1000000000 = 69426.977}
         let diff = CMTime(
-            seconds: sampleBuffer.presentationTimeStamp.seconds,
+            seconds: presentationTimeStamp.seconds,
             preferredTimescale: sampleRate
         ) - CMTime(seconds: latestPresentationTimeStamp.seconds, preferredTimescale: sampleRate)
         return Int(diff.value) - sampleBuffer.numSamples
@@ -134,7 +139,6 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         }
         // Workaround for audio drift on iPhone 15 Pro Max running iOS 17. Probably issue on more models.
         let presentationTimeStamp = syncTimeToVideo(mixer: mixer, sampleBuffer: sampleBuffer)
-        //print(presentationTimeStamp.seconds, presentationTimeStamp.timescale)
         guard mixer.useSampleBuffer(presentationTimeStamp, mediaType: AVMediaType.audio) else {
             return
         }
@@ -152,7 +156,7 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             numberOfAudioChannels: connection.audioChannels.count,
             presentationTimestamp: presentationTimeStamp.seconds
         )
-        appendSampleBuffer(sampleBuffer, isFirstAfterAttach: false, skipEffects: false)
+        appendSampleBuffer(sampleBuffer, presentationTimeStamp, isFirstAfterAttach: false, skipEffects: false)
     }
 }
 

@@ -93,7 +93,8 @@ public class IOMixer {
         switch mediaSync {
         case .video:
             if mediaType == .audio {
-                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= presentationTimeStamp.seconds
+                return !videoTimeStamp.seconds.isZero && videoTimeStamp.seconds <= presentationTimeStamp
+                    .seconds
             }
             if videoTimeStamp == CMTime.zero {
                 videoTimeStamp = presentationTimeStamp

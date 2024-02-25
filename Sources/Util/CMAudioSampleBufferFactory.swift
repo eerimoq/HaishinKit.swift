@@ -1,10 +1,10 @@
 import CoreMedia
 import Foundation
 
-func makeAudioSampleBuffer(_ buffer: CMSampleBuffer, numSamples: Int,
+func makeAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer, numSamples: Int,
                            presentationTimeStamp: CMTime) -> CMSampleBuffer?
 {
-    guard numSamples > 0, let formatDescription = buffer.formatDescription,
+    guard numSamples > 0, let formatDescription = sampleBuffer.formatDescription,
           let streamBasicDescription = formatDescription.streamBasicDescription
     else {
         return nil

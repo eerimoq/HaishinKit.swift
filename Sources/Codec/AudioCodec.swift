@@ -104,7 +104,11 @@ public class AudioCodec {
     private var outputBuffers: [AVAudioBuffer] = []
     private var audioConverter: AVAudioConverter?
 
-    public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, offset: Int = 0) {
+    public func appendSampleBuffer(
+        _ sampleBuffer: CMSampleBuffer,
+        _ presentationTimeStamp: CMTime,
+        offset: Int = 0
+    ) {
         guard isRunning.value else {
             return
         }
@@ -114,7 +118,11 @@ public class AudioCodec {
                 logger.info("audioConverter or ringBuffer missing")
                 return
             }
-            let numSamples = ringBuffer.appendSampleBuffer(sampleBuffer, offset: offset)
+            let numSamples = ringBuffer.appendSampleBuffer(
+                sampleBuffer,
+                presentationTimeStamp,
+                offset: offset
+            )
             if ringBuffer.isReady {
                 guard let buffer = getOutputBuffer() else {
                     logger.info("no output buffer")
@@ -129,11 +137,11 @@ public class AudioCodec {
                 ringBuffer.next()
             }
             if offset + numSamples < sampleBuffer.numSamples {
-                appendSampleBuffer(sampleBuffer, offset: offset + numSamples)
+                appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
             }
         case .pcm:
             var offset = 0
-            var newPresentationTimeStamp = sampleBuffer.presentationTimeStamp
+            var newPresentationTimeStamp = presentationTimeStamp
             for i in 0 ..< sampleBuffer.numSamples {
                 guard let buffer = makeInputBuffer() as? AVAudioCompressedBuffer else {
                     continue
@@ -159,7 +167,7 @@ public class AudioCodec {
                         newPresentationTimeStamp,
                         CMTime(
                             value: CMTimeValue(1024),
-                            timescale: sampleBuffer.presentationTimeStamp.timescale
+                            timescale: presentationTimeStamp.timescale
                         )
                     )
                     offset += sampleSize
@@ -170,7 +178,11 @@ public class AudioCodec {
                 logger.info("audioConverter or ringBuffer missing")
                 return
             }
-            let numSamples = ringBuffer.appendSampleBuffer(sampleBuffer, offset: offset)
+            let numSamples = ringBuffer.appendSampleBuffer(
+                sampleBuffer,
+                presentationTimeStamp,
+                offset: offset
+            )
             if ringBuffer.isReady {
                 guard let buffer = getOutputBuffer() else {
                     logger.info("no output buffer")
@@ -185,7 +197,7 @@ public class AudioCodec {
                 ringBuffer.next()
             }
             if offset + numSamples < sampleBuffer.numSamples {
-                appendSampleBuffer(sampleBuffer, offset: offset + numSamples)
+                appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
             }
         }
     }

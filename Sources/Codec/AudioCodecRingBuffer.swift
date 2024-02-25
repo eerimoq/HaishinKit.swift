@@ -46,16 +46,18 @@ final class AudioCodecRingBuffer {
         self.numSamples = Int(numSamples)
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, offset: Int) -> Int {
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime,
+                            offset: Int) -> Int
+    {
         if isReady {
             return -1
         }
         if latestPresentationTimeStamp == .invalid {
             let offsetTimeStamp: CMTime = offset == 0 ? .zero : CMTime(
                 value: CMTimeValue(offset),
-                timescale: sampleBuffer.presentationTimeStamp.timescale
+                timescale: presentationTimeStamp.timescale
             )
-            latestPresentationTimeStamp = CMTimeAdd(sampleBuffer.presentationTimeStamp, offsetTimeStamp)
+            latestPresentationTimeStamp = CMTimeAdd(presentationTimeStamp, offsetTimeStamp)
         }
         if offset == 0 {
             if workingBuffer.frameLength < sampleBuffer.numSamples {
