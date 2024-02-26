@@ -114,91 +114,111 @@ public class AudioCodec {
         }
         switch settings.format {
         case .aac:
-            guard let audioConverter, let ringBuffer else {
-                logger.info("audioConverter or ringBuffer missing")
-                return
-            }
-            let numSamples = ringBuffer.appendSampleBuffer(
-                sampleBuffer,
-                presentationTimeStamp,
-                offset: offset
-            )
-            if ringBuffer.isReady {
-                guard let buffer = getOutputBuffer() else {
-                    logger.info("no output buffer")
-                    return
-                }
-                convertBuffer(
-                    audioConverter: audioConverter,
-                    inputBuffer: ringBuffer.current,
-                    outputBuffer: buffer,
-                    presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
-                )
-                ringBuffer.next()
-            }
-            if offset + numSamples < sampleBuffer.numSamples {
-                appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
-            }
+            appendSampleBufferAac(sampleBuffer, presentationTimeStamp, offset: offset)
         case .pcm:
-            var offset = 0
-            var newPresentationTimeStamp = presentationTimeStamp
-            for i in 0 ..< sampleBuffer.numSamples {
-                guard let buffer = makeInputBuffer() as? AVAudioCompressedBuffer else {
-                    continue
-                }
-                let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
-                let byteCount = sampleSize - ADTSHeader.size
-                buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
-                    mStartOffset: 0,
-                    mVariableFramesInPacket: 0,
-                    mDataByteSize: UInt32(byteCount)
-                )
-                buffer.packetCount = 1
-                buffer.byteLength = UInt32(byteCount)
-                if let blockBuffer = sampleBuffer.dataBuffer {
-                    CMBlockBufferCopyDataBytes(
-                        blockBuffer,
-                        atOffset: offset + ADTSHeader.size,
-                        dataLength: byteCount,
-                        destination: buffer.data
-                    )
-                    appendAudioBuffer(buffer, presentationTimeStamp: newPresentationTimeStamp)
-                    newPresentationTimeStamp = CMTimeAdd(
-                        newPresentationTimeStamp,
-                        CMTime(
-                            value: CMTimeValue(1024),
-                            timescale: presentationTimeStamp.timescale
-                        )
-                    )
-                    offset += sampleSize
-                }
-            }
+            appendSampleBufferPcm(sampleBuffer, presentationTimeStamp)
         case .opus:
-            guard let audioConverter, let ringBuffer else {
-                logger.info("audioConverter or ringBuffer missing")
+            appendSampleBufferOpus(sampleBuffer, presentationTimeStamp, offset: offset)
+        }
+    }
+
+    private func appendSampleBufferAac(
+        _ sampleBuffer: CMSampleBuffer,
+        _ presentationTimeStamp: CMTime,
+        offset: Int = 0
+    ) {
+        guard let audioConverter, let ringBuffer else {
+            logger.info("audioConverter or ringBuffer missing")
+            return
+        }
+        let numSamples = ringBuffer.appendSampleBuffer(
+            sampleBuffer,
+            presentationTimeStamp,
+            offset: offset
+        )
+        if ringBuffer.isReady {
+            guard let buffer = getOutputBuffer() else {
+                logger.info("no output buffer")
                 return
             }
-            let numSamples = ringBuffer.appendSampleBuffer(
-                sampleBuffer,
-                presentationTimeStamp,
-                offset: offset
+            convertBuffer(
+                audioConverter: audioConverter,
+                inputBuffer: ringBuffer.current,
+                outputBuffer: buffer,
+                presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
             )
-            if ringBuffer.isReady {
-                guard let buffer = getOutputBuffer() else {
-                    logger.info("no output buffer")
-                    return
-                }
-                convertBuffer(
-                    audioConverter: audioConverter,
-                    inputBuffer: ringBuffer.current,
-                    outputBuffer: buffer,
-                    presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
+            ringBuffer.next()
+        }
+        if offset + numSamples < sampleBuffer.numSamples {
+            appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
+        }
+    }
+
+    private func appendSampleBufferPcm(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) {
+        var offset = 0
+        var newPresentationTimeStamp = presentationTimeStamp
+        for i in 0 ..< sampleBuffer.numSamples {
+            guard let buffer = makeInputBuffer() as? AVAudioCompressedBuffer else {
+                continue
+            }
+            let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
+            let byteCount = sampleSize - ADTSHeader.size
+            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
+                mStartOffset: 0,
+                mVariableFramesInPacket: 0,
+                mDataByteSize: UInt32(byteCount)
+            )
+            buffer.packetCount = 1
+            buffer.byteLength = UInt32(byteCount)
+            if let blockBuffer = sampleBuffer.dataBuffer {
+                CMBlockBufferCopyDataBytes(
+                    blockBuffer,
+                    atOffset: offset + ADTSHeader.size,
+                    dataLength: byteCount,
+                    destination: buffer.data
                 )
-                ringBuffer.next()
+                appendAudioBuffer(buffer, presentationTimeStamp: newPresentationTimeStamp)
+                newPresentationTimeStamp = CMTimeAdd(
+                    newPresentationTimeStamp,
+                    CMTime(
+                        value: CMTimeValue(1024),
+                        timescale: presentationTimeStamp.timescale
+                    )
+                )
+                offset += sampleSize
             }
-            if offset + numSamples < sampleBuffer.numSamples {
-                appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
+        }
+    }
+
+    private func appendSampleBufferOpus(
+        _ sampleBuffer: CMSampleBuffer,
+        _ presentationTimeStamp: CMTime,
+        offset: Int = 0
+    ) {
+        guard let audioConverter, let ringBuffer else {
+            logger.info("audioConverter or ringBuffer missing")
+            return
+        }
+        let numSamples = ringBuffer.appendSampleBuffer(
+            sampleBuffer,
+            presentationTimeStamp,
+            offset: offset
+        )
+        if ringBuffer.isReady {
+            guard let buffer = getOutputBuffer() else {
+                logger.info("no output buffer")
+                return
             }
+            convertBuffer(
+                audioConverter: audioConverter,
+                inputBuffer: ringBuffer.current,
+                outputBuffer: buffer,
+                presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
+            )
+            ringBuffer.next()
+        }
+        if offset + numSamples < sampleBuffer.numSamples {
+            appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
         }
     }
 
