@@ -54,15 +54,6 @@ open class NetStream: NSObject {
 
     /// Specifies the delegate of the NetStream.
     public weak var delegate: (any NetStreamDelegate)?
-    /// Specifies the context object.
-    public var context: CIContext {
-        get {
-            mixer.video.context
-        }
-        set {
-            mixer.video.context = newValue
-        }
-    }
 
     /// Specifiet the device torch indicating wheter the turn on(TRUE) or not(FALSE).
     public var torch: Bool {

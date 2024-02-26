@@ -82,15 +82,7 @@ public final class IOVideoUnit: NSObject {
     private var input: AVCaptureInput?
     private var output: AVCaptureVideoDataOutput?
     private var connection: AVCaptureConnection?
-
-    var context: CIContext = .init() {
-        didSet {
-            for effect in effects {
-                effect.ciContext = context
-            }
-        }
-    }
-
+    private let context = CIContext()
     weak var drawable: (any NetStreamDrawable)?
 
     var formatDescription: CMVideoFormatDescription? {
@@ -275,7 +267,6 @@ public final class IOVideoUnit: NSObject {
     }
 
     func registerEffect(_ effect: VideoEffect) -> Bool {
-        effect.ciContext = context
         if effects.contains(effect) {
             return false
         } else {
@@ -285,7 +276,6 @@ public final class IOVideoUnit: NSObject {
     }
 
     func unregisterEffect(_ effect: VideoEffect) -> Bool {
-        effect.ciContext = nil
         if let index = effects.firstIndex(of: effect) {
             effects.remove(at: index)
             return true
