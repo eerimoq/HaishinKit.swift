@@ -144,6 +144,8 @@ public final class IOVideoUnit: NSObject {
     private var firstFrameDate: Date?
     private var isFirstAfterAttach = false
     private var latestSampleBufferAppendTime = CMTime.zero
+    private var lowFpsPngImageEnabled: Bool = false
+    private var lowFpsPngImageLatest: Double = 0.0
 
     deinit {
         stopGapFillerTimer()
@@ -284,6 +286,10 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
+    func setLowFpsPngImage(enabled: Bool) {
+        lowFpsPngImageEnabled = enabled
+    }
+
     func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
         guard let replaceVideo = replaceVideos[id] else {
             return
@@ -401,6 +407,17 @@ public final class IOVideoUnit: NSObject {
             imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
+        if lowFpsPngImageEnabled, let mixer,
+           lowFpsPngImageLatest + 5 < sampleBuffer.presentationTimeStamp.seconds
+        {
+            lowFpsPngImageLatest = sampleBuffer.presentationTimeStamp.seconds
+            var ciImage = CIImage(cvPixelBuffer: imageBuffer)
+            let scale = 300.0 / Double(imageBuffer.width)
+            ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            let cgImage = context.createCGImage(ciImage, from: ciImage.extent)!
+            let image = UIImage(cgImage: cgImage)
+            mixer.delegate?.mixerVideo(mixer, lowFpsPngImage: image.pngData())
+        }
         return true
     }
 

@@ -1,5 +1,6 @@
 import AVFoundation
 import SwiftPMSupport
+import SwiftUI
 
 private func makeCaptureSession() -> AVCaptureSession {
     let session = AVCaptureSession()
@@ -21,6 +22,7 @@ protocol IOMixerDelegate: AnyObject {
     func mixer(_ mixer: IOMixer, audioLevel: Float, numberOfAudioChannels: Int, presentationTimestamp: Double)
     func mixerVideo(_ mixer: IOMixer, presentationTimestamp: Double)
     func mixerVideo(_ mixer: IOMixer, failedEffect: String?)
+    func mixerVideo(_ mixer: IOMixer, lowFpsPngImage: Data?)
     func mixer(_ mixer: IOMixer, recorderErrorOccured error: IORecorder.Error)
     func mixer(_ mixer: IOMixer, recorderFinishWriting writer: AVAssetWriter)
 }
