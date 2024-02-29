@@ -288,6 +288,7 @@ public final class IOVideoUnit: NSObject {
 
     func setLowFpsPngImage(enabled: Bool) {
         lowFpsPngImageEnabled = enabled
+        lowFpsPngImageLatest = 0.0
     }
 
     func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
@@ -412,7 +413,7 @@ public final class IOVideoUnit: NSObject {
         {
             lowFpsPngImageLatest = sampleBuffer.presentationTimeStamp.seconds
             var ciImage = CIImage(cvPixelBuffer: imageBuffer)
-            let scale = 300.0 / Double(imageBuffer.width)
+            let scale = 150.0 / Double(imageBuffer.width)
             ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             let cgImage = context.createCGImage(ciImage, from: ciImage.extent)!
             let image = UIImage(cgImage: cgImage)
