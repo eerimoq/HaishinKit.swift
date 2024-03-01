@@ -3,6 +3,7 @@ import CoreImage
 import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
+public var ioVideoUnitWatchInterval = 3.0
 
 class ReplaceVideo {
     var sampleBuffers: [CMSampleBuffer] = []
@@ -409,11 +410,11 @@ public final class IOVideoUnit: NSObject {
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
         if lowFpsPngImageEnabled, let mixer,
-           lowFpsPngImageLatest + 5 < sampleBuffer.presentationTimeStamp.seconds
+           lowFpsPngImageLatest + ioVideoUnitWatchInterval < sampleBuffer.presentationTimeStamp.seconds
         {
             lowFpsPngImageLatest = sampleBuffer.presentationTimeStamp.seconds
             var ciImage = CIImage(cvPixelBuffer: imageBuffer)
-            let scale = 150.0 / Double(imageBuffer.width)
+            let scale = 400.0 / Double(imageBuffer.width)
             ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             let cgImage = context.createCGImage(ciImage, from: ciImage.extent)!
             let image = UIImage(cgImage: cgImage)
