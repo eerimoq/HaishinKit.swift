@@ -3,7 +3,7 @@ import CoreImage
 import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
-public var ioVideoUnitWatchInterval = 3.0
+public var ioVideoUnitWatchInterval = 2.0
 
 class ReplaceVideo {
     var sampleBuffers: [CMSampleBuffer] = []
