@@ -29,7 +29,7 @@ public protocol NetStreamDelegate: AnyObject {
     )
     func streamVideo(_ stream: NetStream, presentationTimestamp: Double)
     func streamVideo(_ stream: NetStream, failedEffect: String?)
-    func streamVideo(_ stream: NetStream, lowFpsPngImage: Data?)
+    func streamVideo(_ stream: NetStream, lowFpsImage: Data?)
     func stream(_ stream: NetStream, recorderErrorOccured error: IORecorder.Error)
     func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
@@ -232,9 +232,9 @@ open class NetStream: NSObject {
         }
     }
 
-    public func setLowFpsPngImage(enabled: Bool) {
+    public func setLowFpsImage(enabled: Bool) {
         mixer.video.lockQueue.sync {
-            self.mixer.video.setLowFpsPngImage(enabled: enabled)
+            self.mixer.video.setLowFpsImage(enabled: enabled)
         }
     }
 
@@ -284,8 +284,8 @@ extension NetStream: IOMixerDelegate {
         delegate?.streamVideo(self, failedEffect: failedEffect)
     }
 
-    func mixerVideo(_: IOMixer, lowFpsPngImage: Data?) {
-        delegate?.streamVideo(self, lowFpsPngImage: lowFpsPngImage)
+    func mixerVideo(_: IOMixer, lowFpsImage: Data?) {
+        delegate?.streamVideo(self, lowFpsImage: lowFpsImage)
     }
 
     func mixer(_: IOMixer, recorderErrorOccured error: IORecorder.Error) {

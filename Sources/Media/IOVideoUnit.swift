@@ -3,7 +3,7 @@ import CoreImage
 import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
-public var ioVideoUnitWatchInterval = 3.0
+public var ioVideoUnitWatchInterval = 1.0
 
 class ReplaceVideo {
     var sampleBuffers: [CMSampleBuffer] = []
@@ -145,8 +145,8 @@ public final class IOVideoUnit: NSObject {
     private var firstFrameDate: Date?
     private var isFirstAfterAttach = false
     private var latestSampleBufferAppendTime = CMTime.zero
-    private var lowFpsPngImageEnabled: Bool = false
-    private var lowFpsPngImageLatest: Double = 0.0
+    private var lowFpsImageEnabled: Bool = false
+    private var lowFpsImageLatest: Double = 0.0
 
     deinit {
         stopGapFillerTimer()
@@ -287,9 +287,9 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    func setLowFpsPngImage(enabled: Bool) {
-        lowFpsPngImageEnabled = enabled
-        lowFpsPngImageLatest = 0.0
+    func setLowFpsImage(enabled: Bool) {
+        lowFpsImageEnabled = enabled
+        lowFpsImageLatest = 0.0
     }
 
     func addReplaceVideoSampleBuffer(id: UUID, _ sampleBuffer: CMSampleBuffer) {
@@ -409,16 +409,16 @@ public final class IOVideoUnit: NSObject {
             imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )
-        if lowFpsPngImageEnabled, let mixer,
-           lowFpsPngImageLatest + ioVideoUnitWatchInterval < sampleBuffer.presentationTimeStamp.seconds
+        if lowFpsImageEnabled, let mixer,
+           lowFpsImageLatest + ioVideoUnitWatchInterval < sampleBuffer.presentationTimeStamp.seconds
         {
-            lowFpsPngImageLatest = sampleBuffer.presentationTimeStamp.seconds
+            lowFpsImageLatest = sampleBuffer.presentationTimeStamp.seconds
             var ciImage = CIImage(cvPixelBuffer: imageBuffer)
             let scale = 400.0 / Double(imageBuffer.width)
             ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             let cgImage = context.createCGImage(ciImage, from: ciImage.extent)!
             let image = UIImage(cgImage: cgImage)
-            mixer.delegate?.mixerVideo(mixer, lowFpsPngImage: image.pngData())
+            mixer.delegate?.mixerVideo(mixer, lowFpsImage: image.jpegData(compressionQuality: 0.6))
         }
         return true
     }
