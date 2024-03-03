@@ -207,36 +207,6 @@ open class RTMPStream: NetStream {
         }
     }
 
-    /// Pauses playback or publish of a video stream or not.
-    open var paused = false {
-        didSet {
-            lockQueue.async {
-                switch self.readyState {
-                case .publish, .publishing:
-                    if self.paused {
-                        self.pausedStatus = .init(hasAudio: self.hasAudio, hasVideo: self.hasVideo)
-                        self.hasAudio = false
-                        self.hasVideo = false
-                    } else {
-                        self.hasAudio = self.pausedStatus.hasAudio
-                        self.hasVideo = self.pausedStatus.hasVideo
-                    }
-                case .play, .playing:
-                    self.rtmpConnection?.socket.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
-                        streamId: self.id,
-                        transactionId: 0,
-                        objectEncoding: self.objectEncoding,
-                        commandName: "pause",
-                        commandObject: nil,
-                        arguments: [self.paused, floor(self.startedAt.timeIntervalSinceNow * -1000)]
-                    )))
-                default:
-                    break
-                }
-            }
-        }
-    }
-
     var id: UInt32 = RTMPStream.defaultID
     var readyState: ReadyState = .initialized {
         didSet {

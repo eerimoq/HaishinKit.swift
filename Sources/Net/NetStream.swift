@@ -34,9 +34,7 @@ public protocol NetStreamDelegate: AnyObject {
     func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
 
-/// The `NetStream` class is the foundation of a RTMPStream, HTTPStream.
 open class NetStream: NSObject {
-    /// The lockQueue.
     public let lockQueue: DispatchQueue = {
         let queue = DispatchQueue(label: "com.haishinkit.HaishinKit.NetStream.lock")
         queue.setSpecific(key: queueKey, value: queueValue)
@@ -57,30 +55,15 @@ open class NetStream: NSObject {
     public weak var delegate: (any NetStreamDelegate)?
 
     /// Specifiet the device torch indicating wheter the turn on(TRUE) or not(FALSE).
-    public var torch: Bool {
-        get {
-            lockQueue.sync {
-                self.mixer.video.torch
-            }
-        }
-        set {
-            lockQueue.async {
-                self.mixer.video.torch = newValue
-            }
+    public func setTorch(value: Bool) {
+        lockQueue.async {
+            self.mixer.video.torch = value
         }
     }
 
-    /// Specifies the frame rate of a device capture.
-    public var frameRate: Float64 {
-        get {
-            lockQueue.sync {
-                self.mixer.video.frameRate
-            }
-        }
-        set {
-            lockQueue.async {
-                self.mixer.video.frameRate = newValue
-            }
+    public func setFrameRate(value: Float64) {
+        lockQueue.async {
+            self.mixer.video.frameRate = value
         }
     }
 
@@ -92,51 +75,20 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Specifies the sessionPreset for the AVCaptureSession.
-    public var sessionPreset: AVCaptureSession.Preset {
-        get {
-            lockQueue.sync {
-                self.mixer.sessionPreset
-            }
-        }
-        set {
-            lockQueue.async {
-                self.mixer.sessionPreset = newValue
-            }
+    public func setSessionPreset(preset: AVCaptureSession.Preset) {
+        lockQueue.async {
+            self.mixer.sessionPreset = preset
         }
     }
 
-    /// Specifies the video orientation for stream.
-    public var videoOrientation: AVCaptureVideoOrientation {
-        get {
-            mixer.video.videoOrientation
-        }
-        set {
-            mixer.video.videoOrientation = newValue
-        }
+    public func setVideoOrientation(value: AVCaptureVideoOrientation) {
+        mixer.video.videoOrientation = value
     }
 
-    /// Specifies the hasAudio indicies whether no signal audio or not.
-    public var hasAudio: Bool {
-        get {
-            !mixer.audio.muted
-        }
-        set {
-            mixer.audio.muted = !newValue
-        }
+    public func setHasAudio(value: Bool) {
+        mixer.audio.muted = !value
     }
 
-    /// Specifies the hasVideo indicies whether freeze video signal or not.
-    public var hasVideo: Bool {
-        get {
-            !mixer.video.muted
-        }
-        set {
-            mixer.video.muted = !newValue
-        }
-    }
-
-    /// Specifies the audio compression properties.
     public var audioSettings: AudioCodecSettings {
         get {
             mixer.audio.codec.settings
@@ -146,7 +98,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Specifies the video compression properties.
     public var videoSettings: VideoCodecSettings {
         get {
             mixer.video.codec.settings
@@ -156,13 +107,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Creates a NetStream object.
-    override public init() {
-        super.init()
-    }
-
-    /// Attaches the primary camera object.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
     public func attachCamera(
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil,
@@ -179,8 +123,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Attaches the audio capture object.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
     public func attachAudio(
         _ device: AVCaptureDevice?,
         onError: ((_ error: Error) -> Void)? = nil
@@ -238,7 +180,6 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Starts recording.
     public func startRecording(
         url: URL,
         _ settings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings
@@ -248,7 +189,6 @@ open class NetStream: NSObject {
         mixer.recorder.startRunning()
     }
 
-    /// Stop recording.
     public func stopRecording() {
         mixer.recorder.stopRunning()
     }
