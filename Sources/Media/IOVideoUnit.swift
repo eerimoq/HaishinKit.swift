@@ -418,7 +418,7 @@ public final class IOVideoUnit: NSObject {
             ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             let cgImage = context.createCGImage(ciImage, from: ciImage.extent)!
             let image = UIImage(cgImage: cgImage)
-            mixer.delegate?.mixerVideo(mixer, lowFpsImage: image.jpegData(compressionQuality: 0.6))
+            mixer.delegate?.mixerVideo(mixer, lowFpsImage: image.jpegData(compressionQuality: 0.3))
         }
         return true
     }
