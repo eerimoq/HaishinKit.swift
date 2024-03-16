@@ -127,7 +127,7 @@ public final class IOVideoUnit: NSObject {
 
     var torch = false {
         didSet {
-            guard torch != oldValue, let device = self.device else {
+            guard torch != oldValue, let device = device else {
                 return
             }
             setTorchMode(device, torch ? .on : .off)
