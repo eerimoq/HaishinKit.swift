@@ -115,8 +115,8 @@ public final class IOVideoUnit: NSObject {
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if self.torch {
-                    self.setTorchMode(.on)
+                if self.torch, let device = self.device {
+                    self.setTorchMode(device, .on)
                 }
             }
             output?.connections
@@ -127,10 +127,10 @@ public final class IOVideoUnit: NSObject {
 
     var torch = false {
         didSet {
-            guard torch != oldValue else {
+            guard torch != oldValue, let device = self.device else {
                 return
             }
-            setTorchMode(torch ? .on : .off)
+            setTorchMode(device, torch ? .on : .off)
         }
     }
 
@@ -487,8 +487,10 @@ public final class IOVideoUnit: NSObject {
         captureSession.beginConfiguration()
         defer {
             captureSession.commitConfiguration()
-            if torch {
-                setTorchMode(.on)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if self.torch, let device = self.device {
+                    self.setTorchMode(device, .on)
+                }
             }
         }
         if let connection, captureSession.connections.contains(connection) {
@@ -528,8 +530,8 @@ public final class IOVideoUnit: NSObject {
         }
     }
 
-    private func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
-        guard let device, device.isTorchModeSupported(torchMode) else {
+    private func setTorchMode(_ device: AVCaptureDevice, _ torchMode: AVCaptureDevice.TorchMode) {
+        guard device.isTorchModeSupported(torchMode) else {
             return
         }
         do {
