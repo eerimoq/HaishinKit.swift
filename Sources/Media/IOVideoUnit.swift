@@ -251,7 +251,7 @@ public final class IOVideoUnit: NSObject {
         output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
-    func effect(_ buffer: CVImageBuffer, info: CMSampleBuffer?) -> CIImage {
+    func applyEffects(_ buffer: CVImageBuffer, info: CMSampleBuffer?) {
         var image = CIImage(cvPixelBuffer: buffer)
         let extent = image.extent
         var failedEffect: String?
@@ -266,7 +266,9 @@ public final class IOVideoUnit: NSObject {
         if let mixer {
             mixer.delegate?.mixerVideo(mixer, failedEffect: failedEffect)
         }
-        return image
+        if buffer.width == Int(image.extent.width) && buffer.height == Int(image.extent.height) {
+            context.render(image, to: buffer)
+        }
     }
 
     func registerEffect(_ effect: VideoEffect) -> Bool {
@@ -392,12 +394,7 @@ public final class IOVideoUnit: NSObject {
             imageBuffer.unlockBaseAddress()
         }
         if !effects.isEmpty && !skipEffects {
-            let image = effect(imageBuffer, info: sampleBuffer)
-            if imageBuffer.width == Int(image.extent.width) && imageBuffer
-                .height == Int(image.extent.height)
-            {
-                context.render(image, to: imageBuffer)
-            }
+            applyEffects(imageBuffer, info: sampleBuffer)
         }
         drawable?.enqueue(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
         codec.appendImageBuffer(
