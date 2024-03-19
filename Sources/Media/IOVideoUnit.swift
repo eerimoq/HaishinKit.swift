@@ -448,10 +448,6 @@ public final class IOVideoUnit: NSObject {
             )
         }
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
-        imageBuffer.lockBaseAddress()
-        defer {
-            imageBuffer.unlockBaseAddress()
-        }
         if !effects.isEmpty {
             (imageBuffer, sampleBuffer) = applyEffects(imageBuffer, sampleBuffer)
         }
