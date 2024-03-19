@@ -38,8 +38,7 @@ final class IOAudioUnit: NSObject {
     func appendSampleBuffer(
         _ sampleBuffer: CMSampleBuffer,
         _ presentationTimeStamp: CMTime,
-        isFirstAfterAttach _: Bool,
-        skipEffects _: Bool
+        isFirstAfterAttach _: Bool
     ) {
         guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
             return
@@ -156,7 +155,7 @@ extension IOAudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
             numberOfAudioChannels: connection.audioChannels.count,
             presentationTimestamp: presentationTimeStamp.seconds
         )
-        appendSampleBuffer(sampleBuffer, presentationTimeStamp, isFirstAfterAttach: false, skipEffects: false)
+        appendSampleBuffer(sampleBuffer, presentationTimeStamp, isFirstAfterAttach: false)
     }
 }
 

@@ -147,6 +147,9 @@ public final class IOVideoUnit: NSObject {
     private var latestSampleBufferAppendTime = CMTime.zero
     private var lowFpsImageEnabled: Bool = false
     private var lowFpsImageLatest: Double = 0.0
+    private var pool: CVPixelBufferPool?
+    private var poolWidth = 0
+    private var poolHeight = 0
 
     deinit {
         stopGapFillerTimer()
@@ -199,7 +202,7 @@ public final class IOVideoUnit: NSObject {
         else {
             return
         }
-        _ = appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false, skipEffects: true)
+        _ = appendSampleBuffer(sampleBuffer!, isFirstAfterAttach: false)
     }
 
     func attach(_ device: AVCaptureDevice?, _ replaceVideo: UUID?) throws {
@@ -251,12 +254,34 @@ public final class IOVideoUnit: NSObject {
         output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
-    func applyEffects(_ buffer: CVImageBuffer, info: CMSampleBuffer?) {
-        var image = CIImage(cvPixelBuffer: buffer)
+    private func getBufferPool(width: Int, height: Int) -> CVPixelBufferPool? {
+        if width != poolWidth || height != poolHeight {
+            poolWidth = width
+            poolHeight = height
+            let pixelBufferAttributes: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: UInt(kCVPixelFormatType_32BGRA),
+                kCVPixelBufferWidthKey as String: width,
+                kCVPixelBufferHeightKey as String: height,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:],
+            ]
+            CVPixelBufferPoolCreate(
+                kCFAllocatorDefault,
+                nil,
+                pixelBufferAttributes as NSDictionary?,
+                &pool
+            )
+        }
+        return pool
+    }
+
+    func applyEffects(_ imageBuffer: CVImageBuffer,
+                      _ sampleBuffer: CMSampleBuffer) -> (CVImageBuffer, CMSampleBuffer)
+    {
+        var image = CIImage(cvPixelBuffer: imageBuffer)
         let extent = image.extent
         var failedEffect: String?
         for effect in effects {
-            let effectOutputImage = effect.execute(image, info: info)
+            let effectOutputImage = effect.execute(image, info: sampleBuffer)
             if effectOutputImage.extent == extent {
                 image = effectOutputImage
             } else {
@@ -266,9 +291,45 @@ public final class IOVideoUnit: NSObject {
         if let mixer {
             mixer.delegate?.mixerVideo(mixer, failedEffect: failedEffect)
         }
-        if buffer.width == Int(image.extent.width) && buffer.height == Int(image.extent.height) {
-            context.render(image, to: buffer)
+        guard imageBuffer.width == Int(image.extent.width) && imageBuffer.height == Int(image.extent.height)
+        else {
+            return (imageBuffer, sampleBuffer)
         }
+        guard let pool = getBufferPool(width: imageBuffer.width, height: imageBuffer.height) else {
+            return (imageBuffer, sampleBuffer)
+        }
+        var outputImageBuffer: CVPixelBuffer?
+        CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputImageBuffer)
+        guard let outputImageBuffer else {
+            return (imageBuffer, sampleBuffer)
+        }
+        context.render(image, to: outputImageBuffer)
+        var formatDescription: CMVideoFormatDescription?
+        CMVideoFormatDescriptionCreateForImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: outputImageBuffer,
+            formatDescriptionOut: &formatDescription
+        )
+        guard let formatDescription else {
+            return (imageBuffer, sampleBuffer)
+        }
+        var timing = CMSampleTimingInfo(
+            duration: sampleBuffer.duration,
+            presentationTimeStamp: sampleBuffer.presentationTimeStamp,
+            decodeTimeStamp: sampleBuffer.decodeTimeStamp
+        )
+        var outputSampleBuffer: CMSampleBuffer?
+        CMSampleBufferCreateReadyWithImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: outputImageBuffer,
+            formatDescription: formatDescription,
+            sampleTiming: &timing,
+            sampleBufferOut: &outputSampleBuffer
+        )
+        guard let outputSampleBuffer else {
+            return (imageBuffer, sampleBuffer)
+        }
+        return (outputImageBuffer, outputSampleBuffer)
     }
 
     func registerEffect(_ effect: VideoEffect) -> Bool {
@@ -366,10 +427,9 @@ public final class IOVideoUnit: NSObject {
         return sampleBuffer
     }
 
-    private func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool,
-                                    skipEffects: Bool) -> Bool
-    {
-        guard let imageBuffer = sampleBuffer.imageBuffer else {
+    private func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, isFirstAfterAttach: Bool) -> Bool {
+        var sampleBuffer = sampleBuffer
+        guard var imageBuffer = sampleBuffer.imageBuffer else {
             return false
         }
         if sampleBuffer.presentationTimeStamp < latestSampleBufferAppendTime {
@@ -388,14 +448,14 @@ public final class IOVideoUnit: NSObject {
             )
         }
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
-        sampleBuffer.setAttachmentDisplayImmediately()
         imageBuffer.lockBaseAddress()
         defer {
             imageBuffer.unlockBaseAddress()
         }
-        if !effects.isEmpty && !skipEffects {
-            applyEffects(imageBuffer, info: sampleBuffer)
+        if !effects.isEmpty {
+            (imageBuffer, sampleBuffer) = applyEffects(imageBuffer, sampleBuffer)
         }
+        sampleBuffer.setAttachmentDisplayImmediately()
         drawable?.enqueue(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach)
         codec.appendImageBuffer(
             imageBuffer,
@@ -569,7 +629,7 @@ extension IOVideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         else {
             return
         }
-        if appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach, skipEffects: false) {
+        if appendSampleBuffer(sampleBuffer, isFirstAfterAttach: isFirstAfterAttach) {
             isFirstAfterAttach = false
         }
         stopGapFillerTimer()
