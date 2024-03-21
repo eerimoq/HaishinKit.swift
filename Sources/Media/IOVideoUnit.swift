@@ -226,6 +226,15 @@ public final class IOVideoUnit: NSObject {
         }
         output?.setSampleBufferDelegate(nil, queue: lockQueue)
         let captureSession = mixer.captureSession
+        captureSession.beginConfiguration()
+        defer {
+            captureSession.commitConfiguration()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if self.torch, let device = self.device {
+                    self.setTorchMode(device, .on)
+                }
+            }
+        }
         if let device {
             mixer.mediaSync = .video
             try attachDevice(device, captureSession)
@@ -537,15 +546,6 @@ public final class IOVideoUnit: NSObject {
     }
 
     private func attachDevice(_ device: AVCaptureDevice?, _ captureSession: AVCaptureSession) throws {
-        captureSession.beginConfiguration()
-        defer {
-            captureSession.commitConfiguration()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                if self.torch, let device = self.device {
-                    self.setTorchMode(device, .on)
-                }
-            }
-        }
         if let connection, captureSession.connections.contains(connection) {
             captureSession.removeConnection(connection)
         }
