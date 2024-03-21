@@ -35,26 +35,15 @@ public protocol NetStreamDelegate: AnyObject {
 }
 
 open class NetStream: NSObject {
-    public let lockQueue: DispatchQueue = {
-        let queue = DispatchQueue(label: "com.haishinkit.HaishinKit.NetStream.lock")
-        queue.setSpecific(key: queueKey, value: queueValue)
-        return queue
-    }()
-
-    private static let queueKey = DispatchSpecificKey<UnsafeMutableRawPointer>()
-    private static let queueValue = UnsafeMutableRawPointer.allocate(byteCount: 1, alignment: 1)
-
-    /// The mixer object.
-    public private(set) lazy var mixer: IOMixer = {
-        let mixer = IOMixer()
-        mixer.delegate = self
-        return mixer
-    }()
-
-    /// Specifies the delegate of the NetStream.
+    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.NetStream.lock")
+    public let mixer = IOMixer()
     public weak var delegate: (any NetStreamDelegate)?
 
-    /// Specifiet the device torch indicating wheter the turn on(TRUE) or not(FALSE).
+    override init() {
+        super.init()
+        mixer.delegate = self
+    }
+
     public func setTorch(value: Bool) {
         lockQueue.async {
             self.mixer.video.torch = value
