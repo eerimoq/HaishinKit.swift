@@ -307,7 +307,7 @@ open class RTMPStream: NetStream {
     open func publish(_ name: String?, type: RTMPStream.HowToPublish = .live) {
         // swiftlint:disable:next closure_body_length
         lockQueue.async {
-            guard let name: String = name else {
+            guard let name else {
                 switch self.readyState {
                 case .publish, .publishing:
                     self.close(withLockQueue: false)
