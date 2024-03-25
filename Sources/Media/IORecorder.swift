@@ -187,7 +187,8 @@ public class IORecorder {
                     case AVSampleRateKey:
                         outputSettings[key] = isZero(value) ? inSourceFormat.mSampleRate : value
                     case AVNumberOfChannelsKey:
-                        outputSettings[key] = isZero(value) ? Int(inSourceFormat.mChannelsPerFrame) : value
+                        outputSettings[key] = isZero(value) ? min(Int(inSourceFormat.mChannelsPerFrame), 2) :
+                            value
                     default:
                         outputSettings[key] = value
                     }
@@ -207,6 +208,8 @@ public class IORecorder {
                 break
             }
         }
+        let mediaTypeString = mediaType == AVMediaType.audio ? "audio" : "video"
+        logger.info("Output settings \(outputSettings) for \(mediaTypeString)")
         var input: AVAssetWriterInput?
         nstry {
             input = AVAssetWriterInput(
