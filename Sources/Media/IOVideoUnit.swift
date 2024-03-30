@@ -5,6 +5,18 @@ import UIKit
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
 public var ioVideoUnitWatchInterval = 1.0
 
+private func setOrientation(
+    device: AVCaptureDevice?,
+    connection: AVCaptureConnection,
+    orientation: AVCaptureVideoOrientation
+) {
+    if #available(iOS 17.0, *), device?.deviceType == .external {
+        connection.videoOrientation = .landscapeRight
+    } else {
+        connection.videoOrientation = orientation
+    }
+}
+
 class ReplaceVideo {
     var sampleBuffers: [CMSampleBuffer] = []
     var firstPresentationTimeStamp: Double = .nan
@@ -121,7 +133,9 @@ public final class IOVideoUnit: NSObject {
             }
             output?.connections
                 .filter { $0.isVideoOrientationSupported }
-                .forEach { $0.videoOrientation = videoOrientation }
+                .forEach {
+                    setOrientation(device: device, connection: $0, orientation: videoOrientation)
+                }
         }
     }
 
@@ -253,7 +267,7 @@ public final class IOVideoUnit: NSObject {
                 $0.isVideoMirrored = isVideoMirrored
             }
             if $0.isVideoOrientationSupported {
-                $0.videoOrientation = videoOrientation
+                setOrientation(device: device, connection: $0, orientation: videoOrientation)
             }
             if $0.isVideoStabilizationSupported {
                 $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
