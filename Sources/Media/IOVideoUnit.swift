@@ -481,7 +481,7 @@ public final class IOVideoUnit: NSObject {
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
             duration: sampleBuffer.duration
         )
-        mixer?.recorder.appendPixelBuffer(
+        mixer?.recorder.appendVideo(
             imageBuffer,
             withPresentationTime: sampleBuffer.presentationTimeStamp
         )

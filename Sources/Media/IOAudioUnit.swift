@@ -60,12 +60,12 @@ final class IOAudioUnit: NSObject {
                     continue
                 }
                 codec.appendSampleBuffer(gapSampleBuffer, gapPresentationTimeStamp)
-                mixer?.recorder.appendSampleBuffer(gapSampleBuffer)
+                mixer?.recorder.appendAudio(gapSampleBuffer)
                 gapPresentationTimeStamp = CMTimeAdd(gapPresentationTimeStamp, gapSampleBuffer.duration)
             }
         }
         codec.appendSampleBuffer(sampleBuffer, presentationTimeStamp)
-        mixer?.recorder.appendSampleBuffer(sampleBuffer)
+        mixer?.recorder.appendAudio(sampleBuffer)
         latestPresentationTimeStamp = presentationTimeStamp
     }
 

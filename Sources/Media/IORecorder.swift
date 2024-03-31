@@ -47,7 +47,7 @@ public class IORecorder {
 
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
     private var isReadyForStartWriting: Bool {
-        guard let writer = writer else {
+        guard let writer else {
             return false
         }
         return outputSettings.count == writer.inputs.count
@@ -60,154 +60,127 @@ public class IORecorder {
     private var videoPresentationTime: CMTime = .zero
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
 
-    /// Append a sample buffer for recording.
-    public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    public func appendAudio(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
             return
         }
-        let mediaType: AVMediaType = (sampleBuffer.formatDescription?._mediaType == kCMMediaType_Video) ?
-            .video : .audio
         lockQueue.async {
-            guard
-                let writer = self.writer,
-                let input = self.makeWriterInput(mediaType, sourceFormatHint: sampleBuffer.formatDescription),
-                self.isReadyForStartWriting
-            else {
-                return
-            }
+            self.appendAudioInner(sampleBuffer)
+        }
+    }
 
-            switch writer.status {
-            case .unknown:
-                writer.startWriting()
-                writer.startSession(atSourceTime: sampleBuffer.presentationTimeStamp)
-            default:
-                break
-            }
+    private func appendAudioInner(_ sampleBuffer: CMSampleBuffer) {
+        guard
+            let writer,
+            let input = makeAudioWriterInput(sourceFormatHint: sampleBuffer.formatDescription),
+            isReadyForStartWriting
+        else {
+            return
+        }
+        switch writer.status {
+        case .unknown:
+            writer.startWriting()
+            writer.startSession(atSourceTime: sampleBuffer.presentationTimeStamp)
+        default:
+            break
+        }
+        guard input.isReadyForMoreMediaData else {
+            return
+        }
+        if input.append(sampleBuffer) {
+            audioPresentationTime = sampleBuffer.presentationTimeStamp
+        } else {
+            delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
+        }
+    }
 
-            if input.isReadyForMoreMediaData {
-                switch mediaType {
-                case .audio:
-                    if input.append(sampleBuffer) {
-                        self.audioPresentationTime = sampleBuffer.presentationTimeStamp
-                    } else {
-                        self.delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
-                    }
-                case .video:
-                    if input.append(sampleBuffer) {
-                        self.videoPresentationTime = sampleBuffer.presentationTimeStamp
-                    } else {
-                        self.delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
-                    }
+    public func appendVideo(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
+        guard isRunning.value else {
+            return
+        }
+        lockQueue.async {
+            self.appendVideoInner(pixelBuffer, withPresentationTime: withPresentationTime)
+        }
+    }
+
+    private func appendVideoInner(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
+        if dimensions.width != pixelBuffer.width || dimensions.height != pixelBuffer.height {
+            dimensions = .init(width: Int32(pixelBuffer.width), height: Int32(pixelBuffer.height))
+        }
+        guard
+            let writer,
+            let input = makeVideoWriterInput(),
+            let adaptor = makePixelBufferAdaptor(input),
+            isReadyForStartWriting,
+            videoPresentationTime.seconds < withPresentationTime.seconds
+        else {
+            return
+        }
+        switch writer.status {
+        case .unknown:
+            writer.startWriting()
+            writer.startSession(atSourceTime: withPresentationTime)
+        default:
+            break
+        }
+        guard input.isReadyForMoreMediaData else {
+            return
+        }
+        if adaptor.append(pixelBuffer, withPresentationTime: withPresentationTime) {
+            videoPresentationTime = withPresentationTime
+        } else {
+            delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
+        }
+    }
+
+    private func makeAudioWriterInput(sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
+        if let input = writerInputs[.audio] {
+            return input
+        }
+        var outputSettings: [String: Any] = [:]
+        if let defaultOutputSettings: [String: Any] = self.outputSettings[.audio],
+           let format = sourceFormatHint,
+           let inSourceFormat = format.streamBasicDescription?.pointee
+        {
+            for (key, value) in defaultOutputSettings {
+                switch key {
+                case AVSampleRateKey:
+                    outputSettings[key] = isZero(value) ? inSourceFormat.mSampleRate : value
+                case AVNumberOfChannelsKey:
+                    outputSettings[key] = isZero(value) ? min(Int(inSourceFormat.mChannelsPerFrame), 2) :
+                        value
                 default:
-                    break
+                    outputSettings[key] = value
                 }
             }
         }
+        return makeWriterInput(.audio, outputSettings, sourceFormatHint: sourceFormatHint)
     }
 
-    /// Append a pixel buffer for recording.
-    public func appendPixelBuffer(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
-        guard isRunning.value else {
-            return
+    private func makeVideoWriterInput() -> AVAssetWriterInput? {
+        if let input = writerInputs[.video] {
+            return input
         }
-        lockQueue.async {
-            if self.dimensions.width != pixelBuffer.width || self.dimensions.height != pixelBuffer.height {
-                self.dimensions = .init(width: Int32(pixelBuffer.width), height: Int32(pixelBuffer.height))
-                logger.info("set dimensions to \(self.dimensions)")
-            }
-            guard
-                let writer = self.writer,
-                let input = self.makeWriterInput(.video, sourceFormatHint: nil),
-                let adaptor = self.makePixelBufferAdaptor(input),
-                self.isReadyForStartWriting,
-                self.videoPresentationTime.seconds < withPresentationTime.seconds
-            else {
-                logger.info("not writing for some reason")
-                return
-            }
-
-            switch writer.status {
-            case .unknown:
-                writer.startWriting()
-                writer.startSession(atSourceTime: withPresentationTime)
-                logger.info("start session")
-            default:
-                break
-            }
-
-            if input.isReadyForMoreMediaData {
-                if adaptor.append(pixelBuffer, withPresentationTime: withPresentationTime) {
-                    self.videoPresentationTime = withPresentationTime
-                } else {
-                    self.delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
+        var outputSettings: [String: Any] = [:]
+        if let defaultOutputSettings: [String: Any] = self.outputSettings[.video] {
+            for (key, value) in defaultOutputSettings {
+                switch key {
+                case AVVideoHeightKey:
+                    outputSettings[key] = isZero(value) ? Int(dimensions.height) : value
+                case AVVideoWidthKey:
+                    outputSettings[key] = isZero(value) ? Int(dimensions.width) : value
+                default:
+                    outputSettings[key] = value
                 }
             }
         }
-    }
-
-    func finishWriting() {
-        guard let writer = writer, writer.status == .writing else {
-            delegate?.recorder(self, errorOccured: .failedToFinishWriting(error: writer?.error))
-            return
-        }
-        let dispatchGroup = DispatchGroup()
-        dispatchGroup.enter()
-        for (_, input) in writerInputs {
-            input.markAsFinished()
-        }
-        writer.finishWriting {
-            self.delegate?.recorder(self, finishWriting: writer)
-            self.writer = nil
-            self.writerInputs.removeAll()
-            self.pixelBufferAdaptor = nil
-            dispatchGroup.leave()
-        }
-        dispatchGroup.wait()
+        return makeWriterInput(.video, outputSettings, sourceFormatHint: nil)
     }
 
     private func makeWriterInput(_ mediaType: AVMediaType,
+                                 _ outputSettings: [String: Any],
                                  sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput?
     {
-        if let input = writerInputs[mediaType] {
-            return input
-        }
-
-        var outputSettings: [String: Any] = [:]
-        if let defaultOutputSettings: [String: Any] = self.outputSettings[mediaType] {
-            switch mediaType {
-            case .audio:
-                guard
-                    let format = sourceFormatHint,
-                    let inSourceFormat = format.streamBasicDescription?.pointee
-                else {
-                    break
-                }
-                for (key, value) in defaultOutputSettings {
-                    switch key {
-                    case AVSampleRateKey:
-                        outputSettings[key] = isZero(value) ? inSourceFormat.mSampleRate : value
-                    case AVNumberOfChannelsKey:
-                        outputSettings[key] = isZero(value) ? min(Int(inSourceFormat.mChannelsPerFrame), 2) :
-                            value
-                    default:
-                        outputSettings[key] = value
-                    }
-                }
-            case .video:
-                for (key, value) in defaultOutputSettings {
-                    switch key {
-                    case AVVideoHeightKey:
-                        outputSettings[key] = isZero(value) ? Int(dimensions.height) : value
-                    case AVVideoWidthKey:
-                        outputSettings[key] = isZero(value) ? Int(dimensions.width) : value
-                    default:
-                        outputSettings[key] = value
-                    }
-                }
-            default:
-                break
-            }
-        }
         let mediaTypeString = mediaType == AVMediaType.audio ? "audio" : "video"
         logger.info("Output settings \(outputSettings) for \(mediaTypeString)")
         var input: AVAssetWriterInput?
@@ -272,5 +245,25 @@ public class IORecorder {
             self.finishWriting()
             self.isRunning.mutate { $0 = false }
         }
+    }
+
+    private func finishWriting() {
+        guard let writer = writer, writer.status == .writing else {
+            delegate?.recorder(self, errorOccured: .failedToFinishWriting(error: writer?.error))
+            return
+        }
+        let dispatchGroup = DispatchGroup()
+        dispatchGroup.enter()
+        for (_, input) in writerInputs {
+            input.markAsFinished()
+        }
+        writer.finishWriting {
+            self.delegate?.recorder(self, finishWriting: writer)
+            self.writer = nil
+            self.writerInputs.removeAll()
+            self.pixelBufferAdaptor = nil
+            dispatchGroup.leave()
+        }
+        dispatchGroup.wait()
     }
 }
