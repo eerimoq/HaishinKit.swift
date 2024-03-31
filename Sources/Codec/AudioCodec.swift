@@ -285,13 +285,11 @@ public class AudioCodec {
             let inputFormat = Self.makeAudioFormat(&inSourceFormat),
             let outputFormat = settings.format.makeAudioFormat(inSourceFormat)
         else {
-            logger.info("cannot create")
             return nil
         }
         logger.info("inputFormat: \(inputFormat)")
         logger.info("outputFormat: \(outputFormat)")
         guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
-            logger.info("Failed to create converter")
             delegate?.audioCodec(self, errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
             return nil
         }
