@@ -14,13 +14,13 @@ public class IORecorder {
         case failedToFinishWriting(error: Swift.Error?)
     }
 
-    public static let defaultAudioOutputSettings: [String: Any] = [
+    private static let defaultAudioOutputSettings: [String: Any] = [
         AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
         AVSampleRateKey: 0,
         AVNumberOfChannelsKey: 0,
     ]
 
-    public static let defaultVideoOutputSettings: [String: Any] = [
+    private static let defaultVideoOutputSettings: [String: Any] = [
         AVVideoCodecKey: AVVideoCodecType.h264,
         AVVideoHeightKey: 0,
         AVVideoWidthKey: 0,
