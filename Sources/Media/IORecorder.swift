@@ -1,25 +1,16 @@
 import AVFoundation
 import SwiftPMSupport
 
-/// The interface an IORecorder uses to inform its delegate.
 public protocol IORecorderDelegate: AnyObject {
-    /// Tells the receiver to recorder error occured.
     func recorder(_ recorder: IORecorder, errorOccured error: IORecorder.Error)
-    /// Tells the receiver to finish writing.
     func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter)
 }
 
-/// The IORecorder class represents video and audio recorder.
 public class IORecorder {
-    /// The IORecorder error domain codes.
     public enum Error: Swift.Error {
-        /// Failed to create the AVAssetWriter.
         case failedToCreateAssetWriter(error: Swift.Error)
-        /// Failed to create the AVAssetWriterInput.
         case failedToCreateAssetWriterInput(error: NSException)
-        /// Failed to append the PixelBuffer or SampleBuffer.
         case failedToAppend(error: Swift.Error?)
-        /// Failed to finish writing the AVAssetWriter.
         case failedToFinishWriting(error: Swift.Error?)
     }
 
@@ -43,10 +34,7 @@ public class IORecorder {
 
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
     private var isReadyForStartWriting: Bool {
-        guard let writer else {
-            return false
-        }
-        return writer.inputs.count == 2
+        return writer?.inputs.count == 2
     }
 
     private var writer: AVAssetWriter?
@@ -72,12 +60,9 @@ public class IORecorder {
         else {
             return
         }
-        switch writer.status {
-        case .unknown:
+        if writer.status == .unknown {
             writer.startWriting()
             writer.startSession(atSourceTime: sampleBuffer.presentationTimeStamp)
-        default:
-            break
         }
         guard input.isReadyForMoreMediaData else {
             return
@@ -108,12 +93,9 @@ public class IORecorder {
         else {
             return
         }
-        switch writer.status {
-        case .unknown:
+        if writer.status == .unknown {
             writer.startWriting()
             writer.startSession(atSourceTime: withPresentationTime)
-        default:
-            break
         }
         guard input.isReadyForMoreMediaData else {
             return
