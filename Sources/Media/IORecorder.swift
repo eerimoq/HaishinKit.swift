@@ -50,7 +50,8 @@ public class IORecorder {
     }
 
     private var writer: AVAssetWriter?
-    private var writerInputs: [AVMediaType: AVAssetWriterInput] = [:]
+    private var audioWriterInput: AVAssetWriterInput?
+    private var videoWriterInput: AVAssetWriterInput?
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
 
@@ -123,8 +124,8 @@ public class IORecorder {
     }
 
     private func makeAudioWriterInput(sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
-        if let input = writerInputs[.audio] {
-            return input
+        if let audioWriterInput {
+            return audioWriterInput
         }
         var outputSettings: [String: Any] = [:]
         if let sourceFormatHint,
@@ -142,12 +143,13 @@ public class IORecorder {
                 }
             }
         }
-        return makeWriterInput(.audio, outputSettings, sourceFormatHint: sourceFormatHint)
+        audioWriterInput = makeWriterInput(.audio, outputSettings, sourceFormatHint: sourceFormatHint)
+        return audioWriterInput
     }
 
     private func makeVideoWriterInput() -> AVAssetWriterInput? {
-        if let input = writerInputs[.video] {
-            return input
+        if let videoWriterInput {
+            return videoWriterInput
         }
         var outputSettings: [String: Any] = [:]
         for (key, value) in videoOutputSettings {
@@ -160,7 +162,8 @@ public class IORecorder {
                 outputSettings[key] = value
             }
         }
-        return makeWriterInput(.video, outputSettings, sourceFormatHint: nil)
+        videoWriterInput = makeWriterInput(.video, outputSettings, sourceFormatHint: nil)
+        return videoWriterInput
     }
 
     private func makeWriterInput(_ mediaType: AVMediaType,
@@ -177,7 +180,6 @@ public class IORecorder {
                 sourceFormatHint: sourceFormatHint
             )
             input?.expectsMediaDataInRealTime = true
-            self.writerInputs[mediaType] = input
             if let input {
                 self.writer?.add(input)
             }
@@ -240,13 +242,13 @@ public class IORecorder {
         }
         let dispatchGroup = DispatchGroup()
         dispatchGroup.enter()
-        for (_, input) in writerInputs {
-            input.markAsFinished()
-        }
+        audioWriterInput?.markAsFinished()
+        videoWriterInput?.markAsFinished()
         writer.finishWriting {
             self.delegate?.recorder(self, finishWriting: writer)
             self.writer = nil
-            self.writerInputs.removeAll()
+            self.audioWriterInput = nil
+            self.videoWriterInput = nil
             self.pixelBufferAdaptor = nil
             dispatchGroup.leave()
         }
