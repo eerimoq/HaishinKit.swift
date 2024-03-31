@@ -171,10 +171,12 @@ open class NetStream: NSObject {
 
     public func startRecording(
         url: URL,
-        _ settings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings
+        audioSettings: [String: Any],
+        videoSettings: [String: Any]
     ) {
         mixer.recorder.url = url
-        mixer.recorder.outputSettings = settings
+        mixer.recorder.audioOutputSettings = audioSettings
+        mixer.recorder.videoOutputSettings = videoSettings
         mixer.recorder.startRunning()
     }
 
