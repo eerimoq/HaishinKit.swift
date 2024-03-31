@@ -1,15 +1,10 @@
 import AVFAudio
 import Foundation
 
-/// The AudioCodecSettings class  specifying audio compression settings.
 public struct AudioCodecSettings: Codable {
-    /// The default value.
     public static let `default` = AudioCodecSettings()
-
-    /// Maximum number of channels supported by the system
     public static let maximumNumberOfChannels: UInt32 = 2
 
-    /// The type of the AudioCodec supports format.
     enum Format: Codable {
         case aac
         case pcm
@@ -85,16 +80,10 @@ public struct AudioCodecSettings: Codable {
         }
     }
 
-    /// Specifies the bitRate of audio output.
     public var bitRate: Int
-
-    /// Map of the output to input channels
     public var outputChannelsMap: [Int: Int]
-
-    /// Specifies the output format.
     var format: AudioCodecSettings.Format = .aac
 
-    /// Create an new AudioCodecSettings instance.
     public init(
         bitRate: Int = 64 * 1000,
         outputChannelsMap: [Int: Int] = [0: 0, 1: 1]

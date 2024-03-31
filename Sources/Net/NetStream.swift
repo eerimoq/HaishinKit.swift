@@ -149,14 +149,12 @@ open class NetStream: NSObject {
         }
     }
 
-    /// Register a video effect.
     public func registerVideoEffect(_ effect: VideoEffect) -> Bool {
         mixer.video.lockQueue.sync {
             self.mixer.video.registerEffect(effect)
         }
     }
 
-    /// Unregister a video effect.
     public func unregisterVideoEffect(_ effect: VideoEffect) -> Bool {
         mixer.video.lockQueue.sync {
             self.mixer.video.unregisterEffect(effect)
@@ -167,6 +165,11 @@ open class NetStream: NSObject {
         mixer.video.lockQueue.sync {
             self.mixer.video.setLowFpsImage(enabled: enabled)
         }
+    }
+
+    public func setAudioChannelsMap(map: [Int: Int]) {
+        audioSettings.outputChannelsMap = map
+        mixer.recorder.setAudioChannelsMap(map: map)
     }
 
     public func startRecording(

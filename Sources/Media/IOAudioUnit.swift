@@ -1,6 +1,23 @@
 import AVFoundation
 import SwiftPMSupport
 
+func makeChannelMap(
+    numberOfInputChannels: Int,
+    numberOfOutputChannels: Int,
+    outputToInputChannelsMap: [Int: Int]
+) -> [NSNumber] {
+    var result = Array(repeating: -1, count: numberOfOutputChannels)
+    for inputIndex in 0 ..< min(numberOfInputChannels, numberOfOutputChannels) {
+        result[inputIndex] = inputIndex
+    }
+    for outputIndex in 0 ..< numberOfOutputChannels {
+        if let inputIndex = outputToInputChannelsMap[outputIndex], inputIndex < numberOfInputChannels {
+            result[outputIndex] = inputIndex
+        }
+    }
+    return result.map { NSNumber(value: $0) }
+}
+
 final class IOAudioUnit: NSObject {
     private static let defaultPresentationTimeStamp: CMTime = .invalid
     private static let sampleBuffersThreshold: Int = 1
@@ -13,13 +30,13 @@ final class IOAudioUnit: NSObject {
     weak var mixer: IOMixer?
     private var latestPresentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
-    private var inSourceFormat: AudioStreamBasicDescription? {
+    private var inputSourceFormat: AudioStreamBasicDescription? {
         didSet {
-            guard inSourceFormat != oldValue else {
+            guard inputSourceFormat != oldValue else {
                 return
             }
             latestPresentationTimeStamp = Self.defaultPresentationTimeStamp
-            codec.inSourceFormat = inSourceFormat
+            codec.inSourceFormat = inputSourceFormat
         }
     }
 
@@ -43,7 +60,7 @@ final class IOAudioUnit: NSObject {
         guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
             return
         }
-        inSourceFormat = sampleBuffer.formatDescription?.streamBasicDescription?.pointee
+        inputSourceFormat = sampleBuffer.formatDescription?.streamBasicDescription?.pointee
         // Synchronization between video and audio, need to synchronize the gaps.
         let numGapSamples = numGapSamples(sampleBuffer, presentationTimeStamp)
         let numSampleBuffers = Int(numGapSamples / sampleBuffer.numSamples)
@@ -70,7 +87,7 @@ final class IOAudioUnit: NSObject {
     }
 
     private func numGapSamples(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) -> Int {
-        guard let mSampleRate = inSourceFormat?.mSampleRate,
+        guard let mSampleRate = inputSourceFormat?.mSampleRate,
               latestPresentationTimeStamp != Self.defaultPresentationTimeStamp
         else {
             return 0
@@ -97,7 +114,7 @@ final class IOAudioUnit: NSObject {
     func stopEncoding() {
         codec.stopRunning()
         codec.delegate = nil
-        inSourceFormat = nil
+        inputSourceFormat = nil
     }
 
     private func attachDevice(_ device: AVCaptureDevice?, _ captureSession: AVCaptureSession) throws {

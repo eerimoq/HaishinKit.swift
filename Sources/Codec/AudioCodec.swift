@@ -61,27 +61,8 @@ public class AudioCodec {
         return AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | numberOfChannels)
     }
 
-    /// Creates a channel map for specific input and output format
-    static func makeChannelMap(inChannels: Int, outChannels: Int,
-                               outputChannelsMap: [Int: Int]) -> [NSNumber]
-    {
-        var result = Array(repeating: -1, count: outChannels)
-        for inputIndex in 0 ..< min(inChannels, outChannels) {
-            result[inputIndex] = inputIndex
-        }
-        for currentIndex in 0 ..< outChannels {
-            if let inputIndex = outputChannelsMap[currentIndex], inputIndex < inChannels {
-                result[currentIndex] = inputIndex
-            }
-        }
-        return result.map { NSNumber(value: $0) }
-    }
-
-    /// Specifies the delegate.
     public weak var delegate: (any AudioCodecDelegate)?
-    /// This instance is running to process(true) or not(false).
     public private(set) var isRunning: Atomic<Bool> = .init(false)
-    /// Specifies the settings for audio codec.
     public var settings: AudioCodecSettings = .default {
         didSet {
             settings.apply(audioConverter, oldValue: oldValue)
@@ -293,13 +274,11 @@ public class AudioCodec {
             delegate?.audioCodec(self, errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
             return nil
         }
-        let channelMap = Self.makeChannelMap(
-            inChannels: Int(inputFormat.channelCount),
-            outChannels: Int(outputFormat.channelCount),
-            outputChannelsMap: settings.outputChannelsMap
+        converter.channelMap = makeChannelMap(
+            numberOfInputChannels: Int(inputFormat.channelCount),
+            numberOfOutputChannels: Int(outputFormat.channelCount),
+            outputToInputChannelsMap: settings.outputChannelsMap
         )
-        logger.info("channelMap: \(channelMap)")
-        converter.channelMap = channelMap
         settings.apply(converter, oldValue: nil)
         delegate?.audioCodec(self, didOutput: outputFormat)
         return converter

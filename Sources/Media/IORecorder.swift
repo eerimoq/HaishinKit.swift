@@ -6,6 +6,8 @@ public protocol IORecorderDelegate: AnyObject {
     func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter)
 }
 
+private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
+
 public class IORecorder {
     public enum Error: Swift.Error {
         case failedToCreateAssetWriter(error: Swift.Error)
@@ -31,8 +33,8 @@ public class IORecorder {
     public var videoOutputSettings = IORecorder.defaultVideoOutputSettings
     public private(set) var isRunning: Atomic<Bool> = .init(false)
     public var url: URL?
+    private var outputChannelsMap: [Int: Int] = [0: 0, 1: 1]
 
-    private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
     private var isReadyForStartWriting: Bool {
         return writer?.inputs.count == 2
     }
@@ -40,8 +42,15 @@ public class IORecorder {
     private var writer: AVAssetWriter?
     private var audioWriterInput: AVAssetWriterInput?
     private var videoWriterInput: AVAssetWriterInput?
+    private var audioConverter: AVAudioConverter?
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
+
+    public func setAudioChannelsMap(map: [Int: Int]) {
+        lockQueue.async {
+            self.outputChannelsMap = map
+        }
+    }
 
     public func appendAudio(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
@@ -53,6 +62,7 @@ public class IORecorder {
     }
 
     private func appendAudioInner(_ sampleBuffer: CMSampleBuffer) {
+        let sampleBuffer = convert(sampleBuffer)
         guard
             let writer,
             let input = makeAudioWriterInput(sourceFormatHint: sampleBuffer.formatDescription),
@@ -70,6 +80,38 @@ public class IORecorder {
         if !input.append(sampleBuffer) {
             delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
         }
+    }
+
+    private func convert(_ sampleBuffer: CMSampleBuffer) -> CMSampleBuffer {
+        var sampleBuffer = sampleBuffer
+        guard
+            let converter = makeAudioConverter(sampleBuffer.formatDescription)
+        else {
+            return sampleBuffer
+        }
+        guard let outputBuffer = AVAudioPCMBuffer(
+            pcmFormat: converter.outputFormat,
+            frameCapacity: UInt32(sampleBuffer.numSamples)
+        ) else {
+            return sampleBuffer
+        }
+        do {
+            try sampleBuffer.withAudioBufferList { list, _ in
+                guard #available(iOS 15.0, *) else {
+                    return
+                }
+                guard let inputBuffer = AVAudioPCMBuffer(
+                    pcmFormat: converter.inputFormat,
+                    bufferListNoCopy: list.unsafePointer
+                ) else {
+                    return
+                }
+                try converter.convert(to: outputBuffer, from: inputBuffer)
+                sampleBuffer = outputBuffer
+                    .makeSampleBuffer(presentationTimeStamp: sampleBuffer.presentationTimeStamp)!
+            }
+        } catch {}
+        return sampleBuffer
     }
 
     public func appendVideo(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
@@ -152,8 +194,6 @@ public class IORecorder {
                                  _ outputSettings: [String: Any],
                                  sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput?
     {
-        let mediaTypeString = mediaType == AVMediaType.audio ? "audio" : "video"
-        logger.info("Output settings \(outputSettings) for \(mediaTypeString)")
         var input: AVAssetWriterInput?
         nstry {
             input = AVAssetWriterInput(
@@ -169,6 +209,69 @@ public class IORecorder {
             self.delegate?.recorder(self, errorOccured: .failedToCreateAssetWriterInput(error: exception))
         }
         return input
+    }
+
+    private func makeAudioConverter(_ formatDescription: CMFormatDescription?) -> AVAudioConverter? {
+        guard audioConverter == nil else {
+            return audioConverter
+        }
+        guard var streamBasicDescription = formatDescription?.streamBasicDescription?.pointee else {
+            return nil
+        }
+        guard let inputFormat = makeAudioFormat(&streamBasicDescription) else {
+            return nil
+        }
+        let outputNumberOfChannels = min(inputFormat.channelCount, 2)
+        let outputFormat = AVAudioFormat(
+            commonFormat: inputFormat.commonFormat,
+            sampleRate: inputFormat.sampleRate,
+            channels: outputNumberOfChannels,
+            interleaved: inputFormat.isInterleaved
+        )!
+        audioConverter = AVAudioConverter(from: inputFormat, to: outputFormat)
+        audioConverter?.channelMap = makeChannelMap(
+            numberOfInputChannels: Int(inputFormat.channelCount),
+            numberOfOutputChannels: Int(outputNumberOfChannels),
+            outputToInputChannelsMap: outputChannelsMap
+        )
+        return audioConverter
+    }
+
+    private func makeChannelLayout(_ numberOfChannels: UInt32) -> AVAudioChannelLayout? {
+        guard numberOfChannels > 2 else {
+            return nil
+        }
+        return AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | numberOfChannels)
+    }
+
+    private func makeAudioFormat(_ basicDescription: inout AudioStreamBasicDescription) -> AVAudioFormat? {
+        if basicDescription.mFormatID == kAudioFormatLinearPCM,
+           kLinearPCMFormatFlagIsBigEndian ==
+           (basicDescription.mFormatFlags & kLinearPCMFormatFlagIsBigEndian)
+        {
+            // ReplayKit audioApp.
+            guard basicDescription.mBitsPerChannel == 16 else {
+                return nil
+            }
+            if let layout = makeChannelLayout(basicDescription.mChannelsPerFrame) {
+                return .init(
+                    commonFormat: .pcmFormatInt16,
+                    sampleRate: basicDescription.mSampleRate,
+                    interleaved: true,
+                    channelLayout: layout
+                )
+            }
+            return AVAudioFormat(
+                commonFormat: .pcmFormatInt16,
+                sampleRate: basicDescription.mSampleRate,
+                channels: basicDescription.mChannelsPerFrame,
+                interleaved: true
+            )
+        }
+        if let layout = makeChannelLayout(basicDescription.mChannelsPerFrame) {
+            return .init(streamDescription: &basicDescription, channelLayout: layout)
+        }
+        return .init(streamDescription: &basicDescription)
     }
 
     private func makePixelBufferAdaptor(_ writerInput: AVAssetWriterInput)
