@@ -63,7 +63,7 @@ public class VideoCodec {
         }
     }
 
-    var needsSync: Atomic<Bool> = .init(true)
+    private var needsSync: Atomic<Bool> = .init(true)
     var attributes: [NSString: AnyObject]? {
         guard VideoCodec.defaultAttributes != nil else {
             return nil

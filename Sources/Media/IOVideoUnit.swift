@@ -4,6 +4,7 @@ import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
 public var ioVideoUnitWatchInterval = 1.0
+let pixelFormatType = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
 
 private func setOrientation(
     device: AVCaptureDevice?,
@@ -282,13 +283,11 @@ public final class IOVideoUnit: NSObject {
             poolWidth = width
             poolHeight = height
             let pixelBufferAttributes: [NSString: AnyObject] = [
-                kCVPixelBufferPixelFormatTypeKey: NSNumber(
-                    value: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
-                ),
-                kCVPixelBufferWidthKey: NSNumber(value: width),
-                kCVPixelBufferHeightKey: NSNumber(value: height),
+                kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
                 kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
                 kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
+                kCVPixelBufferWidthKey: NSNumber(value: width),
+                kCVPixelBufferHeightKey: NSNumber(value: height),
             ]
             CVPixelBufferPoolCreate(
                 nil,
@@ -405,13 +404,11 @@ public final class IOVideoUnit: NSObject {
             let width = 1280
             let height = 720
             let pixelBufferAttributes: [NSString: AnyObject] = [
-                kCVPixelBufferPixelFormatTypeKey: NSNumber(
-                    value: UInt(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
-                ),
-                kCVPixelBufferWidthKey: NSNumber(value: Int(width)),
-                kCVPixelBufferHeightKey: NSNumber(value: Int(height)),
+                kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
                 kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
                 kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
+                kCVPixelBufferWidthKey: NSNumber(value: Int(width)),
+                kCVPixelBufferHeightKey: NSNumber(value: Int(height)),
             ]
             CVPixelBufferPoolCreate(
                 kCFAllocatorDefault,
@@ -588,9 +585,7 @@ public final class IOVideoUnit: NSObject {
             input = try AVCaptureDeviceInput(device: device)
             output = AVCaptureVideoDataOutput()
             output!.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: Int(
-                    kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
-                ),
+                kCVPixelBufferPixelFormatTypeKey as String: pixelFormatType,
             ]
             if let port = input?.ports.first(where: { $0.mediaType == .video }) {
                 connection = AVCaptureConnection(inputPorts: [port], output: output!)
