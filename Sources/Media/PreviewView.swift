@@ -40,8 +40,13 @@ public class PreviewView: UIView {
         }
     }
 
+    public var isPortrait = false {
+        didSet {
+            applyIsMirrored()
+        }
+    }
+
     public var isMirrored = false
-    public var isPortrait = false
 
     private func applyIsMirrored() {
         var transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
