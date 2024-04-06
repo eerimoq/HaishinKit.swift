@@ -41,9 +41,13 @@ public class PreviewView: UIView {
     }
 
     public var isMirrored = false
+    public var isPortrait = false
 
     private func applyIsMirrored() {
-        let transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
+        var transform = CGAffineTransformMakeScale(isMirrored ? -1.0 : 1.0, 1.0)
+        if isPortrait {
+            transform = transform.rotated(by: .pi / 2)
+        }
         layer.setAffineTransform(transform)
     }
 
