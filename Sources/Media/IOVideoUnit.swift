@@ -4,7 +4,7 @@ import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
 public var ioVideoUnitWatchInterval = 1.0
-let pixelFormatType = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+let pixelFormatType = kCVPixelFormatType_32BGRA
 
 private func setOrientation(
     device: AVCaptureDevice?,
@@ -163,16 +163,17 @@ public final class IOVideoUnit: NSObject {
     private var lowFpsImageEnabled: Bool = false
     private var lowFpsImageLatest: Double = 0.0
     private var pool: CVPixelBufferPool?
-    private var poolWidth = 0
-    private var poolHeight = 0
+    private var poolWidth: Int32 = 0
+    private var poolHeight: Int32 = 0
 
     deinit {
         stopGapFillerTimer()
     }
 
     private func startGapFillerTimer() {
+        stopGapFillerTimer()
         gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
-        let frameInterval = 1 / frameRate
+        let frameInterval = (1 / frameRate) * 2 // Times 2 for some extra slack
         gapFillerTimer!.schedule(deadline: .now() + frameInterval, repeating: frameInterval)
         gapFillerTimer!.setEventHandler { [weak self] in
             self?.handleGapFillerTimer()
@@ -278,29 +279,47 @@ public final class IOVideoUnit: NSObject {
         output?.setSampleBufferDelegate(self, queue: lockQueue)
     }
 
-    private func getBufferPool(width: Int, height: Int) -> CVPixelBufferPool? {
-        if width != poolWidth || height != poolHeight {
-            poolWidth = width
-            poolHeight = height
-            let pixelBufferAttributes: [NSString: AnyObject] = [
-                kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
-                kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
-                kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
-                kCVPixelBufferWidthKey: NSNumber(value: width),
-                kCVPixelBufferHeightKey: NSNumber(value: height),
-            ]
-            CVPixelBufferPoolCreate(
-                nil,
-                nil,
-                pixelBufferAttributes as NSDictionary?,
-                &pool
-            )
+    private func getBufferPool(formatDescription: CMFormatDescription) -> CVPixelBufferPool? {
+        let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
+        guard dimensions.width != poolWidth || dimensions.height != poolHeight else {
+            return pool
         }
+        print("new pool")
+        pool = nil
+        poolWidth = dimensions.width
+        poolHeight = dimensions.height
+        var pixelBufferAttributes: [NSString: AnyObject] = [
+            kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
+            kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
+            kCVPixelBufferWidthKey: NSNumber(value: dimensions.width),
+            kCVPixelBufferHeightKey: NSNumber(value: dimensions.height),
+        ]
+        if let formatDescriptionExtension =
+            CMFormatDescriptionGetExtensions(formatDescription) as Dictionary?
+        {
+            if let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey] {
+                var colorSpaceProperties: [NSString: AnyObject] =
+                    [kCVImageBufferColorPrimariesKey: colorPrimaries]
+                if let yCbCrMatrix = formatDescriptionExtension[kCVImageBufferYCbCrMatrixKey] {
+                    colorSpaceProperties[kCVImageBufferYCbCrMatrixKey] = yCbCrMatrix
+                }
+                if let transferFunction = formatDescriptionExtension[kCVImageBufferTransferFunctionKey] {
+                    colorSpaceProperties[kCVImageBufferTransferFunctionKey] = transferFunction
+                }
+                pixelBufferAttributes[kCVBufferPropagatedAttachmentsKey] = colorSpaceProperties as AnyObject
+            }
+        }
+        CVPixelBufferPoolCreate(
+            nil,
+            nil,
+            pixelBufferAttributes as NSDictionary?,
+            &pool
+        )
         return pool
     }
 
-    func applyEffects(_ imageBuffer: CVImageBuffer,
-                      _ sampleBuffer: CMSampleBuffer) -> (CVImageBuffer?, CMSampleBuffer?)
+    private func applyEffects(_ imageBuffer: CVImageBuffer,
+                              _ sampleBuffer: CMSampleBuffer) -> (CVImageBuffer?, CMSampleBuffer?)
     {
         var image = CIImage(cvPixelBuffer: imageBuffer)
         let extent = image.extent
@@ -320,21 +339,25 @@ public final class IOVideoUnit: NSObject {
         else {
             return (nil, nil)
         }
-        guard let pool = getBufferPool(width: imageBuffer.width, height: imageBuffer.height) else {
+        guard let pool = getBufferPool(formatDescription: sampleBuffer.formatDescription!) else {
             return (nil, nil)
         }
         var outputImageBuffer: CVPixelBuffer?
-        CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputImageBuffer)
+        guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputImageBuffer) == kCVReturnSuccess else {
+            return (nil, nil)
+        }
         guard let outputImageBuffer else {
             return (nil, nil)
         }
         context.render(image, to: outputImageBuffer)
         var formatDescription: CMVideoFormatDescription?
-        CMVideoFormatDescriptionCreateForImageBuffer(
+        guard CMVideoFormatDescriptionCreateForImageBuffer(
             allocator: nil,
             imageBuffer: outputImageBuffer,
             formatDescriptionOut: &formatDescription
-        )
+        ) == noErr else {
+            return (nil, nil)
+        }
         guard let formatDescription else {
             return (nil, nil)
         }
@@ -344,13 +367,15 @@ public final class IOVideoUnit: NSObject {
             decodeTimeStamp: sampleBuffer.decodeTimeStamp
         )
         var outputSampleBuffer: CMSampleBuffer?
-        CMSampleBufferCreateReadyWithImageBuffer(
+        guard CMSampleBufferCreateReadyWithImageBuffer(
             allocator: kCFAllocatorDefault,
             imageBuffer: outputImageBuffer,
             formatDescription: formatDescription,
             sampleTiming: &timing,
             sampleBufferOut: &outputSampleBuffer
-        )
+        ) == noErr else {
+            return (nil, nil)
+        }
         guard let outputSampleBuffer else {
             return (nil, nil)
         }
@@ -406,7 +431,6 @@ public final class IOVideoUnit: NSObject {
             let pixelBufferAttributes: [NSString: AnyObject] = [
                 kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
                 kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
-                kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
                 kCVPixelBufferWidthKey: NSNumber(value: Int(width)),
                 kCVPixelBufferHeightKey: NSNumber(value: Int(height)),
             ]
@@ -475,14 +499,8 @@ public final class IOVideoUnit: NSObject {
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
         var newImageBuffer: CVImageBuffer?
         var newSampleBuffer: CMSampleBuffer?
-        imageBuffer.lockBaseAddress()
-        defer {
-            imageBuffer.unlockBaseAddress()
-            newImageBuffer?.unlockBaseAddress()
-        }
         if !effects.isEmpty {
             (newImageBuffer, newSampleBuffer) = applyEffects(imageBuffer, sampleBuffer)
-            newImageBuffer?.lockBaseAddress()
         }
         let modImageBuffer = newImageBuffer ?? imageBuffer
         let modSampleBuffer = newSampleBuffer ?? sampleBuffer
