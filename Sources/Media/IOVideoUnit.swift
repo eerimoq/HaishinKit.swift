@@ -4,7 +4,7 @@ import UIKit
 
 public var ioVideoUnitIgnoreFramesAfterAttachSeconds = 0.3
 public var ioVideoUnitWatchInterval = 1.0
-let pixelFormatType = kCVPixelFormatType_32BGRA
+let pixelFormatType = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
 
 private func setOrientation(
     device: AVCaptureDevice?,
@@ -171,9 +171,8 @@ public final class IOVideoUnit: NSObject {
     }
 
     private func startGapFillerTimer() {
-        stopGapFillerTimer()
         gapFillerTimer = DispatchSource.makeTimerSource(queue: lockQueue)
-        let frameInterval = (1 / frameRate) * 2 // Times 2 for some extra slack
+        let frameInterval = 1 / frameRate
         gapFillerTimer!.schedule(deadline: .now() + frameInterval, repeating: frameInterval)
         gapFillerTimer!.setEventHandler { [weak self] in
             self?.handleGapFillerTimer()
@@ -284,13 +283,13 @@ public final class IOVideoUnit: NSObject {
         guard dimensions.width != poolWidth || dimensions.height != poolHeight else {
             return pool
         }
-        print("new pool")
         pool = nil
         poolWidth = dimensions.width
         poolHeight = dimensions.height
         var pixelBufferAttributes: [NSString: AnyObject] = [
             kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
             kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
+            kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
             kCVPixelBufferWidthKey: NSNumber(value: dimensions.width),
             kCVPixelBufferHeightKey: NSNumber(value: dimensions.height),
         ]
@@ -431,6 +430,7 @@ public final class IOVideoUnit: NSObject {
             let pixelBufferAttributes: [NSString: AnyObject] = [
                 kCVPixelBufferPixelFormatTypeKey: NSNumber(value: pixelFormatType),
                 kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
+                kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue,
                 kCVPixelBufferWidthKey: NSNumber(value: Int(width)),
                 kCVPixelBufferHeightKey: NSNumber(value: Int(height)),
             ]
