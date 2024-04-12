@@ -165,6 +165,7 @@ public final class IOVideoUnit: NSObject {
     private var pool: CVPixelBufferPool?
     private var poolWidth: Int32 = 0
     private var poolHeight: Int32 = 0
+    private var poolColorSpace: CGColorSpace?
 
     deinit {
         stopGapFillerTimer()
@@ -280,10 +281,29 @@ public final class IOVideoUnit: NSObject {
 
     private func getBufferPool(formatDescription: CMFormatDescription) -> CVPixelBufferPool? {
         let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
-        guard dimensions.width != poolWidth || dimensions.height != poolHeight else {
+        var newColorSpace: CGColorSpace?
+        let formatDescriptionExtension = CMFormatDescriptionGetExtensions(formatDescription) as Dictionary?
+        if let formatDescriptionExtension {
+            if let colorSpace = formatDescriptionExtension[kCVImageBufferCGColorSpaceKey] {
+                newColorSpace = (colorSpace as! CGColorSpace)
+            } else if let colorPrimaries =
+                formatDescriptionExtension[kCVImageBufferColorPrimariesKey] as? String
+            {
+                if colorPrimaries == (kCVImageBufferColorPrimaries_P3_D65 as String) {
+                    newColorSpace = CGColorSpace(name: CGColorSpace.displayP3)!
+                } else if #available(iOS 17.2, *),
+                          formatDescriptionExtension[kCVImageBufferLogTransferFunctionKey] as? String ==
+                          kCVImageBufferLogTransferFunction_AppleLog as String
+                {
+                    newColorSpace = CGColorSpace(name: CGColorSpace.itur_2020)!
+                }
+            }
+        }
+        guard dimensions.width != poolWidth || dimensions
+            .height != poolHeight || newColorSpace != poolColorSpace
+        else {
             return pool
         }
-        pool = nil
         poolWidth = dimensions.width
         poolHeight = dimensions.height
         var pixelBufferAttributes: [NSString: AnyObject] = [
@@ -293,10 +313,9 @@ public final class IOVideoUnit: NSObject {
             kCVPixelBufferWidthKey: NSNumber(value: dimensions.width),
             kCVPixelBufferHeightKey: NSNumber(value: dimensions.height),
         ]
-        if let formatDescriptionExtension =
-            CMFormatDescriptionGetExtensions(formatDescription) as Dictionary?
-        {
-            if let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey] {
+        if let formatDescriptionExtension {
+            let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey]
+            if let colorPrimaries {
                 var colorSpaceProperties: [NSString: AnyObject] =
                     [kCVImageBufferColorPrimariesKey: colorPrimaries]
                 if let yCbCrMatrix = formatDescriptionExtension[kCVImageBufferYCbCrMatrixKey] {
@@ -308,6 +327,8 @@ public final class IOVideoUnit: NSObject {
                 pixelBufferAttributes[kCVBufferPropagatedAttachmentsKey] = colorSpaceProperties as AnyObject
             }
         }
+        poolColorSpace = newColorSpace
+        pool = nil
         CVPixelBufferPoolCreate(
             nil,
             nil,
@@ -328,7 +349,7 @@ public final class IOVideoUnit: NSObject {
             if effectOutputImage.extent == extent {
                 image = effectOutputImage
             } else {
-                failedEffect = "\(effect.name) (wrong size)"
+                failedEffect = "\(effect.getName()) (wrong size)"
             }
         }
         if let mixer {
@@ -348,7 +369,11 @@ public final class IOVideoUnit: NSObject {
         guard let outputImageBuffer else {
             return (nil, nil)
         }
-        context.render(image, to: outputImageBuffer)
+        if let poolColorSpace {
+            context.render(image, to: outputImageBuffer, bounds: extent, colorSpace: poolColorSpace)
+        } else {
+            context.render(image, to: outputImageBuffer)
+        }
         var formatDescription: CMVideoFormatDescription?
         guard CMVideoFormatDescriptionCreateForImageBuffer(
             allocator: nil,
