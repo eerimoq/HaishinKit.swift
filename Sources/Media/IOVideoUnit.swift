@@ -314,8 +314,7 @@ public final class IOVideoUnit: NSObject {
             kCVPixelBufferHeightKey: NSNumber(value: dimensions.height),
         ]
         if let formatDescriptionExtension {
-            let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey]
-            if let colorPrimaries {
+            if let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey] {
                 var colorSpaceProperties: [NSString: AnyObject] =
                     [kCVImageBufferColorPrimariesKey: colorPrimaries]
                 if let yCbCrMatrix = formatDescriptionExtension[kCVImageBufferYCbCrMatrixKey] {
