@@ -166,6 +166,7 @@ public final class IOVideoUnit: NSObject {
     private var poolWidth: Int32 = 0
     private var poolHeight: Int32 = 0
     private var poolColorSpace: CGColorSpace?
+    private var poolFormatDescriptionExtension: CFDictionary?
 
     deinit {
         stopGapFillerTimer()
@@ -281,26 +282,9 @@ public final class IOVideoUnit: NSObject {
 
     private func getBufferPool(formatDescription: CMFormatDescription) -> CVPixelBufferPool? {
         let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
-        var newColorSpace: CGColorSpace?
-        let formatDescriptionExtension = CMFormatDescriptionGetExtensions(formatDescription) as Dictionary?
-        if let formatDescriptionExtension {
-            if let colorSpace = formatDescriptionExtension[kCVImageBufferCGColorSpaceKey] {
-                newColorSpace = (colorSpace as! CGColorSpace)
-            } else if let colorPrimaries =
-                formatDescriptionExtension[kCVImageBufferColorPrimariesKey] as? String
-            {
-                if colorPrimaries == (kCVImageBufferColorPrimaries_P3_D65 as String) {
-                    newColorSpace = CGColorSpace(name: CGColorSpace.displayP3)!
-                } else if #available(iOS 17.2, *),
-                          formatDescriptionExtension[kCVImageBufferLogTransferFunctionKey] as? String ==
-                          kCVImageBufferLogTransferFunction_AppleLog as String
-                {
-                    newColorSpace = CGColorSpace(name: CGColorSpace.itur_2020)!
-                }
-            }
-        }
+        let formatDescriptionExtension = CMFormatDescriptionGetExtensions(formatDescription)
         guard dimensions.width != poolWidth || dimensions
-            .height != poolHeight || newColorSpace != poolColorSpace
+            .height != poolHeight || formatDescriptionExtension != poolFormatDescriptionExtension
         else {
             return pool
         }
@@ -313,8 +297,11 @@ public final class IOVideoUnit: NSObject {
             kCVPixelBufferWidthKey: NSNumber(value: dimensions.width),
             kCVPixelBufferHeightKey: NSNumber(value: dimensions.height),
         ]
-        if let formatDescriptionExtension {
-            if let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey] {
+        poolColorSpace = nil
+        // This is not correct, I'm sure. Colors are not alsays correct. At least for Apple Log.
+        if let formatDescriptionExtension = formatDescriptionExtension as Dictionary? {
+            let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey]
+            if let colorPrimaries {
                 var colorSpaceProperties: [NSString: AnyObject] =
                     [kCVImageBufferColorPrimariesKey: colorPrimaries]
                 if let yCbCrMatrix = formatDescriptionExtension[kCVImageBufferYCbCrMatrixKey] {
@@ -325,8 +312,23 @@ public final class IOVideoUnit: NSObject {
                 }
                 pixelBufferAttributes[kCVBufferPropagatedAttachmentsKey] = colorSpaceProperties as AnyObject
             }
+            if let colorSpace = formatDescriptionExtension[kCVImageBufferCGColorSpaceKey] {
+                poolColorSpace = (colorSpace as! CGColorSpace)
+            } else if let colorPrimaries = colorPrimaries as? String {
+                if colorPrimaries == (kCVImageBufferColorPrimaries_P3_D65 as String) {
+                    poolColorSpace = CGColorSpace(name: CGColorSpace.displayP3)
+                } else if #available(iOS 17.2, *),
+                          formatDescriptionExtension[kCVImageBufferLogTransferFunctionKey] as? String ==
+                          kCVImageBufferLogTransferFunction_AppleLog as String
+                {
+                    poolColorSpace = CGColorSpace(name: CGColorSpace.itur_2020)
+                    //poolColorSpace = CGColorSpace(name: CGColorSpace.extendedITUR_2020)
+                    //poolColorSpace = CGColorSpace(name: CGColorSpace.displayP3)
+                    //poolColorSpace = nil
+                }
+            }
         }
-        poolColorSpace = newColorSpace
+        poolFormatDescriptionExtension = formatDescriptionExtension
         pool = nil
         CVPixelBufferPoolCreate(
             nil,
