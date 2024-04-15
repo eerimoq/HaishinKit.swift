@@ -109,6 +109,7 @@ public final class IOVideoUnit: NSObject {
     weak var mixer: IOMixer?
     var muted = false
     private var effects: [VideoEffect] = []
+    private var pendingAfterAttachEffects: [VideoEffect]?
 
     var frameRate = IOMixer.defaultFrameRate {
         didSet {
@@ -407,21 +408,30 @@ public final class IOVideoUnit: NSObject {
         return (outputImageBuffer, outputSampleBuffer)
     }
 
-    func registerEffect(_ effect: VideoEffect) -> Bool {
-        if effects.contains(effect) {
-            return false
-        } else {
+    func registerEffect(_ effect: VideoEffect) {
+        if !effects.contains(effect) {
             effects.append(effect)
-            return true
         }
     }
 
-    func unregisterEffect(_ effect: VideoEffect) -> Bool {
+    func unregisterEffect(_ effect: VideoEffect) {
         if let index = effects.firstIndex(of: effect) {
             effects.remove(at: index)
-            return true
-        } else {
-            return false
+        }
+    }
+
+    func unregisterAllEffects() {
+        effects.removeAll()
+    }
+
+    func setPendingAfterAttachEffects(effects: [VideoEffect]) {
+        pendingAfterAttachEffects = effects
+    }
+
+    func usePendingAfterAttachEffects() {
+        if let pendingAfterAttachEffects {
+            effects = pendingAfterAttachEffects
+            self.pendingAfterAttachEffects = nil
         }
     }
 
@@ -525,6 +535,10 @@ public final class IOVideoUnit: NSObject {
         latestSampleBufferAppendTime = sampleBuffer.presentationTimeStamp
         var newImageBuffer: CVImageBuffer?
         var newSampleBuffer: CMSampleBuffer?
+        if isFirstAfterAttach, let pendingAfterAttachEffects {
+            effects = pendingAfterAttachEffects
+            self.pendingAfterAttachEffects = nil
+        }
         if !effects.isEmpty {
             (newImageBuffer, newSampleBuffer) = applyEffects(imageBuffer, sampleBuffer)
         }

@@ -149,15 +149,33 @@ open class NetStream: NSObject {
         }
     }
 
-    public func registerVideoEffect(_ effect: VideoEffect) -> Bool {
+    public func registerVideoEffect(_ effect: VideoEffect) {
         mixer.video.lockQueue.sync {
             self.mixer.video.registerEffect(effect)
         }
     }
 
-    public func unregisterVideoEffect(_ effect: VideoEffect) -> Bool {
+    public func unregisterVideoEffect(_ effect: VideoEffect) {
         mixer.video.lockQueue.sync {
             self.mixer.video.unregisterEffect(effect)
+        }
+    }
+
+    public func unregisterAllEffects() {
+        mixer.video.lockQueue.sync {
+            self.mixer.video.unregisterAllEffects()
+        }
+    }
+
+    public func setPendingAfterAttachEffects(effects: [VideoEffect]) {
+        mixer.video.lockQueue.sync {
+            self.mixer.video.setPendingAfterAttachEffects(effects: effects)
+        }
+    }
+
+    public func usePendingAfterAttachEffects() {
+        mixer.video.lockQueue.sync {
+            self.mixer.video.usePendingAfterAttachEffects()
         }
     }
 
