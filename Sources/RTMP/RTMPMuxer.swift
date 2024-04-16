@@ -49,7 +49,7 @@ extension RTMPMuxer: AudioCodecDelegate {
         )
         delegate?.muxer(self, didOutputAudio: buffer, withTimestamp: delta)
         audioTimeStamp = presentationTimeStamp
-        codec.releaseOutputBuffer(audioBuffer)
+        codec.freeOutputBuffer(audioBuffer)
     }
 }
 

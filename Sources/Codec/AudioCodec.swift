@@ -63,9 +63,12 @@ public class AudioCodec {
 
     public weak var delegate: (any AudioCodecDelegate)?
     public private(set) var isRunning: Atomic<Bool> = .init(false)
-    public var settings: AudioCodecSettings = .default {
+    public var outputSettings: AudioCodecOutputSettings = .default {
         didSet {
-            settings.apply(audioConverter, oldValue: oldValue)
+            guard let audioConverter else {
+                return
+            }
+            outputSettings.apply(audioConverter, oldValue: oldValue)
         }
     }
 
@@ -93,18 +96,18 @@ public class AudioCodec {
         guard isRunning.value else {
             return
         }
-        switch settings.format {
+        switch outputSettings.format {
         case .aac:
-            appendSampleBufferAac(sampleBuffer, presentationTimeStamp, offset: offset)
+            appendSampleBufferOutputAac(sampleBuffer, presentationTimeStamp, offset: offset)
         case .pcm:
-            appendSampleBufferPcm(sampleBuffer, presentationTimeStamp)
+            appendSampleBufferOutputPcm(sampleBuffer, presentationTimeStamp)
         }
     }
 
-    private func appendSampleBufferAac(
+    private func appendSampleBufferOutputAac(
         _ sampleBuffer: CMSampleBuffer,
         _ presentationTimeStamp: CMTime,
-        offset: Int = 0
+        offset: Int
     ) {
         guard let audioConverter, let ringBuffer else {
             logger.info("audioConverter or ringBuffer missing")
@@ -116,14 +119,14 @@ public class AudioCodec {
             offset: offset
         )
         if ringBuffer.isReady {
-            guard let buffer = getOutputBuffer() else {
+            guard let outputBuffer = allocOutputBuffer(audioConverter) else {
                 logger.info("no output buffer")
                 return
             }
             convertBuffer(
                 audioConverter: audioConverter,
                 inputBuffer: ringBuffer.current,
-                outputBuffer: buffer,
+                outputBuffer: outputBuffer,
                 presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
             )
             ringBuffer.next()
@@ -133,7 +136,9 @@ public class AudioCodec {
         }
     }
 
-    private func appendSampleBufferPcm(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) {
+    private func appendSampleBufferOutputPcm(_ sampleBuffer: CMSampleBuffer,
+                                             _ presentationTimeStamp: CMTime)
+    {
         var offset = 0
         var newPresentationTimeStamp = presentationTimeStamp
         for i in 0 ..< sampleBuffer.numSamples {
@@ -170,13 +175,13 @@ public class AudioCodec {
     }
 
     func appendAudioBuffer(_ audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
-        guard isRunning.value, let audioConverter, let buffer = getOutputBuffer() else {
+        guard isRunning.value, let audioConverter, let outputBuffer = allocOutputBuffer(audioConverter) else {
             return
         }
         convertBuffer(
             audioConverter: audioConverter,
             inputBuffer: audioBuffer,
-            outputBuffer: buffer,
+            outputBuffer: outputBuffer,
             presentationTimeStamp: presentationTimeStamp
         )
     }
@@ -211,18 +216,15 @@ public class AudioCodec {
         }
     }
 
-    func releaseOutputBuffer(_ buffer: AVAudioBuffer) {
-        outputBuffers.append(buffer)
-    }
-
-    private func getOutputBuffer() -> AVAudioBuffer? {
-        guard let outputFormat = audioConverter?.outputFormat else {
-            return nil
-        }
+    private func allocOutputBuffer(_ audioConverter: AVAudioConverter) -> AVAudioBuffer? {
         if outputBuffers.isEmpty {
-            return settings.format.makeAudioBuffer(outputFormat)
+            return outputSettings.format.makeAudioBuffer(audioConverter.outputFormat)
         }
         return outputBuffers.removeFirst()
+    }
+
+    func freeOutputBuffer(_ buffer: AVAudioBuffer) {
+        outputBuffers.append(buffer)
     }
 
     private func makeAudioConverter(_ inSourceFormat: inout AudioStreamBasicDescription)
@@ -230,7 +232,7 @@ public class AudioCodec {
     {
         guard
             let inputFormat = Self.makeAudioFormat(&inSourceFormat),
-            let outputFormat = settings.format.makeAudioFormat(inSourceFormat)
+            let outputFormat = outputSettings.format.makeAudioFormat(inSourceFormat)
         else {
             return nil
         }
@@ -243,9 +245,9 @@ public class AudioCodec {
         converter.channelMap = makeChannelMap(
             numberOfInputChannels: Int(inputFormat.channelCount),
             numberOfOutputChannels: Int(outputFormat.channelCount),
-            outputToInputChannelsMap: settings.outputChannelsMap
+            outputToInputChannelsMap: outputSettings.channelsMap
         )
-        settings.apply(converter, oldValue: nil)
+        outputSettings.apply(converter, oldValue: nil)
         delegate?.audioCodec(self, didOutput: outputFormat)
         return converter
     }
@@ -264,9 +266,6 @@ public class AudioCodec {
 
     public func stopRunning() {
         lockQueue.async {
-            guard self.isRunning.value else {
-                return
-            }
             self.inSourceFormat = nil
             self.audioConverter = nil
             self.ringBuffer = nil

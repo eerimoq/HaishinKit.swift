@@ -337,7 +337,7 @@ extension TSWriter: AudioCodecDelegate {
             PES: PES
         ))
 
-        codec.releaseOutputBuffer(audioBuffer)
+        codec.freeOutputBuffer(audioBuffer)
     }
 }
 

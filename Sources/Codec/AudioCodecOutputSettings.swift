@@ -1,8 +1,8 @@
 import AVFAudio
 import Foundation
 
-public struct AudioCodecSettings: Codable {
-    public static let `default` = AudioCodecSettings()
+public struct AudioCodecOutputSettings: Codable {
+    public static let `default` = AudioCodecOutputSettings()
     public static let maximumNumberOfChannels: UInt32 = 2
 
     enum Format: Codable {
@@ -37,7 +37,7 @@ public struct AudioCodecSettings: Codable {
                     mBytesPerFrame: 0,
                     mChannelsPerFrame: min(
                         inSourceFormat.mChannelsPerFrame,
-                        AudioCodecSettings.maximumNumberOfChannels
+                        AudioCodecOutputSettings.maximumNumberOfChannels
                     ),
                     mBitsPerChannel: 0,
                     mReserved: 0
@@ -49,7 +49,7 @@ public struct AudioCodecSettings: Codable {
                     sampleRate: inSourceFormat.mSampleRate,
                     channels: min(
                         inSourceFormat.mChannelsPerFrame,
-                        AudioCodecSettings.maximumNumberOfChannels
+                        AudioCodecOutputSettings.maximumNumberOfChannels
                     ),
                     interleaved: true
                 )
@@ -58,30 +58,25 @@ public struct AudioCodecSettings: Codable {
     }
 
     public var bitRate: Int
-    public var outputChannelsMap: [Int: Int]
-    var format: AudioCodecSettings.Format = .aac
+    public var channelsMap: [Int: Int]
+    var format: AudioCodecOutputSettings.Format = .aac
 
-    public init(
-        bitRate: Int = 64 * 1000,
-        outputChannelsMap: [Int: Int] = [0: 0, 1: 1]
-    ) {
-        self.bitRate = bitRate
-        self.outputChannelsMap = outputChannelsMap
+    public init() {
+        bitRate = 64 * 1000
+        channelsMap = [0: 0, 1: 1]
     }
 
-    func apply(_ converter: AVAudioConverter?, oldValue: AudioCodecSettings?) {
-        guard let converter else {
+    func apply(_ converter: AVAudioConverter, oldValue: AudioCodecOutputSettings?) {
+        guard bitRate != oldValue?.bitRate else {
             return
         }
-        if bitRate != oldValue?.bitRate {
-            let minAvailableBitRate = converter.applicableEncodeBitRates?.min(by: { a, b in
-                a.intValue < b.intValue
-            })?.intValue ?? bitRate
-            let maxAvailableBitRate = converter.applicableEncodeBitRates?.max(by: { a, b in
-                a.intValue < b.intValue
-            })?.intValue ?? bitRate
-            converter.bitRate = min(maxAvailableBitRate, max(minAvailableBitRate, bitRate))
-            logger.info("Audio bitrate: \(converter.bitRate), maximum: \(maxAvailableBitRate)")
-        }
+        let minAvailableBitRate = converter.applicableEncodeBitRates?.min(by: { a, b in
+            a.intValue < b.intValue
+        })?.intValue ?? bitRate
+        let maxAvailableBitRate = converter.applicableEncodeBitRates?.max(by: { a, b in
+            a.intValue < b.intValue
+        })?.intValue ?? bitRate
+        converter.bitRate = min(maxAvailableBitRate, max(minAvailableBitRate, bitRate))
+        logger.info("Audio bitrate: \(converter.bitRate), maximum: \(maxAvailableBitRate)")
     }
 }

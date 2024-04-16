@@ -78,12 +78,12 @@ open class NetStream: NSObject {
         mixer.audio.muted = !value
     }
 
-    public var audioSettings: AudioCodecSettings {
+    public var audioSettings: AudioCodecOutputSettings {
         get {
-            mixer.audio.codec.settings
+            mixer.audio.codec.outputSettings
         }
         set {
-            mixer.audio.codec.settings = newValue
+            mixer.audio.codec.outputSettings = newValue
         }
     }
 
@@ -186,7 +186,7 @@ open class NetStream: NSObject {
     }
 
     public func setAudioChannelsMap(map: [Int: Int]) {
-        audioSettings.outputChannelsMap = map
+        audioSettings.channelsMap = map
         mixer.recorder.setAudioChannelsMap(map: map)
     }
 
