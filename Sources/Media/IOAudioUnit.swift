@@ -19,8 +19,6 @@ func makeChannelMap(
 }
 
 final class IOAudioUnit: NSObject {
-    private static let defaultPresentationTimeStamp: CMTime = .invalid
-    private static let sampleBuffersThreshold: Int = 1
     lazy var codec: AudioCodec = .init(lockQueue: lockQueue)
     private(set) var device: AVCaptureDevice?
     private var input: AVCaptureInput?
@@ -28,14 +26,12 @@ final class IOAudioUnit: NSObject {
     private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.AudioIOUnit.lock")
     var muted = false
     weak var mixer: IOMixer?
-    private var latestPresentationTimeStamp = IOAudioUnit.defaultPresentationTimeStamp
 
     private var inputSourceFormat: AudioStreamBasicDescription? {
         didSet {
             guard inputSourceFormat != oldValue else {
                 return
             }
-            latestPresentationTimeStamp = Self.defaultPresentationTimeStamp
             codec.inSourceFormat = inputSourceFormat
         }
     }
@@ -61,49 +57,8 @@ final class IOAudioUnit: NSObject {
             return
         }
         inputSourceFormat = sampleBuffer.formatDescription?.streamBasicDescription?.pointee
-        // Synchronization between video and audio, need to synchronize the gaps.
-        let numGapSamples = numGapSamples(sampleBuffer, presentationTimeStamp)
-        let numSampleBuffers = Int(numGapSamples / sampleBuffer.numSamples)
-        if Self.sampleBuffersThreshold <= numSampleBuffers {
-            var gapPresentationTimeStamp = latestPresentationTimeStamp
-            for i in 0 ... numSampleBuffers {
-                let numSamples = numSampleBuffers == i ? numGapSamples % sampleBuffer
-                    .numSamples : sampleBuffer.numSamples
-                guard let gapSampleBuffer = makeAudioSampleBuffer(
-                    sampleBuffer,
-                    numSamples: numSamples,
-                    presentationTimeStamp: gapPresentationTimeStamp
-                ) else {
-                    continue
-                }
-                codec.appendSampleBuffer(gapSampleBuffer, gapPresentationTimeStamp)
-                mixer?.recorder.appendAudio(gapSampleBuffer)
-                gapPresentationTimeStamp = CMTimeAdd(gapPresentationTimeStamp, gapSampleBuffer.duration)
-            }
-        }
         codec.appendSampleBuffer(sampleBuffer, presentationTimeStamp)
         mixer?.recorder.appendAudio(sampleBuffer)
-        latestPresentationTimeStamp = presentationTimeStamp
-    }
-
-    private func numGapSamples(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) -> Int {
-        guard let mSampleRate = inputSourceFormat?.mSampleRate,
-              latestPresentationTimeStamp != Self.defaultPresentationTimeStamp
-        else {
-            return 0
-        }
-        let sampleRate = Int32(mSampleRate)
-        // Device audioMic or ReplayKit audioMic.
-        if latestPresentationTimeStamp.timescale == sampleRate {
-            return Int(presentationTimeStamp.value - latestPresentationTimeStamp.value) - sampleBuffer
-                .numSamples
-        }
-        // ReplayKit audioApp. PTS = {69426976806125/1000000000 = 69426.977}
-        let diff = CMTime(
-            seconds: presentationTimeStamp.seconds,
-            preferredTimescale: sampleRate
-        ) - CMTime(seconds: latestPresentationTimeStamp.seconds, preferredTimescale: sampleRate)
-        return Int(diff.value) - sampleBuffer.numSamples
     }
 
     func startEncoding(_ delegate: any AudioCodecDelegate & VideoCodecDelegate) {
