@@ -8,7 +8,6 @@ public struct AudioCodecSettings: Codable {
     enum Format: Codable {
         case aac
         case pcm
-        case opus
 
         func makeAudioBuffer(_ format: AVAudioFormat) -> AVAudioBuffer? {
             switch self {
@@ -20,12 +19,6 @@ public struct AudioCodecSettings: Codable {
                 )
             case .pcm:
                 return AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)
-            case .opus:
-                return AVAudioCompressedBuffer(
-                    format: format,
-                    packetCapacity: 1,
-                    maximumPacketSize: 1024 * Int(format.channelCount)
-                )
             }
         }
 
@@ -60,22 +53,6 @@ public struct AudioCodecSettings: Codable {
                     ),
                     interleaved: true
                 )
-            case .opus:
-                var streamDescription = AudioStreamBasicDescription(
-                    mSampleRate: inSourceFormat.mSampleRate,
-                    mFormatID: kAudioFormatOpus,
-                    mFormatFlags: 0,
-                    mBytesPerPacket: 0,
-                    mFramesPerPacket: 1024,
-                    mBytesPerFrame: 0,
-                    mChannelsPerFrame: min(
-                        inSourceFormat.mChannelsPerFrame,
-                        AudioCodecSettings.maximumNumberOfChannels
-                    ),
-                    mBitsPerChannel: 0,
-                    mReserved: 0
-                )
-                return AVAudioFormat(streamDescription: &streamDescription)
             }
         }
     }

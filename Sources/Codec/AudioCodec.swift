@@ -98,8 +98,6 @@ public class AudioCodec {
             appendSampleBufferAac(sampleBuffer, presentationTimeStamp, offset: offset)
         case .pcm:
             appendSampleBufferPcm(sampleBuffer, presentationTimeStamp)
-        case .opus:
-            appendSampleBufferOpus(sampleBuffer, presentationTimeStamp, offset: offset)
         }
     }
 
@@ -168,38 +166,6 @@ public class AudioCodec {
                 )
                 offset += sampleSize
             }
-        }
-    }
-
-    private func appendSampleBufferOpus(
-        _ sampleBuffer: CMSampleBuffer,
-        _ presentationTimeStamp: CMTime,
-        offset: Int = 0
-    ) {
-        guard let audioConverter, let ringBuffer else {
-            logger.info("audioConverter or ringBuffer missing")
-            return
-        }
-        let numSamples = ringBuffer.appendSampleBuffer(
-            sampleBuffer,
-            presentationTimeStamp,
-            offset: offset
-        )
-        if ringBuffer.isReady {
-            guard let buffer = getOutputBuffer() else {
-                logger.info("no output buffer")
-                return
-            }
-            convertBuffer(
-                audioConverter: audioConverter,
-                inputBuffer: ringBuffer.current,
-                outputBuffer: buffer,
-                presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
-            )
-            ringBuffer.next()
-        }
-        if offset + numSamples < sampleBuffer.numSamples {
-            appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
         }
     }
 
