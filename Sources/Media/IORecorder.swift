@@ -12,7 +12,8 @@ public class IORecorder {
     public enum Error: Swift.Error {
         case failedToCreateAssetWriter(error: Swift.Error)
         case failedToCreateAssetWriterInput(error: NSException)
-        case failedToAppend(error: Swift.Error?)
+        case failedToAppendAudio(error: Swift.Error?)
+        case failedToAppendVideo(error: Swift.Error?)
         case failedToFinishWriting(error: Swift.Error?)
     }
 
@@ -31,11 +32,10 @@ public class IORecorder {
     public weak var delegate: (any IORecorderDelegate)?
     public var audioOutputSettings = IORecorder.defaultAudioOutputSettings
     public var videoOutputSettings = IORecorder.defaultVideoOutputSettings
-    public private(set) var isRunning: Atomic<Bool> = .init(false)
     public var url: URL?
     private var outputChannelsMap: [Int: Int] = [0: 0, 1: 1]
 
-    private var isReadyForStartWriting: Bool {
+    private func isReadyForStartWriting() -> Bool {
         return writer?.inputs.count == 2
     }
 
@@ -53,20 +53,19 @@ public class IORecorder {
     }
 
     public func appendAudio(_ sampleBuffer: CMSampleBuffer) {
-        guard isRunning.value else {
-            return
-        }
         lockQueue.async {
             self.appendAudioInner(sampleBuffer)
         }
     }
 
     private func appendAudioInner(_ sampleBuffer: CMSampleBuffer) {
+        guard let writer else {
+            return
+        }
         let sampleBuffer = convert(sampleBuffer)
         guard
-            let writer,
             let input = makeAudioWriterInput(sourceFormatHint: sampleBuffer.formatDescription),
-            isReadyForStartWriting
+            isReadyForStartWriting()
         else {
             return
         }
@@ -78,7 +77,7 @@ public class IORecorder {
             return
         }
         if !input.append(sampleBuffer) {
-            delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
+            delegate?.recorder(self, errorOccured: .failedToAppendAudio(error: writer.error))
         }
     }
 
@@ -115,23 +114,22 @@ public class IORecorder {
     }
 
     public func appendVideo(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
-        guard isRunning.value else {
-            return
-        }
         lockQueue.async {
             self.appendVideoInner(pixelBuffer, withPresentationTime: withPresentationTime)
         }
     }
 
     private func appendVideoInner(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
+        guard let writer else {
+            return
+        }
         if dimensions.width != pixelBuffer.width || dimensions.height != pixelBuffer.height {
             dimensions = .init(width: Int32(pixelBuffer.width), height: Int32(pixelBuffer.height))
         }
         guard
-            let writer,
             let input = makeVideoWriterInput(),
             let adaptor = makePixelBufferAdaptor(input),
-            isReadyForStartWriting
+            isReadyForStartWriting()
         else {
             return
         }
@@ -143,18 +141,13 @@ public class IORecorder {
             return
         }
         if !adaptor.append(pixelBuffer, withPresentationTime: withPresentationTime) {
-            delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
+            delegate?.recorder(self, errorOccured: .failedToAppendVideo(error: writer.error))
         }
     }
 
-    private func makeAudioWriterInput(sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
-        if let audioWriterInput {
-            return audioWriterInput
-        }
+    private func createAudioWriterInput(sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
         var outputSettings: [String: Any] = [:]
-        if let sourceFormatHint,
-           let inSourceFormat = sourceFormatHint.streamBasicDescription?.pointee
-        {
+        if let sourceFormatHint, let inSourceFormat = sourceFormatHint.streamBasicDescription?.pointee {
             for (key, value) in audioOutputSettings {
                 switch key {
                 case AVSampleRateKey:
@@ -167,14 +160,17 @@ public class IORecorder {
                 }
             }
         }
-        audioWriterInput = makeWriterInput(.audio, outputSettings, sourceFormatHint: sourceFormatHint)
+        return makeWriterInput(.audio, outputSettings, sourceFormatHint: sourceFormatHint)
+    }
+
+    private func makeAudioWriterInput(sourceFormatHint: CMFormatDescription?) -> AVAssetWriterInput? {
+        if audioWriterInput == nil {
+            audioWriterInput = createAudioWriterInput(sourceFormatHint: sourceFormatHint)
+        }
         return audioWriterInput
     }
 
-    private func makeVideoWriterInput() -> AVAssetWriterInput? {
-        if let videoWriterInput {
-            return videoWriterInput
-        }
+    private func createVideoWriterInput() -> AVAssetWriterInput? {
         var outputSettings: [String: Any] = [:]
         for (key, value) in videoOutputSettings {
             switch key {
@@ -186,7 +182,13 @@ public class IORecorder {
                 outputSettings[key] = value
             }
         }
-        videoWriterInput = makeWriterInput(.video, outputSettings, sourceFormatHint: nil)
+        return makeWriterInput(.video, outputSettings, sourceFormatHint: nil)
+    }
+
+    private func makeVideoWriterInput() -> AVAssetWriterInput? {
+        if videoWriterInput == nil {
+            videoWriterInput = createVideoWriterInput()
+        }
         return videoWriterInput
     }
 
@@ -277,15 +279,13 @@ public class IORecorder {
     private func makePixelBufferAdaptor(_ writerInput: AVAssetWriterInput)
         -> AVAssetWriterInputPixelBufferAdaptor?
     {
-        if pixelBufferAdaptor != nil {
-            return pixelBufferAdaptor
+        if pixelBufferAdaptor == nil {
+            pixelBufferAdaptor = AVAssetWriterInputPixelBufferAdaptor(
+                assetWriterInput: writerInput,
+                sourcePixelBufferAttributes: [:]
+            )
         }
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-            assetWriterInput: writerInput,
-            sourcePixelBufferAttributes: [:]
-        )
-        pixelBufferAdaptor = adaptor
-        return adaptor
+        return pixelBufferAdaptor
     }
 
     public func startRunning() {
@@ -294,13 +294,14 @@ public class IORecorder {
         }
     }
 
-    public func startRunningInner() {
-        guard !isRunning.value, let url else {
+    private func startRunningInner() {
+        guard writer == nil, let url else {
+            logger.info("Will not start recording as it is already running or missing URL")
             return
         }
+        reset()
         do {
             writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-            isRunning.mutate { $0 = true }
         } catch {
             delegate?.recorder(self, errorOccured: .failedToCreateAssetWriter(error: error))
         }
@@ -312,31 +313,31 @@ public class IORecorder {
         }
     }
 
-    public func stopRunningInner() {
-        guard isRunning.value else {
+    private func stopRunningInner() {
+        guard let writer else {
+            logger.info("Will not stop recording as it is not running")
             return
         }
-        finishWriting()
-        isRunning.mutate { $0 = false }
-    }
-
-    private func finishWriting() {
-        guard let writer, writer.status == .writing else {
-            delegate?.recorder(self, errorOccured: .failedToFinishWriting(error: writer?.error))
+        guard writer.status == .writing else {
+            delegate?.recorder(self, errorOccured: .failedToFinishWriting(error: writer.error))
+            reset()
             return
         }
         let dispatchGroup = DispatchGroup()
         dispatchGroup.enter()
-        audioWriterInput?.markAsFinished()
-        videoWriterInput?.markAsFinished()
         writer.finishWriting {
             self.delegate?.recorder(self, finishWriting: writer)
-            self.writer = nil
-            self.audioWriterInput = nil
-            self.videoWriterInput = nil
-            self.pixelBufferAdaptor = nil
+            self.reset()
             dispatchGroup.leave()
         }
         dispatchGroup.wait()
+    }
+
+    private func reset() {
+        writer = nil
+        audioWriterInput = nil
+        videoWriterInput = nil
+        pixelBufferAdaptor = nil
+        dimensions = .init(width: 0, height: 0)
     }
 }
