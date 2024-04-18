@@ -281,11 +281,11 @@ public class TSWriter {
 }
 
 extension TSWriter: AudioCodecDelegate {
-    public func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
+    public func audioCodec(errorOccurred error: AudioCodec.Error) {
         logger.error("Audio error \(error)")
     }
 
-    public func audioCodec(_: AudioCodec, didOutput outputFormat: AVAudioFormat) {
+    public func audioCodec(didOutput outputFormat: AVAudioFormat) {
         logger.info("Audio setup \(outputFormat) (forcing AAC)")
         var data = ESSpecificData()
         data.streamType = .adtsAac
@@ -295,11 +295,7 @@ extension TSWriter: AudioCodecDelegate {
         audioConfig = AudioSpecificConfig(formatDescription: outputFormat.formatDescription)
     }
 
-    public func audioCodec(
-        _ codec: AudioCodec,
-        didOutput audioBuffer: AVAudioBuffer,
-        presentationTimeStamp: CMTime
-    ) {
+    public func audioCodec(didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
         guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
             logger.info("Audio output no buffer")
             return
@@ -314,7 +310,7 @@ extension TSWriter: AudioCodecDelegate {
                 PCRTimestamp = baseAudioTimestamp
             }
         }
-        guard let config = audioConfig else {
+        guard let audioConfig else {
             return
         }
         guard let PES = PacketizedElementaryStream(
@@ -323,12 +319,11 @@ extension TSWriter: AudioCodecDelegate {
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid,
             timestamp: baseAudioTimestamp,
-            config: config,
+            config: audioConfig,
             streamID: TSWriter.audioStreamId
         ) else {
             return
         }
-
         writeAudio(data: writeSampleBuffer(
             TSWriter.defaultAudioPID,
             presentationTimeStamp: presentationTimeStamp,
@@ -336,8 +331,6 @@ extension TSWriter: AudioCodecDelegate {
             randomAccessIndicator: true,
             PES: PES
         ))
-
-        codec.freeOutputBuffer(audioBuffer)
     }
 }
 
@@ -388,39 +381,35 @@ extension TSWriter: VideoCodecDelegate {
                 PCRTimestamp = baseVideoTimestamp
             }
         }
-
-        guard let config = videoConfig else {
+        guard let videoConfig else {
             return
         }
-
         let randomAccessIndicator = !sampleBuffer.isNotSync
         let PES: PacketizedElementaryStream
         let bytes = UnsafeRawPointer(buffer).bindMemory(to: UInt8.self, capacity: length)
-
-        if let config = config as? AVCDecoderConfigurationRecord {
+        if let videoConfig = videoConfig as? AVCDecoderConfigurationRecord {
             PES = PacketizedElementaryStream(
                 bytes: bytes,
-                count: UInt32(length),
+                count: length,
                 presentationTimeStamp: sampleBuffer.presentationTimeStamp,
                 decodeTimeStamp: sampleBuffer.decodeTimeStamp,
                 timestamp: baseVideoTimestamp,
-                config: randomAccessIndicator ? config : nil,
+                config: randomAccessIndicator ? videoConfig : nil,
                 streamID: TSWriter.videoStreamId
             )
-        } else if let config = config as? HEVCDecoderConfigurationRecord {
+        } else if let videoConfig = videoConfig as? HEVCDecoderConfigurationRecord {
             PES = PacketizedElementaryStream(
                 bytes: bytes,
-                count: UInt32(length),
+                count: length,
                 presentationTimeStamp: sampleBuffer.presentationTimeStamp,
                 decodeTimeStamp: sampleBuffer.decodeTimeStamp,
                 timestamp: baseVideoTimestamp,
-                config: randomAccessIndicator ? config : nil,
+                config: randomAccessIndicator ? videoConfig : nil,
                 streamID: TSWriter.videoStreamId
             )
         } else {
             return
         }
-
         writeVideo(data: writeSampleBuffer(
             TSWriter.defaultVideoPID,
             presentationTimeStamp: sampleBuffer.presentationTimeStamp,
@@ -432,9 +421,5 @@ extension TSWriter: VideoCodecDelegate {
 
     public func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
         logger.error("Video error \(error)")
-    }
-
-    public func videoCodecWillDropFame(_: VideoCodec) -> Bool {
-        return false
     }
 }

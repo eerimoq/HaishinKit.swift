@@ -2,11 +2,11 @@ import AVFoundation
 
 public protocol AudioCodecDelegate: AnyObject {
     /// Tells the receiver to output an AVAudioFormat.
-    func audioCodec(_ codec: AudioCodec, didOutput audioFormat: AVAudioFormat)
+    func audioCodec(didOutput audioFormat: AVAudioFormat)
     /// Tells the receiver to output an encoded or decoded CMSampleBuffer.
-    func audioCodec(_ codec: AudioCodec, didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime)
+    func audioCodec(didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime)
     /// Tells the receiver to occured an error.
-    func audioCodec(_ codec: AudioCodec, errorOccurred error: AudioCodec.Error)
+    func audioCodec(errorOccurred error: AudioCodec.Error)
 }
 
 /**
@@ -123,6 +123,9 @@ public class AudioCodec {
                 logger.info("no output buffer")
                 return
             }
+            defer {
+                freeOutputBuffer(outputBuffer)
+            }
             convertBuffer(
                 audioConverter: audioConverter,
                 inputBuffer: ringBuffer.current,
@@ -178,6 +181,9 @@ public class AudioCodec {
         guard isRunning.value, let audioConverter, let outputBuffer = allocOutputBuffer(audioConverter) else {
             return
         }
+        defer {
+            freeOutputBuffer(outputBuffer)
+        }
         convertBuffer(
             audioConverter: audioConverter,
             inputBuffer: audioBuffer,
@@ -198,9 +204,9 @@ public class AudioCodec {
             return inputBuffer
         }
         if let error {
-            delegate?.audioCodec(self, errorOccurred: .failedToConvert(error: error))
+            delegate?.audioCodec(errorOccurred: .failedToConvert(error: error))
         } else {
-            delegate?.audioCodec(self, didOutput: outputBuffer, presentationTimeStamp: presentationTimeStamp)
+            delegate?.audioCodec(didOutput: outputBuffer, presentationTimeStamp: presentationTimeStamp)
         }
     }
 
@@ -239,7 +245,7 @@ public class AudioCodec {
         logger.info("inputFormat: \(inputFormat)")
         logger.info("outputFormat: \(outputFormat)")
         guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
-            delegate?.audioCodec(self, errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
+            delegate?.audioCodec(errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
             return nil
         }
         converter.channelMap = makeChannelMap(
@@ -248,7 +254,7 @@ public class AudioCodec {
             outputToInputChannelsMap: outputSettings.channelsMap
         )
         outputSettings.apply(converter, oldValue: nil)
-        delegate?.audioCodec(self, didOutput: outputFormat)
+        delegate?.audioCodec(didOutput: outputFormat)
         return converter
     }
 
@@ -258,7 +264,7 @@ public class AudioCodec {
                 return
             }
             if let audioConverter = self.audioConverter {
-                self.delegate?.audioCodec(self, didOutput: audioConverter.outputFormat)
+                self.delegate?.audioCodec(didOutput: audioConverter.outputFormat)
             }
             self.isRunning.mutate { $0 = true }
         }

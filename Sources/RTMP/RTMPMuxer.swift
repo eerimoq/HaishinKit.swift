@@ -5,7 +5,6 @@ protocol RTMPMuxerDelegate: AnyObject {
     func muxer(_ muxer: RTMPMuxer, didOutputVideo buffer: Data, withTimestamp: Double)
     func muxer(_ muxer: RTMPMuxer, audioCodecErrorOccurred error: AudioCodec.Error)
     func muxer(_ muxer: RTMPMuxer, videoCodecErrorOccurred error: VideoCodec.Error)
-    func muxerWillDropFrame(_ muxer: RTMPMuxer) -> Bool
 }
 
 final class RTMPMuxer {
@@ -24,17 +23,17 @@ final class RTMPMuxer {
 }
 
 extension RTMPMuxer: AudioCodecDelegate {
-    func audioCodec(_: AudioCodec, errorOccurred error: AudioCodec.Error) {
+    func audioCodec(errorOccurred error: AudioCodec.Error) {
         delegate?.muxer(self, audioCodecErrorOccurred: error)
     }
 
-    func audioCodec(_: AudioCodec, didOutput audioFormat: AVAudioFormat) {
+    func audioCodec(didOutput audioFormat: AVAudioFormat) {
         var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.seq.rawValue])
         buffer.append(contentsOf: AudioSpecificConfig(formatDescription: audioFormat.formatDescription).bytes)
         delegate?.muxer(self, didOutputAudio: buffer, withTimestamp: 0)
     }
 
-    func audioCodec(_ codec: AudioCodec, didOutput audioBuffer: AVAudioBuffer,
+    func audioCodec(didOutput audioBuffer: AVAudioBuffer,
                     presentationTimeStamp: CMTime)
     {
         let delta = (audioTimeStamp == CMTime.zero ? 0 : presentationTimeStamp.seconds - audioTimeStamp
@@ -49,7 +48,6 @@ extension RTMPMuxer: AudioCodecDelegate {
         )
         delegate?.muxer(self, didOutputAudio: buffer, withTimestamp: delta)
         audioTimeStamp = presentationTimeStamp
-        codec.freeOutputBuffer(audioBuffer)
     }
 }
 
@@ -125,10 +123,6 @@ extension RTMPMuxer: VideoCodecDelegate {
             delegate?.muxer(self, didOutputVideo: buffer, withTimestamp: delta)
         }
         videoTimeStamp = decodeTimeStamp
-    }
-
-    func videoCodecWillDropFame(_: VideoCodec) -> Bool {
-        return delegate?.muxerWillDropFrame(self) ?? false
     }
 
     private func getCompositionTime(_ sampleBuffer: CMSampleBuffer) -> Int32 {

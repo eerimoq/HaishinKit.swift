@@ -7,8 +7,8 @@ struct AVCFormatStream {
         self.data = data
     }
 
-    init?(bytes: UnsafePointer<UInt8>, count: UInt32) {
-        self.init(data: Data(bytes: bytes, count: Int(count)))
+    init?(bytes: UnsafePointer<UInt8>, count: Int) {
+        self.init(data: Data(bytes: bytes, count: count))
     }
 
     init?(data: Data?) {

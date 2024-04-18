@@ -597,8 +597,4 @@ extension RTMPStream: RTMPMuxerDelegate {
     func muxer(_: RTMPMuxer, audioCodecErrorOccurred error: AudioCodec.Error) {
         delegate?.stream(self, audioCodecErrorOccurred: error)
     }
-
-    func muxerWillDropFrame(_: RTMPMuxer) -> Bool {
-        return delegate?.streamWillDropFrame(self) ?? false
-    }
 }

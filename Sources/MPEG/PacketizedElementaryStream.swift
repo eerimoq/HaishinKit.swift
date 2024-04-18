@@ -210,7 +210,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
 
     init(
         bytes: UnsafePointer<UInt8>,
-        count: UInt32,
+        count: Int,
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
@@ -245,7 +245,7 @@ struct PacketizedElementaryStream: PESPacketHeader {
 
     init(
         bytes: UnsafePointer<UInt8>,
-        count: UInt32,
+        count: Int,
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         timestamp: CMTime,
