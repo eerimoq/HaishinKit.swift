@@ -243,7 +243,7 @@ public final class IOVideoUnit: NSObject {
             return
         }
         output?.setSampleBufferDelegate(nil, queue: lockQueue)
-        let captureSession = mixer.captureSession
+        let captureSession = mixer.videoSession
         captureSession.beginConfiguration()
         defer {
             captureSession.commitConfiguration()

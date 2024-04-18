@@ -135,7 +135,7 @@ private func syncTimeToVideo(mixer: IOMixer, sampleBuffer: CMSampleBuffer) -> CM
     var presentationTimeStamp = sampleBuffer.presentationTimeStamp
     if #available(iOS 16.0, *) {
         if let audioClock = mixer.audioSession.synchronizationClock,
-           let videoClock = mixer.captureSession.synchronizationClock
+           let videoClock = mixer.videoSession.synchronizationClock
         {
             let audioTimescale = sampleBuffer.presentationTimeStamp.timescale
             let seconds = audioClock.convertTime(presentationTimeStamp, to: videoClock).seconds
