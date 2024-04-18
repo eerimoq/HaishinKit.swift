@@ -53,7 +53,7 @@ final class IOAudioUnit: NSObject {
         _ presentationTimeStamp: CMTime,
         isFirstAfterAttach _: Bool
     ) {
-        guard CMSampleBufferDataIsReady(sampleBuffer), let sampleBuffer = sampleBuffer.muted(muted) else {
+        guard let sampleBuffer = sampleBuffer.muted(muted) else {
             return
         }
         inputSourceFormat = sampleBuffer.formatDescription?.streamBasicDescription?.pointee

@@ -2,56 +2,41 @@ import Accelerate
 import AVFoundation
 import Foundation
 
-public var numberOfAudioRingBuffers = 25
-
 final class AudioCodecRingBuffer {
-    static let numSamples: UInt32 = 1024
-
-    var isReady: Bool {
-        numSamples == index
-    }
-
-    var current: AVAudioPCMBuffer {
-        return buffers[cursor]
+    var isOutputBufferReady: Bool {
+        numSamplesPerBuffer == index
     }
 
     private(set) var latestPresentationTimeStamp: CMTime = .invalid
-    private var index: Int = 0
-    private var numSamples: Int
+    private var index = 0
+    private var numSamplesPerBuffer: Int
     private var format: AVAudioFormat
-    private var buffers: [AVAudioPCMBuffer] = []
-    private var cursor: Int = 0
+    var outputBuffer: AVAudioPCMBuffer
     private var workingBuffer: AVAudioPCMBuffer
 
-    init?(
-        _ inSourceFormat: inout AudioStreamBasicDescription,
-        numSamples: UInt32 = AudioCodecRingBuffer.numSamples
-    ) {
+    init?(_ inputBasicDescription: inout AudioStreamBasicDescription) {
+        numSamplesPerBuffer = 1024
         guard
-            inSourceFormat.mFormatID == kAudioFormatLinearPCM,
-            let format = AudioCodec.makeAudioFormat(&inSourceFormat),
-            let workingBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numSamples)
+            inputBasicDescription.mFormatID == kAudioFormatLinearPCM,
+            let format = AudioCodec.makeAudioFormat(&inputBasicDescription),
+            let workingBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: UInt32(numSamplesPerBuffer)
+            ),
+            let outputBuffer = AVAudioPCMBuffer(pcmFormat: format,
+                                                frameCapacity: UInt32(numSamplesPerBuffer))
         else {
             return nil
         }
-        for _ in 0 ..< numberOfAudioRingBuffers {
-            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: numSamples) else {
-                return nil
-            }
-            buffer.frameLength = numSamples
-            buffers.append(buffer)
-        }
+        outputBuffer.frameLength = UInt32(numSamplesPerBuffer)
+        self.outputBuffer = outputBuffer
         self.format = format
         self.workingBuffer = workingBuffer
-        self.numSamples = Int(numSamples)
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime,
-                            offset: Int) -> Int
+                            _ offset: Int) -> Int
     {
-        if isReady {
-            return -1
-        }
         if latestPresentationTimeStamp == .invalid {
             let offsetTimeStamp: CMTime = offset == 0 ? .zero : CMTime(
                 value: CMTimeValue(offset),
@@ -96,25 +81,25 @@ final class AudioCodecRingBuffer {
                 }
             }
         }
-        let numSamples = min(self.numSamples - index, Int(sampleBuffer.numSamples) - offset)
+        let numSamples = min(numSamplesPerBuffer - index, Int(sampleBuffer.numSamples) - offset)
         if format.isInterleaved {
             let channelCount = Int(format.channelCount)
             switch format.commonFormat {
             case .pcmFormatInt16:
                 memcpy(
-                    current.int16ChannelData?[0].advanced(by: index * channelCount),
+                    outputBuffer.int16ChannelData?[0].advanced(by: index * channelCount),
                     workingBuffer.int16ChannelData?[0].advanced(by: offset * channelCount),
                     numSamples * 2 * channelCount
                 )
             case .pcmFormatInt32:
                 memcpy(
-                    current.int32ChannelData?[0].advanced(by: index * channelCount),
+                    outputBuffer.int32ChannelData?[0].advanced(by: index * channelCount),
                     workingBuffer.int32ChannelData?[0].advanced(by: offset * channelCount),
                     numSamples * 4 * channelCount
                 )
             case .pcmFormatFloat32:
                 memcpy(
-                    current.floatChannelData?[0].advanced(by: index * channelCount),
+                    outputBuffer.floatChannelData?[0].advanced(by: index * channelCount),
                     workingBuffer.floatChannelData?[0].advanced(by: offset * channelCount),
                     numSamples * 4 * channelCount
                 )
@@ -126,19 +111,19 @@ final class AudioCodecRingBuffer {
                 switch format.commonFormat {
                 case .pcmFormatInt16:
                     memcpy(
-                        current.int16ChannelData?[i].advanced(by: index),
+                        outputBuffer.int16ChannelData?[i].advanced(by: index),
                         workingBuffer.int16ChannelData?[i].advanced(by: offset),
                         numSamples * 2
                     )
                 case .pcmFormatInt32:
                     memcpy(
-                        current.int32ChannelData?[i].advanced(by: index),
+                        outputBuffer.int32ChannelData?[i].advanced(by: index),
                         workingBuffer.int32ChannelData?[i].advanced(by: offset),
                         numSamples * 4
                     )
                 case .pcmFormatFloat32:
                     memcpy(
-                        current.floatChannelData?[i].advanced(by: index),
+                        outputBuffer.floatChannelData?[i].advanced(by: index),
                         workingBuffer.floatChannelData?[i].advanced(by: offset),
                         numSamples * 4
                     )
@@ -155,9 +140,5 @@ final class AudioCodecRingBuffer {
     func next() {
         latestPresentationTimeStamp = .invalid
         index = 0
-        cursor += 1
-        if cursor == buffers.count {
-            cursor = 0
-        }
     }
 }

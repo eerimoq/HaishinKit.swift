@@ -24,34 +24,34 @@ public class AudioCodec {
         self.lockQueue = lockQueue
     }
 
-    static func makeAudioFormat(_ inSourceFormat: inout AudioStreamBasicDescription) -> AVAudioFormat? {
-        if inSourceFormat.mFormatID == kAudioFormatLinearPCM,
+    static func makeAudioFormat(_ basicDescription: inout AudioStreamBasicDescription) -> AVAudioFormat? {
+        if basicDescription.mFormatID == kAudioFormatLinearPCM,
            kLinearPCMFormatFlagIsBigEndian ==
-           (inSourceFormat.mFormatFlags & kLinearPCMFormatFlagIsBigEndian)
+           (basicDescription.mFormatFlags & kLinearPCMFormatFlagIsBigEndian)
         {
             // ReplayKit audioApp.
-            guard inSourceFormat.mBitsPerChannel == 16 else {
+            guard basicDescription.mBitsPerChannel == 16 else {
                 return nil
             }
-            if let layout = makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
+            if let layout = makeChannelLayout(basicDescription.mChannelsPerFrame) {
                 return .init(
                     commonFormat: .pcmFormatInt16,
-                    sampleRate: inSourceFormat.mSampleRate,
+                    sampleRate: basicDescription.mSampleRate,
                     interleaved: true,
                     channelLayout: layout
                 )
             }
             return AVAudioFormat(
                 commonFormat: .pcmFormatInt16,
-                sampleRate: inSourceFormat.mSampleRate,
-                channels: inSourceFormat.mChannelsPerFrame,
+                sampleRate: basicDescription.mSampleRate,
+                channels: basicDescription.mChannelsPerFrame,
                 interleaved: true
             )
         }
-        if let layout = makeChannelLayout(inSourceFormat.mChannelsPerFrame) {
-            return .init(streamDescription: &inSourceFormat, channelLayout: layout)
+        if let layout = makeChannelLayout(basicDescription.mChannelsPerFrame) {
+            return .init(streamDescription: &basicDescription, channelLayout: layout)
         }
-        return .init(streamDescription: &inSourceFormat)
+        return .init(streamDescription: &basicDescription)
     }
 
     static func makeChannelLayout(_ numberOfChannels: UInt32) -> AVAudioChannelLayout? {
@@ -61,8 +61,8 @@ public class AudioCodec {
         return AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | numberOfChannels)
     }
 
-    public weak var delegate: (any AudioCodecDelegate)?
-    public private(set) var isRunning: Atomic<Bool> = .init(false)
+    weak var delegate: (any AudioCodecDelegate)?
+    private var isRunning: Atomic<Bool> = .init(false)
     public var outputSettings: AudioCodecOutputSettings = .default {
         didSet {
             guard let audioConverter else {
@@ -78,64 +78,43 @@ public class AudioCodec {
             guard var inSourceFormat, inSourceFormat != oldValue else {
                 return
             }
-            outputBuffers.removeAll()
             ringBuffer = .init(&inSourceFormat)
             audioConverter = makeAudioConverter(&inSourceFormat)
         }
     }
 
     private var ringBuffer: AudioCodecRingBuffer?
-    private var outputBuffers: [AVAudioBuffer] = []
     private var audioConverter: AVAudioConverter?
 
-    public func appendSampleBuffer(
-        _ sampleBuffer: CMSampleBuffer,
-        _ presentationTimeStamp: CMTime,
-        offset: Int = 0
-    ) {
+    public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) {
         guard isRunning.value else {
             return
         }
         switch outputSettings.format {
         case .aac:
-            appendSampleBufferOutputAac(sampleBuffer, presentationTimeStamp, offset: offset)
+            appendSampleBufferOutputAac(sampleBuffer, presentationTimeStamp)
         case .pcm:
             appendSampleBufferOutputPcm(sampleBuffer, presentationTimeStamp)
         }
     }
 
-    private func appendSampleBufferOutputAac(
-        _ sampleBuffer: CMSampleBuffer,
-        _ presentationTimeStamp: CMTime,
-        offset: Int
-    ) {
+    private func appendSampleBufferOutputAac(_ sampleBuffer: CMSampleBuffer,
+                                             _ presentationTimeStamp: CMTime)
+    {
         guard let audioConverter, let ringBuffer else {
-            logger.info("audioConverter or ringBuffer missing")
             return
         }
-        let numSamples = ringBuffer.appendSampleBuffer(
-            sampleBuffer,
-            presentationTimeStamp,
-            offset: offset
-        )
-        if ringBuffer.isReady {
-            guard let outputBuffer = allocOutputBuffer(audioConverter) else {
-                logger.info("no output buffer")
-                return
+        var offset = 0
+        while offset < sampleBuffer.numSamples {
+            offset += ringBuffer.appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset)
+            if ringBuffer.isOutputBufferReady {
+                convertBuffer(
+                    audioConverter: audioConverter,
+                    inputBuffer: ringBuffer.outputBuffer,
+                    presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
+                )
+                ringBuffer.next()
             }
-            defer {
-                freeOutputBuffer(outputBuffer)
-            }
-            convertBuffer(
-                audioConverter: audioConverter,
-                inputBuffer: ringBuffer.current,
-                outputBuffer: outputBuffer,
-                presentationTimeStamp: ringBuffer.latestPresentationTimeStamp
-            )
-            ringBuffer.next()
-        }
-        if offset + numSamples < sampleBuffer.numSamples {
-            appendSampleBuffer(sampleBuffer, presentationTimeStamp, offset: offset + numSamples)
         }
     }
 
@@ -178,16 +157,12 @@ public class AudioCodec {
     }
 
     func appendAudioBuffer(_ audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
-        guard isRunning.value, let audioConverter, let outputBuffer = allocOutputBuffer(audioConverter) else {
+        guard isRunning.value, let audioConverter else {
             return
-        }
-        defer {
-            freeOutputBuffer(outputBuffer)
         }
         convertBuffer(
             audioConverter: audioConverter,
             inputBuffer: audioBuffer,
-            outputBuffer: outputBuffer,
             presentationTimeStamp: presentationTimeStamp
         )
     }
@@ -195,9 +170,11 @@ public class AudioCodec {
     private func convertBuffer(
         audioConverter: AVAudioConverter,
         inputBuffer: AVAudioBuffer,
-        outputBuffer: AVAudioBuffer,
         presentationTimeStamp: CMTime
     ) {
+        guard let outputBuffer = createOutputBuffer(audioConverter) else {
+            return
+        }
         var error: NSError?
         audioConverter.convert(to: outputBuffer, error: &error) { _, status in
             status.pointee = .haveData
@@ -222,15 +199,8 @@ public class AudioCodec {
         }
     }
 
-    private func allocOutputBuffer(_ audioConverter: AVAudioConverter) -> AVAudioBuffer? {
-        if outputBuffers.isEmpty {
-            return outputSettings.format.makeAudioBuffer(audioConverter.outputFormat)
-        }
-        return outputBuffers.removeFirst()
-    }
-
-    func freeOutputBuffer(_ buffer: AVAudioBuffer) {
-        outputBuffers.append(buffer)
+    private func createOutputBuffer(_ audioConverter: AVAudioConverter) -> AVAudioBuffer? {
+        return outputSettings.format.makeAudioBuffer(audioConverter.outputFormat)
     }
 
     private func makeAudioConverter(_ inSourceFormat: inout AudioStreamBasicDescription)
