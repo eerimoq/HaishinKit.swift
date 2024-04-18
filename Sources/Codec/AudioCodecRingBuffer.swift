@@ -11,7 +11,7 @@ final class AudioCodecRingBuffer {
     private var index = 0
     private var numSamplesPerBuffer: Int
     private var format: AVAudioFormat
-    var outputBuffer: AVAudioPCMBuffer
+    private(set) var outputBuffer: AVAudioPCMBuffer
     private var workingBuffer: AVAudioPCMBuffer
 
     init?(_ inputBasicDescription: inout AudioStreamBasicDescription) {
@@ -19,18 +19,20 @@ final class AudioCodecRingBuffer {
         guard
             inputBasicDescription.mFormatID == kAudioFormatLinearPCM,
             let format = AudioCodec.makeAudioFormat(&inputBasicDescription),
-            let workingBuffer = AVAudioPCMBuffer(
+            let outputBuffer = AVAudioPCMBuffer(
                 pcmFormat: format,
                 frameCapacity: UInt32(numSamplesPerBuffer)
             ),
-            let outputBuffer = AVAudioPCMBuffer(pcmFormat: format,
-                                                frameCapacity: UInt32(numSamplesPerBuffer))
+            let workingBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: UInt32(numSamplesPerBuffer)
+            )
         else {
             return nil
         }
         outputBuffer.frameLength = UInt32(numSamplesPerBuffer)
-        self.outputBuffer = outputBuffer
         self.format = format
+        self.outputBuffer = outputBuffer
         self.workingBuffer = workingBuffer
     }
 
