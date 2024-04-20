@@ -12,8 +12,6 @@ public protocol EventDispatcherConvertible: AnyObject {
     func dispatch(_ type: Event.Name, bubbles: Bool, data: Any?)
 }
 
-// MARK: -
-
 /// The Event interface is used to provide information.
 open class Event {
     /// A structure that defines the name of an event.

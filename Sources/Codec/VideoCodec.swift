@@ -4,28 +4,11 @@ import UIKit
 import VideoToolbox
 
 public protocol VideoCodecDelegate: AnyObject {
-    /// Tells the receiver to set a formatDescription.
     func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?)
-    /// Tells the receiver to output an encoded or decoded sampleBuffer.
     func videoCodec(_ codec: VideoCodec, didOutput sampleBuffer: CMSampleBuffer)
-    /// Tells the receiver to occured an error.
-    func videoCodec(_ codec: VideoCodec, errorOccurred error: VideoCodec.Error)
 }
 
 public class VideoCodec {
-    public enum Error: Swift.Error {
-        /// The VideoCodec failed to create the VTSession.
-        case failedToCreate(status: OSStatus)
-        /// The VideoCodec failed to prepare the VTSession.
-        case failedToPrepare(status: OSStatus)
-        /// The VideoCodec failed to encode a frame.
-        case failedToEncodeFrame(status: OSStatus, gotBuffer: Bool = false)
-        /// The VideoCodec failed to decode a frame.
-        case failedToDecodeFrame(status: OSStatus, gotBuffer: Bool = false)
-        /// The VideoCodec failed to set an option.
-        case failedToSetOption(status: OSStatus, option: VTSessionOption)
-    }
-
     public init(lockQueue: DispatchQueue) {
         self.lockQueue = lockQueue
     }
@@ -98,10 +81,7 @@ public class VideoCodec {
             duration: duration
         ) { [unowned self] status, _, sampleBuffer in
             guard let sampleBuffer, status == noErr else {
-                delegate?.videoCodec(
-                    self,
-                    errorOccurred: .failedToEncodeFrame(status: status, gotBuffer: sampleBuffer != nil)
-                )
+                logger.warn("Failed to encode frame status \(status) an got buffer \(sampleBuffer != nil)")
                 return
             }
             formatDescription = sampleBuffer.formatDescription
@@ -125,10 +105,8 @@ public class VideoCodec {
                 unowned self
             ] status, _, imageBuffer, presentationTimeStamp, duration in
                 guard let imageBuffer, status == noErr else {
-                    self.delegate?.videoCodec(
-                        self,
-                        errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: imageBuffer != nil)
-                    )
+                    logger
+                        .warn("Failed to decode frame status \(status) an got buffer \(sampleBuffer != nil)")
                     return
                 }
                 var timingInfo = CMSampleTimingInfo(
@@ -143,7 +121,7 @@ public class VideoCodec {
                     formatDescriptionOut: &videoFormatDescription
                 )
                 guard status == noErr else {
-                    delegate?.videoCodec(self, errorOccurred: .failedToDecodeFrame(status: status))
+                    logger.warn("Failed to decode frame status \(status)")
                     return
                 }
                 var sampleBuffer: CMSampleBuffer?
@@ -158,10 +136,8 @@ public class VideoCodec {
                     sampleBufferOut: &sampleBuffer
                 )
                 guard let buffer = sampleBuffer, status == noErr else {
-                    delegate?.videoCodec(
-                        self,
-                        errorOccurred: .failedToDecodeFrame(status: status, gotBuffer: sampleBuffer != nil)
-                    )
+                    logger
+                        .warn("Failed to decode frame status \(status) an got buffer \(sampleBuffer != nil)")
                     return
                 }
                 delegate?.videoCodec(self, didOutput: buffer)
@@ -247,17 +223,17 @@ func makeVideoCompressionSession(_ videoCodec: VideoCodec) -> (any VTSessionConv
         compressionSessionOut: &session
     )
     guard status == noErr, let session else {
-        videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToCreate(status: status))
+        logger.warn("Failed to create status \(status)")
         return nil
     }
     status = session.setOptions(videoCodec.settings.options(videoCodec))
     guard status == noErr else {
-        videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToPrepare(status: status))
+        logger.warn("Failed to prepare status \(status)")
         return nil
     }
     status = session.prepareToEncodeFrames()
     guard status == noErr else {
-        videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToPrepare(status: status))
+        logger.warn("Failed to prepare status \(status)")
         return nil
     }
     return session
@@ -265,10 +241,7 @@ func makeVideoCompressionSession(_ videoCodec: VideoCodec) -> (any VTSessionConv
 
 func makeVideoDecompressionSession(_ videoCodec: VideoCodec) -> (any VTSessionConvertible)? {
     guard let formatDescription = videoCodec.formatDescription else {
-        videoCodec.delegate?.videoCodec(
-            videoCodec,
-            errorOccurred: .failedToCreate(status: kVTParameterErr)
-        )
+        logger.warn("Failed to create status \(kVTParameterErr)")
         return nil
     }
     var attributes = videoCodec.attributes
@@ -284,7 +257,7 @@ func makeVideoDecompressionSession(_ videoCodec: VideoCodec) -> (any VTSessionCo
         decompressionSessionOut: &session
     )
     guard status == noErr else {
-        videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToCreate(status: status))
+        logger.warn("Failed to create status \(status)")
         return nil
     }
     return session

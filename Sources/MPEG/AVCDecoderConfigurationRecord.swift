@@ -5,8 +5,6 @@ protocol DecoderConfigurationRecord {
     func makeFormatDescription(_ formatDescriptionOut: UnsafeMutablePointer<CMFormatDescription?>) -> OSStatus
 }
 
-// MARK: -
-
 /*
  - seealso: ISO/IEC 14496-15 2010
  */

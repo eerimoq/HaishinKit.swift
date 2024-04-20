@@ -23,7 +23,6 @@ protocol IOMixerDelegate: AnyObject {
     func mixerVideo(_ mixer: IOMixer, presentationTimestamp: Double)
     func mixerVideo(_ mixer: IOMixer, failedEffect: String?)
     func mixerVideo(_ mixer: IOMixer, lowFpsImage: Data?)
-    func mixer(_ mixer: IOMixer, recorderErrorOccured error: IORecorder.Error)
     func mixer(_ mixer: IOMixer, recorderFinishWriting writer: AVAssetWriter)
 }
 
@@ -262,10 +261,6 @@ public class IOMixer {
 }
 
 extension IOMixer: IORecorderDelegate {
-    public func recorder(_: IORecorder, errorOccured error: IORecorder.Error) {
-        delegate?.mixer(self, recorderErrorOccured: error)
-    }
-
     public func recorder(_: IORecorder, finishWriting writer: AVAssetWriter) {
         delegate?.mixer(self, recorderFinishWriting: writer)
     }

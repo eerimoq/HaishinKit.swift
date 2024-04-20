@@ -238,8 +238,6 @@ public class RTMPSharedObject: EventDispatcher {
 }
 
 extension RTMPSharedObject: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     public var debugDescription: String {
         data.debugDescription
     }

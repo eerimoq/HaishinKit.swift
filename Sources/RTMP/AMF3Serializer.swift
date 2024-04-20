@@ -78,8 +78,6 @@ enum AMF3Type: UInt8 {
     case dictionary = 0x11
 }
 
-// MARK: -
-
 /**
  AMF3 Serializer
 
@@ -90,8 +88,6 @@ final class AMF3Serializer: ByteArray {
 }
 
 extension AMF3Serializer: AMFSerializer {
-    // MARK: AMFSerializer
-
     @discardableResult
     func serialize(_ value: Any?) -> Self {
         if value == nil {

@@ -66,17 +66,11 @@ public struct VideoCodecSettings {
     func apply(_ codec: VideoCodec) {
         let option = VTSessionOption(key: .averageBitRate, value: NSNumber(value: bitRate))
         if let status = codec.session?.setOption(option), status != noErr {
-            codec.delegate?.videoCodec(
-                codec,
-                errorOccurred: .failedToSetOption(status: status, option: option)
-            )
+            logger.warn("Failed to set option \(status) \(option)")
         }
         let optionLimit = VTSessionOption(key: .dataRateLimits, value: createDataRateLimits(bitRate: bitRate))
         if let status = codec.session?.setOption(optionLimit), status != noErr {
-            codec.delegate?.videoCodec(
-                codec,
-                errorOccurred: .failedToSetOption(status: status, option: optionLimit)
-            )
+            logger.warn("Failed to set option \(status) \(optionLimit)")
         }
     }
 

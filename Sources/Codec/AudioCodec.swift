@@ -5,8 +5,6 @@ public protocol AudioCodecDelegate: AnyObject {
     func audioCodec(didOutput audioFormat: AVAudioFormat)
     /// Tells the receiver to output an encoded or decoded CMSampleBuffer.
     func audioCodec(didOutput audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime)
-    /// Tells the receiver to occured an error.
-    func audioCodec(errorOccurred error: AudioCodec.Error)
 }
 
 /**
@@ -14,12 +12,6 @@ public protocol AudioCodecDelegate: AnyObject {
  * - seealso: https://developer.apple.com/library/ios/technotes/tn2236/_index.html
  */
 public class AudioCodec {
-    /// The AudioCodec  error domain codes.
-    public enum Error: Swift.Error {
-        case failedToCreate(from: AVAudioFormat, to: AVAudioFormat)
-        case failedToConvert(error: NSError)
-    }
-
     init(lockQueue: DispatchQueue) {
         self.lockQueue = lockQueue
     }
@@ -181,7 +173,7 @@ public class AudioCodec {
             return inputBuffer
         }
         if let error {
-            delegate?.audioCodec(errorOccurred: .failedToConvert(error: error))
+            logger.warn("Failed to convert \(error)")
         } else {
             delegate?.audioCodec(didOutput: outputBuffer, presentationTimeStamp: presentationTimeStamp)
         }
@@ -215,7 +207,7 @@ public class AudioCodec {
         logger.info("inputFormat: \(inputFormat)")
         logger.info("outputFormat: \(outputFormat)")
         guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
-            delegate?.audioCodec(errorOccurred: .failedToCreate(from: inputFormat, to: outputFormat))
+            logger.warn("Failed to create from \(inputFormat) to \(outputFormat)")
             return nil
         }
         converter.channelMap = makeChannelMap(

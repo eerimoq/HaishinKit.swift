@@ -43,8 +43,6 @@ public struct ASTypedObject {
     }
 }
 
-// MARK: -
-
 /// The ASArray class represents an array value for ActionScript.
 public struct ASArray {
     private(set) var data: [Any?]
@@ -67,8 +65,6 @@ public struct ASArray {
 }
 
 extension ASArray: ExpressibleByArrayLiteral {
-    // MARK: ExpressibleByArrayLiteral
-
     public init(arrayLiteral elements: Any?...) {
         self = ASArray(data: elements)
     }
@@ -109,22 +105,16 @@ extension ASArray: ExpressibleByArrayLiteral {
 }
 
 extension ASArray: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-
     public var debugDescription: String {
         data.description
     }
 }
 
 extension ASArray: Equatable {
-    // MARK: Equatable
-
     public static func == (lhs: ASArray, rhs: ASArray) -> Bool {
         (lhs.data.description == rhs.data.description) && (lhs.dict.description == rhs.dict.description)
     }
 }
-
-// MARK: -
 
 // ActionScript 1.0 and 2.0 and flash.xml.XMLDocument in ActionScript 3.0
 /// - seealso: 2.17 XML Document Type (amf0-file-format-specification.pdf)
@@ -143,14 +133,10 @@ public struct ASXMLDocument: CustomStringConvertible {
 }
 
 extension ASXMLDocument: Equatable {
-    // MARK: Equatable
-
     public static func == (lhs: ASXMLDocument, rhs: ASXMLDocument) -> Bool {
         lhs.description == rhs.description
     }
 }
-
-// MARK: -
 
 /// ActionScript 3.0 introduces a new XML type.
 /// - seealso: 3.13 XML type (amf-file-format-spec.pdf)
@@ -168,8 +154,6 @@ public struct ASXML: CustomStringConvertible {
 }
 
 extension ASXML: Equatable {
-    // MARK: Equatable
-
     public static func == (lhs: ASXML, rhs: ASXML) -> Bool {
         lhs.description == rhs.description
     }

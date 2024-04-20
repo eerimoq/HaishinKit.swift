@@ -3,8 +3,6 @@ import AVFoundation
 protocol RTMPMuxerDelegate: AnyObject {
     func muxer(_ muxer: RTMPMuxer, didOutputAudio buffer: Data, withTimestamp: Double)
     func muxer(_ muxer: RTMPMuxer, didOutputVideo buffer: Data, withTimestamp: Double)
-    func muxer(_ muxer: RTMPMuxer, audioCodecErrorOccurred error: AudioCodec.Error)
-    func muxer(_ muxer: RTMPMuxer, videoCodecErrorOccurred error: VideoCodec.Error)
 }
 
 final class RTMPMuxer {
@@ -23,10 +21,6 @@ final class RTMPMuxer {
 }
 
 extension RTMPMuxer: AudioCodecDelegate {
-    func audioCodec(errorOccurred error: AudioCodec.Error) {
-        delegate?.muxer(self, audioCodecErrorOccurred: error)
-    }
-
     func audioCodec(didOutput audioFormat: AVAudioFormat) {
         var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.seq.rawValue])
         buffer.append(contentsOf: AudioSpecificConfig(formatDescription: audioFormat.formatDescription).bytes)
@@ -52,10 +46,6 @@ extension RTMPMuxer: AudioCodecDelegate {
 }
 
 extension RTMPMuxer: VideoCodecDelegate {
-    func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
-        delegate?.muxer(self, videoCodecErrorOccurred: error)
-    }
-
     func videoCodec(_ codec: VideoCodec, didOutput formatDescription: CMFormatDescription?) {
         guard let formatDescription else {
             return

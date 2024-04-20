@@ -8,8 +8,6 @@ protocol TSPSIPointer {
     var pointerFillerBytes: Data { get set }
 }
 
-// MARK: -
-
 protocol TSPSITableHeader {
     var tableId: UInt8 { get set }
     var sectionSyntaxIndicator: Bool { get set }
@@ -137,8 +135,6 @@ final class TSProgramAssociation: TSProgram {
         }
     }
 }
-
-// MARK: -
 
 final class TSProgramMap: TSProgram {
     static let tableID: UInt8 = 2

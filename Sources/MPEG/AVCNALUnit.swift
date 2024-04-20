@@ -17,8 +17,6 @@ enum AVCNALUnitType: UInt8, Equatable {
     case fill = 12
 }
 
-// MARK: -
-
 struct AVCNALUnit: Equatable {
     let refIdc: UInt8
     let type: AVCNALUnitType

@@ -272,10 +272,6 @@ public class TSWriter {
 }
 
 extension TSWriter: AudioCodecDelegate {
-    public func audioCodec(errorOccurred error: AudioCodec.Error) {
-        logger.error("Audio error \(error)")
-    }
-
     public func audioCodec(didOutput outputFormat: AVAudioFormat) {
         logger.info("Audio setup \(outputFormat) (forcing AAC)")
         var data = ESSpecificData()
@@ -408,9 +404,5 @@ extension TSWriter: VideoCodecDelegate {
             randomAccessIndicator: randomAccessIndicator,
             PES: PES
         ))
-    }
-
-    public func videoCodec(_: VideoCodec, errorOccurred error: VideoCodec.Error) {
-        logger.error("Video error \(error)")
     }
 }

@@ -5,19 +5,12 @@ import UIKit
 
 /// The interface a NetStream uses to inform its delegate.
 public protocol NetStreamDelegate: AnyObject {
-    /// Tells the receiver to session was interrupted.
     func stream(
         _ stream: NetStream,
         sessionWasInterrupted session: AVCaptureSession,
         reason: AVCaptureSession.InterruptionReason?
     )
-    /// Tells the receiver to session interrupted ended.
     func stream(_ stream: NetStream, sessionInterruptionEnded session: AVCaptureSession)
-    /// Tells the receiver to video codec error occured.
-    func stream(_ stream: NetStream, videoCodecErrorOccurred error: VideoCodec.Error)
-    /// Tells the receiver to audio codec error occured.
-    func stream(_ stream: NetStream, audioCodecErrorOccurred error: AudioCodec.Error)
-    /// Tells the receiver to the stream opened.
     func streamDidOpen(_ stream: NetStream)
     func stream(
         _ stream: NetStream,
@@ -28,7 +21,6 @@ public protocol NetStreamDelegate: AnyObject {
     func streamVideo(_ stream: NetStream, presentationTimestamp: Double)
     func streamVideo(_ stream: NetStream, failedEffect: String?)
     func streamVideo(_ stream: NetStream, lowFpsImage: Data?)
-    func stream(_ stream: NetStream, recorderErrorOccured error: IORecorder.Error)
     func stream(_ stream: NetStream, recorderFinishWriting writer: AVAssetWriter)
 }
 
@@ -236,10 +228,6 @@ extension NetStream: IOMixerDelegate {
 
     func mixerVideo(_: IOMixer, lowFpsImage: Data?) {
         delegate?.streamVideo(self, lowFpsImage: lowFpsImage)
-    }
-
-    func mixer(_: IOMixer, recorderErrorOccured error: IORecorder.Error) {
-        delegate?.stream(self, recorderErrorOccured: error)
     }
 
     func mixer(_: IOMixer, recorderFinishWriting writer: AVAssetWriter) {

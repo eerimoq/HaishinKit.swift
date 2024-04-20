@@ -68,8 +68,6 @@ protocol ByteArrayConvertible {
     func clear() -> Self
 }
 
-// MARK: -
-
 /**
  * The ByteArray class provides methods and properties the reading or writing with binary data.
  */

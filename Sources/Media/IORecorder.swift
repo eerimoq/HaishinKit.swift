@@ -2,21 +2,12 @@ import AVFoundation
 import SwiftPMSupport
 
 public protocol IORecorderDelegate: AnyObject {
-    func recorder(_ recorder: IORecorder, errorOccured error: IORecorder.Error)
     func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter)
 }
 
 private let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IORecorder.lock")
 
 public class IORecorder {
-    public enum Error: Swift.Error {
-        case failedToCreateAssetWriter(error: Swift.Error)
-        case failedToCreateAssetWriterInput(error: NSException)
-        case failedToAppendAudio(error: Swift.Error?)
-        case failedToAppendVideo(error: Swift.Error?)
-        case failedToFinishWriting(error: Swift.Error?)
-    }
-
     private static let defaultAudioOutputSettings: [String: Any] = [
         AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
         AVSampleRateKey: 0,
@@ -77,7 +68,7 @@ public class IORecorder {
             return
         }
         if !input.append(sampleBuffer) {
-            delegate?.recorder(self, errorOccured: .failedToAppendAudio(error: writer.error))
+            logger.warn("Failed to append audio \(writer.error)")
         }
     }
 
@@ -141,7 +132,7 @@ public class IORecorder {
             return
         }
         if !adaptor.append(pixelBuffer, withPresentationTime: withPresentationTime) {
-            delegate?.recorder(self, errorOccured: .failedToAppendVideo(error: writer.error))
+            logger.warn("Failed to append video \(writer.error)")
         }
     }
 
@@ -208,7 +199,7 @@ public class IORecorder {
                 self.writer?.add(input)
             }
         } _: { exception in
-            self.delegate?.recorder(self, errorOccured: .failedToCreateAssetWriterInput(error: exception))
+            logger.warn("Failed to create asset writer input \(exception)")
         }
         return input
     }
@@ -303,7 +294,7 @@ public class IORecorder {
         do {
             writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         } catch {
-            delegate?.recorder(self, errorOccured: .failedToCreateAssetWriter(error: error))
+            logger.warn("Failed to create asset writer \(error)")
         }
     }
 
@@ -319,7 +310,7 @@ public class IORecorder {
             return
         }
         guard writer.status == .writing else {
-            delegate?.recorder(self, errorOccured: .failedToFinishWriting(error: writer.error))
+            logger.warn("Failed to finish writing \(writer.error)")
             reset()
             return
         }

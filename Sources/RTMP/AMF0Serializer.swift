@@ -22,8 +22,6 @@ enum AMFSerializerError: Error {
     case outOfIndex
 }
 
-// MARK: -
-
 protocol AMFSerializer: ByteArrayConvertible {
     var reference: AMFReference { get set }
 
@@ -89,8 +87,6 @@ enum AMF0Type: UInt8 {
     case avmplush = 0x11
 }
 
-// MARK: -
-
 /**
  AMF0Serializer
 
@@ -101,8 +97,6 @@ public final class AMF0Serializer: ByteArray {
 }
 
 extension AMF0Serializer: AMFSerializer {
-    // MARK: AMFSerializer
-
     @discardableResult
     public func serialize(_ value: Any?) -> Self {
         if value == nil {
