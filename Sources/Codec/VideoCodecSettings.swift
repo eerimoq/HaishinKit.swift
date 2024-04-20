@@ -1,9 +1,7 @@
 import Foundation
 import VideoToolbox
 
-/// The VideoCodecSettings class  specifying video compression settings.
 public struct VideoCodecSettings {
-    /// The type of the VideoCodec supports format.
     enum Format: Codable {
         case h264
         case hevc
@@ -18,15 +16,10 @@ public struct VideoCodecSettings {
         }
     }
 
-    /// Specifies the video size of encoding video.
     public var videoSize: VideoSize
-    /// Specifies the bitrate.
     public var bitRate: UInt32
-    /// Specifies the keyframeInterval.
     public var maxKeyFrameIntervalDuration: Int32
-    /// Specifies the allowFrameRecording.
     public var allowFrameReordering: Bool
-    /// Specifies the H264 profileLevel.
     public var profileLevel: String {
         didSet {
             if profileLevel.contains("HEVC") {
@@ -39,7 +32,6 @@ public struct VideoCodecSettings {
 
     var format: Format = .h264
 
-    /// Creates a new VideoCodecSettings instance.
     public init(
         videoSize: VideoSize = .init(width: 854, height: 480),
         profileLevel: String = kVTProfileLevel_H264_Baseline_3_1 as String,
